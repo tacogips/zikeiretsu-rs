@@ -1,0 +1,6 @@
+[workspace]
+members = ["simple8b-rle","bits-ope","xor-encoding","base-128-variants","zikeiretsu"]
+
+
+[profile.release]
+lto = true

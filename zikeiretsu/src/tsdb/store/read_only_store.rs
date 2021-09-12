@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::tsdb::{datapoint::*, field::*};
+use crate::tsdb::{datapoint::*, datapoints_searcher::*, field::*};
 
 pub struct RefReadonlyStore<'datapoint> {
     datapoints: &'datapoint [DataPoint],
@@ -13,18 +13,15 @@ impl<'datapoint> RefReadonlyStore<'datapoint> {
         validate: bool,
     ) -> Result<Self> {
         if validate {
-            if let Err(e) = check_datapoints_is_sorted(&datapoints) {
-                return Err(e);
+            if let Err(e) = DataPoint::check_datapoints_is_sorted(&datapoints) {
+                return Err(StoreError::UnsortedDatapoints(e));
             }
         }
         Ok(Self { datapoints })
     }
-}
 
-#[async_trait]
-impl DatapointsStore for RefReadonlyStore<'_> {
-    async fn datapoints(&mut self) -> Result<&[DataPoint]> {
-        Ok(&self.datapoints)
+    async fn datapoints_searcher<'a>(&'a self) -> DatapointSearcher<'a> {
+        DatapointSearcher::new(&self.datapoints)
     }
 }
 
@@ -39,17 +36,18 @@ impl ReadonlyStore {
         validate: bool,
     ) -> Result<Self> {
         if validate {
-            if let Err(e) = check_datapoints_is_sorted(&datapoints) {
-                return Err(e);
+            if let Err(e) = DataPoint::check_datapoints_is_sorted(&datapoints) {
+                return Err(StoreError::UnsortedDatapoints(e));
             }
         }
         Ok(Self { datapoints })
     }
-}
 
-#[async_trait]
-impl DatapointsStore for ReadonlyStore {
-    async fn datapoints(&mut self) -> Result<&[DataPoint]> {
-        Ok(&self.datapoints)
+    async fn datapoints(&self) -> &[DataPoint] {
+        &self.datapoints
+    }
+
+    async fn datapoints_searcher<'a>(&'a self) -> DatapointSearcher<'a> {
+        DatapointSearcher::new(&self.datapoints)
     }
 }

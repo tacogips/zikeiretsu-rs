@@ -14,6 +14,7 @@ use crate::FieldError;
 use base_128_variants;
 use bits_ope::*;
 use memmap2::MmapOptions;
+use serde::{Deserialize, Serialize};
 use simple8b_rle;
 use std::cmp::Ordering;
 use std::fs::{File, OpenOptions};
@@ -23,7 +24,7 @@ use std::path::Path;
 use thiserror::Error;
 use xor_encoding;
 
-pub type Result<T> = std::result::Result<T, BlockListError>;
+type Result<T> = std::result::Result<T, BlockListError>;
 
 #[derive(Error, Debug)]
 pub enum BlockListError {
@@ -53,9 +54,6 @@ pub enum BlockListError {
 
     #[error("field error on block. {0}")]
     FieldError(#[from] FieldError),
-
-    #[error("store error on block.  {0}")]
-    StoreError(#[from] StoreError),
 }
 
 #[derive(Debug)]
@@ -65,7 +63,7 @@ pub(crate) struct TimestampSecDeltas {
 }
 
 impl TimestampSecDeltas {
-    pub fn into_timestamp_secs(self) -> Vec<TimestampSec> {
+    pub fn as_timestamp_secs(self) -> Vec<TimestampSec> {
         let mut timestamps = Vec::<TimestampSec>::new();
         timestamps.push(self.head_timestamp_sec);
         let mut prev_timestamp = self.head_timestamp_sec;
@@ -117,6 +115,28 @@ impl BlockList {
         }
     }
 
+    pub fn update_updated_at(&mut self, dt: TimestampNano) {
+        self.updated_timestamp_sec = dt;
+    }
+
+    pub fn add_timestamp(&mut self, block_timestamp: BlockTimestamp) -> Result<()> {
+        // in almost  all case,  the block_timestamp will be stored at the tail
+        let mut insert_at = self.block_timestamps.len();
+        for (idx, each) in self.block_timestamps.iter().rev().enumerate() {
+            if each.until_sec <= block_timestamp.since_sec {
+                insert_at = self.block_timestamps.len() - idx;
+                break;
+            }
+        }
+        if insert_at == self.block_timestamps.len() {
+            self.block_timestamps.push(block_timestamp);
+        } else {
+            self.block_timestamps.insert(insert_at, block_timestamp);
+        }
+
+        Ok(())
+    }
+
     fn check_block_timestamp_is_sorted(&self) -> Result<()> {
         if self.block_timestamps.is_empty() {
             Ok(())
@@ -133,7 +153,7 @@ impl BlockList {
         }
     }
 
-    fn block_timestamp_size(&self) -> usize {
+    fn block_timestamp_num(&self) -> usize {
         self.block_timestamps.len()
     }
 
@@ -149,11 +169,14 @@ impl BlockList {
         (sinces, untils)
     }
 
-    fn search(
+    pub fn search(
         &self,
-        since: Option<TimestampSec>,
-        until: Option<TimestampSec>,
+        since: Option<&TimestampSec>,
+        until: Option<&TimestampSec>,
     ) -> Result<Option<&[BlockTimestamp]>> {
+        //TODO(tacogis)  maybe redundunt
+        self.check_block_timestamp_is_sorted()?;
+
         let block_timestamps = self.block_timestamps.as_slice();
 
         match (since, until) {
@@ -219,7 +242,7 @@ impl BlockList {
     }
 }
 
-#[derive(Copy, Debug, PartialEq, Clone)]
+#[derive(Copy, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub(crate) struct BlockTimestamp {
     pub since_sec: TimestampSec,
     pub until_sec: TimestampSec,
@@ -231,6 +254,18 @@ impl BlockTimestamp {
             since_sec,
             until_sec,
         }
+    }
+
+    pub fn is_before(&self, other: &Self) -> bool {
+        self.until_sec <= other.since_sec
+    }
+
+    pub fn is_after(&self, other: &Self) -> bool {
+        other.until_sec <= self.since_sec
+    }
+
+    fn is_valid(&self) -> bool {
+        self.since_sec <= self.until_sec
     }
     fn from_splited_timestamps(
         since_secs: Vec<TimestampSec>,
@@ -271,11 +306,11 @@ impl BlockTimestamp {
     }
 }
 
-pub(crate) fn write_to_blocklist<W>(mut block_file: W, block_list: BlockList) -> Result<()>
+pub(crate) fn write_to_blocklist<W>(mut block_list_file: W, block_list: BlockList) -> Result<()>
 where
     W: Write,
 {
-    let block_timestamp_size = block_list.block_timestamp_size();
+    let block_timestamp_size = block_list.block_timestamp_num();
     if block_timestamp_size == 0 {
         return Err(BlockListError::EmptyBlockTimestampNano);
     }
@@ -286,21 +321,21 @@ where
     {
         let mut bits_writer = BitsWriter::new();
         bits_writer.append(u64_bits_reader!(*block_list.updated_timestamp_sec, 64)?, 64)?;
-        bits_writer.flush(&mut block_file)?;
+        bits_writer.flush(&mut block_list_file)?;
     }
 
     //  (2) number of block timestamps (n bytes)
-    base_128_variants::compress_u64(block_timestamp_size as u64, &mut block_file)?;
+    base_128_variants::compress_u64(block_timestamp_size as u64, &mut block_list_file)?;
 
     let (sinces, untils) = block_list.split_block_list_timestamps();
 
     //  (3) timestamp second head (since)(v byte)
     //  (4) timestamp second deltas(since)(v byte)
-    write_timestamp_sec_and_deltas(sinces, &mut block_file)?;
+    write_timestamp_sec_and_deltas(sinces, &mut block_list_file)?;
 
     //  (5) timestamp second head (untile)(v byte)
     //  (6) timestamp second (until)(v byte)
-    write_timestamp_sec_and_deltas(untils, &mut block_file)?;
+    write_timestamp_sec_and_deltas(untils, &mut block_list_file)?;
 
     Ok(())
 }
@@ -377,15 +412,15 @@ pub(crate) fn read_from_blocklist(block_data: &[u8]) -> Result<BlockList> {
 
     //  (5) timestamp second head (untile)(v byte)
     //  (6) timestamp second (until)(v byte)
-    let (until_timedeltas, block_idx) = read_timestamp_sec_and_deltas(
+    let (until_timedeltas, _block_idx) = read_timestamp_sec_and_deltas(
         block_data,
         number_of_block_timstamps_deltas as usize,
         block_idx,
     )?;
 
     let block_timestamps = BlockTimestamp::from_splited_timestamps(
-        since_timedeltas.into_timestamp_secs(),
-        until_timedeltas.into_timestamp_secs(),
+        since_timedeltas.as_timestamp_secs(),
+        until_timedeltas.as_timestamp_secs(),
     );
 
     let block_list = BlockList {
@@ -503,7 +538,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(11)), Some(ts!(15)));
+        let result = block_list.search(Some(&ts!(11)), Some(&ts!(15)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -523,7 +558,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(10)), Some(ts!(15)));
+        let result = block_list.search(Some(&ts!(10)), Some(&ts!(15)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -543,7 +578,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(10)), Some(ts!(22)));
+        let result = block_list.search(Some(&ts!(10)), Some(&ts!(22)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -563,7 +598,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(10)), Some(ts!(22)));
+        let result = block_list.search(Some(&ts!(10)), Some(&ts!(22)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -582,7 +617,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(10)), Some(ts!(21)));
+        let result = block_list.search(Some(&ts!(10)), Some(&ts!(21)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -602,7 +637,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(None, Some(ts!(13)));
+        let result = block_list.search(None, Some(&ts!(13)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -622,7 +657,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(13)), None);
+        let result = block_list.search(Some(&ts!(13)), None);
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
@@ -639,7 +674,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(22)), None);
+        let result = block_list.search(Some(&ts!(22)), None);
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_none());
@@ -655,7 +690,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(None, Some(ts!(9)));
+        let result = block_list.search(None, Some(&ts!(9)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_none());
@@ -671,7 +706,7 @@ mod test {
             block_timestamps,
         };
 
-        let result = block_list.search(Some(ts!(4)), Some(ts!(9)));
+        let result = block_list.search(Some(&ts!(4)), Some(&ts!(9)));
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_none());

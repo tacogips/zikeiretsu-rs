@@ -103,7 +103,7 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
                 common_trailing_zero_bits,
                 timestamps_nanoseconds,
             };
-            timestamp_deltas.into_timestamps()
+            timestamp_deltas.as_timestamps()
         }
     };
 

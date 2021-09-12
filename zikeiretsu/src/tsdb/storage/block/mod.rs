@@ -65,11 +65,11 @@ pub enum BlockError {
     #[error("field error on block. {0}")]
     FieldError(#[from] FieldError),
 
-    #[error("store error on block.  {0}")]
-    StoreError(#[from] StoreError),
-
     #[error("invalid block file : {0} at {1}")]
     InvalidBlockfileError(String, usize),
+
+    #[error("unknwon error : {0}")]
+    UnKnownError(String),
 }
 
 #[derive(Debug)]
@@ -81,7 +81,7 @@ pub(crate) struct TimestampDeltas {
 }
 
 impl TimestampDeltas {
-    pub fn into_timestamps(self) -> Vec<TimestampNano> {
+    pub fn as_timestamps(self) -> Vec<TimestampNano> {
         debug_assert_eq!(
             self.timestamps_deltas_second.len(),
             self.timestamps_nanoseconds.len()
@@ -226,7 +226,7 @@ mod test {
 
         let timestamp_deltas = TimestampDeltas::from(datapoints.as_slice());
 
-        let tss = timestamp_deltas.into_timestamps();
+        let tss = timestamp_deltas.as_timestamps();
         assert_eq!(
             tss,
             vec![

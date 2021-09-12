@@ -1,16 +1,20 @@
 use super::timestamp_sec::TimestampSec;
 use chrono::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::ops::{Deref, Sub};
 
 pub const SEC_IN_NANOSEC: u64 = 1_000_000_000;
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TimestampNano(pub u64);
 impl TimestampNano {
     pub fn new(inner: u64) -> Self {
         TimestampNano(inner)
     }
+
     pub fn now() -> Self {
         let timestamp = Utc::now().timestamp();
+
         debug_assert!(timestamp >= 0);
         let timestamp =
             (timestamp as u64 * SEC_IN_NANOSEC) + Utc::now().timestamp_subsec_nanos() as u64;
@@ -22,8 +26,14 @@ impl TimestampNano {
         self.0 / SEC_IN_NANOSEC
     }
 
-    pub fn into_timestamp_sec(&self) -> TimestampSec {
+    pub fn as_timestamp_sec(&self) -> TimestampSec {
         TimestampSec::new(self.in_seconds())
+    }
+}
+
+impl fmt::Display for TimestampNano {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

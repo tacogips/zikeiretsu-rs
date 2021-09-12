@@ -3,7 +3,6 @@ use crate::tsdb::datapoint::DatapointSearchCondition;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio::sync::{Semaphore, TryAcquireError};
 
 pub struct Builder {
     lock: Arc<Mutex<()>>,
@@ -26,9 +25,7 @@ impl Builder {
     }
 }
 
-struct SearchOpt {
-    not_keep_in_cache: bool,
-}
+struct SearchOpt {}
 
 pub struct Zikeiretsu {
     lock: Arc<Mutex<()>>,

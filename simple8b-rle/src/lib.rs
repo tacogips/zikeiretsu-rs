@@ -3,7 +3,7 @@ use std::io::Write;
 use std::iter;
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 type DataNum = usize;
 type Index = usize;
 

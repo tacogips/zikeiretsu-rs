@@ -1,5 +1,7 @@
 use super::field::*;
 use super::timestamp_nano::*;
+use super::timestamp_sec::*;
+use std::cmp::Ordering;
 
 use crate::tsdb::search::*;
 
@@ -25,6 +27,15 @@ impl DataPoint {
         datapoints: &[DataPoint],
         cond: DatapointSearchCondition,
     ) -> Option<&[DataPoint]> {
+        Self::search_with_indices(datapoints, cond)
+            .await
+            .map(|(datapoints, _indices)| datapoints)
+    }
+
+    pub async fn search_with_indices(
+        datapoints: &[DataPoint],
+        cond: DatapointSearchCondition,
+    ) -> Option<(&[DataPoint], (usize, usize))> {
         let since_cond = cond
             .inner_since
             .map(|since| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&since));
@@ -33,16 +44,43 @@ impl DataPoint {
             .inner_until
             .map(|until| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&until));
 
-        binary_search_range_by(&datapoints, since_cond, until_cond)
+        binary_search_range_with_idx_by(&datapoints, since_cond, until_cond)
+    }
+
+    pub(crate) fn check_datapoints_is_sorted(datapoints: &[DataPoint]) -> Result<(), String> {
+        if datapoints.is_empty() {
+            Ok(())
+        } else {
+            let mut prev = unsafe { datapoints.get_unchecked(0) };
+            for each in datapoints[1..].iter() {
+                if each.timestamp_nano.cmp(&prev.timestamp_nano) == Ordering::Less {
+                    return Err(format!(
+                        "{:?}, {:?}",
+                        each.timestamp_nano, prev.timestamp_nano
+                    ));
+                }
+                prev = each
+            }
+
+            Ok(())
+        }
     }
 }
 
+#[derive(Clone)]
 pub struct DatapointSearchCondition {
     pub inner_since: Option<TimestampNano>,
     pub inner_until: Option<TimestampNano>,
 }
 
 impl DatapointSearchCondition {
+    pub fn as_secs(&self) -> (Option<TimestampSec>, Option<TimestampSec>) {
+        (
+            self.inner_since.map(|i| i.as_timestamp_sec()),
+            self.inner_until.map(|i| i.as_timestamp_sec()),
+        )
+    }
+
     pub fn since(since: TimestampNano) -> Self {
         Self {
             inner_since: Some(since),

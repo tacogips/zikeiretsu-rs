@@ -10,12 +10,12 @@ TODO wrtie
 
  zkdb
   ├─ wal (not implemented yet though..)
-	│		│
+  │   │
   │   └─ ...
   │
   ├─ error
-	│		│
-	│		└── ...
+  │   │
+  │   └── ...
   │
   │
   ├─ blocklist
@@ -29,7 +29,8 @@ TODO wrtie
       ├── [metrics_1]
       │       ├── 1626
       │       │    ├─ 162688734_162688740
-      │       │ 	 │      └─ block
+      │       │    │      └─ block
+      │       │    │
       │       │    └─ 162688736_162688750
       │       │          └─ block
       │       ├── 1627

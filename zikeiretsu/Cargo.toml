@@ -15,21 +15,28 @@ name = "zikeiretsu"
 path = "src/bin/main.rs"
 
 [dependencies]
-bits-ope = {path ="../bits-ope"}
-xor-encoding = {path ="../xor-encoding"}
-simple8b-rle = {path ="../simple8b-rle"}
-base-128-variants = {path ="../base-128-variants"}
+bits-ope = { path = "../bits-ope" }
+xor-encoding = { path = "../xor-encoding" }
+simple8b-rle = { path = "../simple8b-rle" }
+base-128-variants = {path ="../base-128-variants" }
+file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.1" }
 
 chrono = "0.4"
 lazy_static = "1"
 pico-args = "0.4"
 strum = { version = "0.21", features = ["derive"] }
 thiserror = "1"
-tokio = {version ="1",features= ["rt","macros"]}
+tokio = { version = "1", features= ["rt","macros"] }
 async-trait = "0.1"
 memmap2 = "0.3"
 itertools = "0.10"
 lockfile = "0.2"
+url = "2"
+log = "0.4"
+futures = "0.3"
+serde = "1"
+serde_json = "1"
+owning_ref = "0.4"
 
 [dev-dependencies]
 tempfile = "3.2"

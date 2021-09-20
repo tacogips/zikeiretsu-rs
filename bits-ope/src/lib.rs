@@ -10,7 +10,7 @@ pub type BytesSize = usize;
 pub type BitsIndex = usize;
 pub type BitsSize = usize;
 
-pub type Result<S> = std::result::Result<S, Error>;
+pub(crate) type Result<S> = std::result::Result<S, Error>;
 
 #[derive(Error, Debug)]
 pub enum Error {

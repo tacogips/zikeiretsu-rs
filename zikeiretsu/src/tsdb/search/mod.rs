@@ -86,6 +86,19 @@ where
     F1: Fn(&T) -> Ordering,
     F2: Fn(&T) -> Ordering,
 {
+    let result = binary_search_range_with_idx_by(datas, condition_at_least, condition_at_most);
+    result.map(|(datapoints, _indicex)| datapoints)
+}
+
+pub fn binary_search_range_with_idx_by<T, F1, F2>(
+    datas: &[T],
+    condition_at_least: Option<F1>,
+    condition_at_most: Option<F2>,
+) -> Option<(&[T], (usize, usize))>
+where
+    F1: Fn(&T) -> Ordering,
+    F2: Fn(&T) -> Ordering,
+{
     let start_idx = if let Some(condition_at_least) = condition_at_least {
         match binary_search_by(datas, condition_at_least, BinaryRangeSearchType::AtLeast) {
             Some(idx) => idx,
@@ -104,7 +117,7 @@ where
         datas.len() - 1
     };
 
-    Some(&datas[start_idx..end_idx + 1])
+    Some((&datas[start_idx..end_idx + 1], (start_idx, end_idx + 1)))
 }
 
 #[derive(Eq, PartialEq)]

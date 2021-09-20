@@ -18,10 +18,10 @@ where
         return Err(BlockError::EmptyDatapoints);
     }
 
-    #[cfg(feature = "validation_on_write")]
-    check_datapoints_is_sorted(&datapoints)?;
+    #[cfg(feature = "validate")]
+    DataPoint::check_datapoints_is_sorted(&datapoints).map_err(|s| BlockError::UnKnownError(s))?;
 
-    #[cfg(feature = "validation_on_write")]
+    #[cfg(feature = "validate")]
     check_fields_are_valid(&datapoints)?;
 
     let head_datapoint = datapoints.get(0).unwrap();

@@ -9,7 +9,7 @@
 ///  (6) timestamp second (until)(v byte)
 ///
 use crate::tsdb::search::*;
-use crate::tsdb::{store::*, timestamp_nano::*, timestamp_sec::*};
+use crate::tsdb::{timestamp_nano::*, timestamp_sec::*};
 use crate::FieldError;
 use base_128_variants;
 use bits_ope::*;
@@ -17,7 +17,7 @@ use memmap2::MmapOptions;
 use serde::{Deserialize, Serialize};
 use simple8b_rle;
 use std::cmp::Ordering;
-use std::fs::{File, OpenOptions};
+use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::iter::Iterator;
 use std::path::Path;
@@ -33,6 +33,9 @@ pub enum BlockListError {
 
     #[error("invalid block timestamp: block timstamp is not sorted ")]
     BlockTimestampIsNotSorted,
+
+    #[error("invalid block list path error")]
+    InvalidBlockListPathError(String),
 
     #[error("block list file error {0}")]
     FileError(#[from] std::io::Error),
@@ -367,6 +370,12 @@ pub(crate) fn write_to_block_listfile<P: AsRef<Path>>(
     let mut block_list_file = if path.as_ref().exists() {
         OpenOptions::new().read(true).write(true).open(path)?
     } else {
+        let parent_dir = path.as_ref().parent().ok_or_else(|| {
+            BlockListError::InvalidBlockListPathError(path.as_ref().display().to_string())
+        })?;
+
+        create_dir_all(parent_dir)?;
+
         File::create(path)?
     };
 

@@ -1,4 +1,4 @@
-use crate::tsdb::{datapoint::*, timestamp_nano::*};
+use crate::tsdb::datapoint::*;
 
 pub struct DatapointSearcher<'a> {
     datapoints: &'a [DataPoint],
@@ -7,7 +7,7 @@ impl<'a> DatapointSearcher<'a> {
     pub fn new(datapoints: &'a [DataPoint]) -> Self {
         Self { datapoints }
     }
-    pub async fn search(&self, cond: DatapointSearchCondition) -> Option<&[DataPoint]> {
+    pub async fn search(&self, cond: &DatapointSearchCondition) -> Option<&[DataPoint]> {
         DataPoint::search(self.datapoints, cond).await
     }
 
@@ -15,15 +15,16 @@ impl<'a> DatapointSearcher<'a> {
         &self,
         cond: DatapointSearchCondition,
     ) -> Option<(&[DataPoint], (usize, usize))> {
-        DataPoint::search_with_indices(self.datapoints, cond).await
+        DataPoint::search_with_indices(self.datapoints, &cond).await
     }
 }
 
 #[cfg(test)]
 mod test {
+
     use super::*;
     use crate::tsdb::datapoint::DataPoint;
-    use async_trait::async_trait;
+    use crate::tsdb::timestamp_nano::*;
 
     macro_rules! empty_data_points {
         ($($timestamp:expr),*) => {
@@ -44,7 +45,7 @@ mod test {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
         let result = store
-            .search(DatapointSearchCondition::since(ts!(20)).with_until(ts!(50)))
+            .search(&DatapointSearchCondition::since(ts!(20)).with_until(ts!(50)))
             .await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -56,7 +57,9 @@ mod test {
     async fn binsearch_test_2() {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
-        let result = store.search(DatapointSearchCondition::since(ts!(20))).await;
+        let result = store
+            .search(&DatapointSearchCondition::since(ts!(20)))
+            .await;
         assert!(result.is_some());
         let result = result.unwrap();
 
@@ -67,7 +70,9 @@ mod test {
     async fn binsearch_test_3() {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
-        let result = store.search(DatapointSearchCondition::until(ts!(40))).await;
+        let result = store
+            .search(&DatapointSearchCondition::until(ts!(40)))
+            .await;
         assert!(result.is_some());
         let result = result.unwrap();
 

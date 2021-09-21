@@ -1,5 +1,5 @@
-use super::{EngineError, Result};
-use crate::tsdb::datapoint::DatapointSearchCondition;
+use super::Result;
+use crate::tsdb::{datapoint::DatapointSearchCondition, metrics::*, storage::*, store::*};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -19,25 +19,37 @@ impl Builder {
 
     pub fn build(self) -> Zikeiretsu {
         Zikeiretsu {
-            lock: self.lock,
             db_dir: self.db_dir,
         }
     }
 }
 
-struct SearchOpt {}
+pub struct SearchSettings {
+    cache_setting: api::CacheSetting,
+    cloud_setting: Option<api::CloudSetting>,
+}
 
 pub struct Zikeiretsu {
-    lock: Arc<Mutex<()>>,
     db_dir: PathBuf,
 }
 
 impl Zikeiretsu {
-    async fn search<P: AsRef<Path>>(
-        db_dir: P,
-        condition: DatapointSearchCondition,
-        search_opt: Option<SearchOpt>,
-    ) -> Result<()> {
-        unimplemented!()
+    pub async fn search(
+        self,
+        metrics: &Metrics,
+        condition: &DatapointSearchCondition,
+        setting: &SearchSettings,
+    ) -> Result<ReadonlyStore> {
+        let datapoints = api::read::search_datas(
+            self.db_dir,
+            metrics,
+            condition,
+            &setting.cache_setting,
+            setting.cloud_setting.as_ref(),
+        )
+        .await?;
+
+        let store = ReadonlyStore::new(datapoints, false)?;
+        Ok(store)
     }
 }

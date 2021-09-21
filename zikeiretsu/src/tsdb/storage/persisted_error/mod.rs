@@ -59,7 +59,7 @@ pub(crate) fn write_persisted_error<P: AsRef<Path>>(
     let mut dest_file = OpenOptions::new().read(true).create(true).open(path)?;
 
     let serialized_error = serde_json::to_string(&persisted_error)?;
-    dest_file.write_all(serialized_error.as_bytes());
+    dest_file.write_all(serialized_error.as_bytes())?;
 
     dest_file.flush()?;
     Ok(())

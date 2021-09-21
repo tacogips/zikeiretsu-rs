@@ -3,9 +3,9 @@ pub mod read;
 pub mod write;
 
 use crate::tsdb::cloudstorage::CloudStorageError;
+use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::{block, block_list, persisted_error};
 use crate::tsdb::timestamp_nano::TimestampNano;
-use crate::tsdb::{datapoint::*, metrics::Metrics};
 pub use cloud_setting::CloudSetting;
 
 use std::path::{Path, PathBuf};
@@ -15,6 +15,29 @@ pub type Result<T> = std::result::Result<T, StorageApiError>;
 pub struct CacheSetting {
     pub read_cache: bool,
     pub write_cache: bool,
+}
+
+impl CacheSetting {
+    pub fn both() -> Self {
+        Self {
+            read_cache: true,
+            write_cache: true,
+        }
+    }
+
+    pub fn only_read() -> Self {
+        Self {
+            read_cache: true,
+            write_cache: false,
+        }
+    }
+
+    pub fn only_write() -> Self {
+        Self {
+            read_cache: false,
+            write_cache: true,
+        }
+    }
 }
 
 #[derive(Error, Debug)]

@@ -1,7 +1,7 @@
 use super::super::persisted_error;
 use super::{
     block, block_list, block_list_file_path, block_timestamp_to_block_file_path, cloud_setting::*,
-    lockfile_path, persisted_error_file_path, CacheSetting, Result, StorageApiError,
+    lockfile_path, persisted_error_file_path, Result, StorageApiError,
 };
 
 use crate::tsdb::cloudstorage::*;
@@ -62,8 +62,16 @@ pub async fn write_datas<P: AsRef<Path>>(
 
     // write block list file first
     let block_list_file_path = {
-        let mut block_list =
-            super::read::read_block_list(db_dir, &metrics, &cache_setting, cloud_setting).await?;
+        let block_list =
+            super::read::read_block_list(db_dir, &metrics, &cache_setting, cloud_setting).await;
+
+        let mut block_list = match block_list {
+            Ok(block_list) => block_list,
+            Err(StorageApiError::NoBlockListFile(_)) => {
+                block_list::BlockList::new(TimestampNano::now(), vec![])
+            }
+            Err(e) => return Err(e),
+        };
 
         block_list.add_timestamp(block_timestamp)?;
         block_list.update_updated_at(TimestampNano::now());

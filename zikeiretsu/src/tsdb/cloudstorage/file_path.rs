@@ -116,10 +116,4 @@ impl<'a> CloudLockfilePath<'a> {
             CloudStorage::Gcp(_, _) => gcp::remove_lock_file(&self).await,
         }
     }
-
-    pub async fn download(&self) -> Result<()> {
-        match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::remove_lock_file(&self).await,
-        }
-    }
 }

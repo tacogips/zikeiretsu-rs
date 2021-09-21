@@ -51,6 +51,7 @@ pub fn same_field_types(types: &Vec<FieldType>, values: &Vec<FieldValue>) -> boo
 pub enum FieldType {
     Float64,
 }
+
 impl std::fmt::Display for FieldType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let name = match self {

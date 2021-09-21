@@ -22,7 +22,7 @@ lazy_static! {
 pub async fn search_datas<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
-    condition: DatapointSearchCondition,
+    condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
     cloud_setting: Option<&CloudSetting>,
 ) -> Result<Vec<DataPoint>> {
@@ -151,6 +151,7 @@ pub(crate) async fn read_block_list(
         Some(bl) => bl,
         None => {
             if !block_list_path.exists() {
+                //
                 //TODO(tacogips) call google cloud hear
                 return Err(StorageApiError::NoBlockListFile(metrics.to_string()));
             }

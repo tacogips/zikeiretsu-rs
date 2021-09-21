@@ -117,7 +117,7 @@ where
         datas.len() - 1
     };
 
-    Some((&datas[start_idx..end_idx + 1], (start_idx, end_idx + 1)))
+    Some((&datas[start_idx..end_idx + 1], (start_idx, end_idx)))
 }
 
 #[derive(Eq, PartialEq)]

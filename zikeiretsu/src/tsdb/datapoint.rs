@@ -23,19 +23,19 @@ impl DataPoint {
         self.field_values.len()
     }
 
-    pub async fn search(
-        datapoints: &[DataPoint],
-        cond: DatapointSearchCondition,
-    ) -> Option<&[DataPoint]> {
+    pub async fn search<'a>(
+        datapoints: &'a [DataPoint],
+        cond: &DatapointSearchCondition,
+    ) -> Option<&'a [DataPoint]> {
         Self::search_with_indices(datapoints, cond)
             .await
             .map(|(datapoints, _indices)| datapoints)
     }
 
-    pub async fn search_with_indices(
-        datapoints: &[DataPoint],
-        cond: DatapointSearchCondition,
-    ) -> Option<(&[DataPoint], (usize, usize))> {
+    pub async fn search_with_indices<'a>(
+        datapoints: &'a [DataPoint],
+        cond: &DatapointSearchCondition,
+    ) -> Option<(&'a [DataPoint], (usize, usize))> {
         let since_cond = cond
             .inner_since
             .map(|since| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&since));
@@ -74,6 +74,13 @@ pub struct DatapointSearchCondition {
 }
 
 impl DatapointSearchCondition {
+    pub fn new(inner_since: Option<TimestampNano>, inner_until: Option<TimestampNano>) -> Self {
+        Self {
+            inner_since,
+            inner_until,
+        }
+    }
+
     pub fn as_secs(&self) -> (Option<TimestampSec>, Option<TimestampSec>) {
         (
             self.inner_since.map(|i| i.as_timestamp_sec()),

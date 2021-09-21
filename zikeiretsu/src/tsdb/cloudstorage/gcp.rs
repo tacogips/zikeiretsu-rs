@@ -95,9 +95,3 @@ pub async fn remove_lock_file<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Res
     gcs_file.delete_with_retry(None).await?;
     Ok(())
 }
-
-pub async fn download_lock_file<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Result<()> {
-    let gcs_file = file_dougu::gcs::GcsFile::new(lock_file_path.as_url())?;
-    gcs_file.delete_with_retry(None).await?;
-    Ok(())
-}

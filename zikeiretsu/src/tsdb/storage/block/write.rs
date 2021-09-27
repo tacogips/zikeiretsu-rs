@@ -29,7 +29,6 @@ where
 
     // (1). number of datapoints
     base_128_variants::compress_u64(datapoints.len() as u64, &mut block_file)?;
-
     // (2). data field num
     block_file.write(&[data_field_num as u8])?;
 

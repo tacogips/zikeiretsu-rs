@@ -361,7 +361,7 @@ mod test {
 
     #[tokio::test]
     async fn persistence_test_2() {
-        let temp_db_dir = TempDir::new("persistence_test_1").unwrap();
+        let temp_db_dir = TempDir::new("persistence_test_2").unwrap();
 
         let field_types = vec![FieldType::Float64, FieldType::Float64];
         let metrics: Metrics = "test_metrics".into();
@@ -377,42 +377,22 @@ mod test {
                 {1629745451_715066000, vec![300f64,36f64]},
                 {1629745451_715063000, vec![200f64,36f64]},
                 {1629745451_715065000, vec![300f64,36f64]},
-                {1629745451_715064000, vec![200f64,37f64]}
-            );
-
-            let result = store.push_multi(input_datapoints.clone()).await;
-            assert!(result.is_ok());
-
-            let expected_datapoints = float_data_points!(
-                {1629745451_715062000, vec![100f64,12f64]},
-                {1629745451_715063000, vec![200f64,36f64]},
                 {1629745451_715064000, vec![200f64,37f64]},
-                {1629745451_715065000, vec![300f64,36f64]},
-                {1629745451_715066000, vec![300f64,36f64]}
-            );
-
-            let stored_datapoints = store.datapoints_with_lock().await.unwrap();
-            assert_eq!(stored_datapoints.len(), expected_datapoints.len());
-            assert_eq!(stored_datapoints.clone(), expected_datapoints);
-        }
-
-        {
-            let input_datapoints = float_data_points!(
-                {1629745451_715061000, vec![100f64,4000f64]},
-                {1629745451_715067000, vec![700f64,100f64]}
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]}
             );
 
             let result = store.push_multi(input_datapoints.clone()).await;
             assert!(result.is_ok());
 
             let expected_datapoints = float_data_points!(
-                {1629745451_715061000, vec![100f64,4000f64]},
                 {1629745451_715062000, vec![100f64,12f64]},
                 {1629745451_715063000, vec![200f64,36f64]},
                 {1629745451_715064000, vec![200f64,37f64]},
                 {1629745451_715065000, vec![300f64,36f64]},
                 {1629745451_715066000, vec![300f64,36f64]},
-                {1629745451_715067000, vec![700f64,100f64]}
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]}
             );
 
             let stored_datapoints = store.datapoints_with_lock().await.unwrap();
@@ -422,10 +402,7 @@ mod test {
 
         {
             let condition = PersistCondition {
-                datapoint_search_condition: DatapointSearchCondition::new(
-                    Some(TimestampNano::new(1629745451_715061000)),
-                    Some(TimestampNano::new(1629745451_715066000)),
-                ),
+                datapoint_search_condition: DatapointSearchCondition::new(None, None),
                 clear_after_persisted: true,
             };
 
@@ -436,9 +413,7 @@ mod test {
 
         {
             // retaining datapoints
-            let expected_datapoints = float_data_points!(
-                {1629745451_715067000, vec![700f64,100f64]}
-            );
+            let expected_datapoints = float_data_points!();
 
             let stored_datapoints = store.datapoints_with_lock().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
@@ -461,6 +436,7 @@ mod test {
                 None,
             )
             .await;
+            println!("{:?}", datapoints);
 
             assert!(datapoints.is_ok());
             let datapoints = datapoints.unwrap();

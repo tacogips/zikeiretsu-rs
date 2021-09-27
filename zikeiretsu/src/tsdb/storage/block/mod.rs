@@ -50,6 +50,9 @@ pub enum BlockError {
     #[error("block file error {0}")]
     FileError(#[from] std::io::Error),
 
+    #[error("block file error {0}")]
+    FileWithPathError(std::io::Error, String),
+
     #[error("simple 128 variant error  {0}")]
     Simpe128VariantError(#[from] base_128_variants::Error),
 
@@ -70,6 +73,12 @@ pub enum BlockError {
 
     #[error("unknwon error : {0}")]
     UnKnownError(String),
+}
+
+impl BlockError {
+    pub(crate) fn file_error<P: AsRef<Path>>(e: std::io::Error, p: P) -> BlockError {
+        BlockError::FileWithPathError(e, p.as_ref().display().to_string())
+    }
 }
 
 #[derive(Debug)]
@@ -149,20 +158,31 @@ impl From<&[DataPoint]> for TimestampDeltas {
 }
 
 pub fn read_from_block_file<P: AsRef<Path>>(path: P) -> Result<Vec<DataPoint>> {
-    let block_file = File::open(path)?;
-    let block_data = unsafe { MmapOptions::new().map(&block_file)? };
+    let block_file =
+        File::open(path.as_ref()).map_err(|e| BlockError::file_error(e, path.as_ref()))?;
+    let block_data = unsafe {
+        MmapOptions::new()
+            .map(&block_file)
+            .map_err(|e| BlockError::file_error(e, path))?
+    };
     read::read_from_block(&block_data)
 }
 
 pub fn write_to_block_file<P: AsRef<Path>>(path: P, datapoints: &[DataPoint]) -> Result<()> {
     let mut block_file = if path.as_ref().exists() {
-        OpenOptions::new().read(true).write(true).open(path)?
+        OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(path.as_ref())
+            .map_err(|e| BlockError::file_error(e, path.as_ref()))?
     } else {
-        File::create(path)?
+        File::create(path.as_ref()).map_err(|e| BlockError::file_error(e, path.as_ref()))?
     };
 
     write::write_to_block(&mut block_file, datapoints)?;
-    block_file.flush()?;
+    block_file
+        .flush()
+        .map_err(|e| BlockError::file_error(e, path))?;
     Ok(())
 }
 

@@ -308,7 +308,7 @@ mod test {
                 Some(TimestampNano::new(1629745451_715066000)),
             );
 
-            let cache_setting = api::CacheSetting::both();
+            let cache_setting = api::CacheSetting::none();
 
             let datapoints = api::read::search_datas(
                 temp_db_dir.path(),
@@ -360,6 +360,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn persistence_test_2() {
         let temp_db_dir = TempDir::new("persistence_test_2").unwrap();
 
@@ -421,12 +422,9 @@ mod test {
         }
 
         {
-            let condition = DatapointSearchCondition::new(
-                Some(TimestampNano::new(1629745451_715062000)),
-                Some(TimestampNano::new(1629745451_715066000)),
-            );
+            let condition = DatapointSearchCondition::new(None, None);
 
-            let cache_setting = api::CacheSetting::both();
+            let cache_setting = api::CacheSetting::none();
 
             let datapoints = api::read::search_datas(
                 temp_db_dir.path(),
@@ -436,7 +434,6 @@ mod test {
                 None,
             )
             .await;
-            println!("{:?}", datapoints);
 
             assert!(datapoints.is_ok());
             let datapoints = datapoints.unwrap();
@@ -445,18 +442,23 @@ mod test {
             let searcher = store.searcher().await;
 
             {
+                let expected = float_data_points!(
+                    {1629745451_715062000, vec![100f64,12f64]},
+                    {1629745451_715063000, vec![200f64,36f64]},
+                    {1629745451_715064000, vec![200f64,37f64]},
+                    {1629745451_715065000, vec![300f64,36f64]},
+                    {1629745451_715066000, vec![300f64,36f64]},
+                    {1639745451_715061000, vec![1300f64,36f64]},
+                    {1639745451_715062000, vec![1200f64,37f64]}
+                );
+
                 let result = searcher.search(&condition).await;
                 assert!(result.is_some());
-                assert_eq!(
-                    result.unwrap(),
-                    float_data_points!(
-                        {1629745451_715062000, vec![100f64,12f64]},
-                        {1629745451_715063000, vec![200f64,36f64]},
-                        {1629745451_715064000, vec![200f64,37f64]},
-                        {1629745451_715065000, vec![300f64,36f64]},
-                        {1629745451_715066000, vec![300f64,36f64]}
-                    )
-                );
+
+                assert_eq!(result.unwrap().len(), expected.len());
+                for (i, each) in result.unwrap().into_iter().enumerate() {
+                    assert_eq!(each, expected.get(i).unwrap());
+                }
             }
 
             {

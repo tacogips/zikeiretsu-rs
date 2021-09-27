@@ -370,6 +370,24 @@ mod test {
     }
 
     #[test]
+    fn test_block_7() {
+        let datapoints = float_data_points!(
+            {1629745451_715066000, vec![300f64,36f64]},
+            {1639745451_715061000, vec![1300f64,36f64]}
+        );
+
+        let mut data = Vec::<u8>::new();
+        let result = write::write_to_block(&mut data, &datapoints);
+        assert!(result.is_ok());
+
+        let readed = read::read_from_block(&data);
+
+        assert!(readed.is_ok());
+        let readed = readed.unwrap();
+        assert_eq!(readed, datapoints);
+    }
+
+    #[test]
     fn test_block_file_1() {
         let target_file = tempfile::NamedTempFile::new().unwrap();
         let datapoints = float_data_points!(

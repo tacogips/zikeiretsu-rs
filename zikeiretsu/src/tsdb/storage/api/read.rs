@@ -116,7 +116,7 @@ pub(crate) async fn read_block_list(
     cloud_setting: Option<&CloudSetting>,
 ) -> Result<block_list::BlockList> {
     let block_list_path = block_list_file_path(&db_dir, metrics);
-    let use_cache = if let Some(cloud_setting) = cloud_setting {
+    let downloaded_from_cloud = if let Some(cloud_setting) = cloud_setting {
         if cloud_setting.update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
         {
@@ -130,6 +130,11 @@ pub(crate) async fn read_block_list(
                 log::warn!("downloading block list failed")
             }
         }
+        true
+    } else {
+        false
+    };
+    let use_cache = if downloaded_from_cloud {
         false
     } else {
         cache_setting.read_cache

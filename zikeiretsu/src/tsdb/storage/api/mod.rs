@@ -18,6 +18,13 @@ pub struct CacheSetting {
 }
 
 impl CacheSetting {
+    pub fn none() -> Self {
+        Self {
+            read_cache: false,
+            write_cache: false,
+        }
+    }
+
     pub fn both() -> Self {
         Self {
             read_cache: true,

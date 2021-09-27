@@ -750,7 +750,6 @@ mod test {
 
         let mut dst = Vec::<u8>::new();
         let result = compress(&src, &mut dst);
-        println!("{:?}", result);
         assert!(result.is_ok());
 
         let mut dec_dest = Vec::<u64>::new();
@@ -765,7 +764,6 @@ mod test {
 
         let mut dst = Vec::<u8>::new();
         let result = compress(&src, &mut dst);
-        println!("{:?}", result);
         assert!(result.is_ok());
 
         let mut dec_dest = Vec::<u64>::new();

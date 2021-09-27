@@ -22,6 +22,10 @@ impl TimestampNano {
         Self::new(timestamp)
     }
 
+    pub fn as_inner(&self) -> u64 {
+        self.0
+    }
+
     pub fn in_seconds(&self) -> u64 {
         self.0 / SEC_IN_NANOSEC
     }

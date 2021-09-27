@@ -360,7 +360,6 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn persistence_test_2() {
         let temp_db_dir = TempDir::new("persistence_test_2").unwrap();
 
@@ -463,17 +462,20 @@ mod test {
 
             {
                 let another_condition = DatapointSearchCondition::new(
-                    Some(TimestampNano::new(1629745451_715063000)),
-                    Some(TimestampNano::new(1629745451_715065000)),
+                    None,
+                    Some(TimestampNano::new(1639745451_715061001)),
                 );
                 let result = searcher.search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap(),
                     float_data_points!(
+                        {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},
                         {1629745451_715064000, vec![200f64,37f64]},
-                        {1629745451_715065000, vec![300f64,36f64]}
+                        {1629745451_715065000, vec![300f64,36f64]},
+                        {1629745451_715066000, vec![300f64,36f64]},
+                        {1639745451_715061000, vec![1300f64,36f64]}
                     )
                 );
             }

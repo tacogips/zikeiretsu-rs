@@ -125,9 +125,9 @@ impl From<&[DataPoint]> for TimestampDeltas {
         for i in 1..datapoints.len() {
             let prev = unsafe { datapoints.get_unchecked(i - 1) };
             let curr = unsafe { datapoints.get_unchecked(i) };
-            let delta = &curr.timestamp_nano - &prev.timestamp_nano;
+            let delta_sec =
+                &curr.timestamp_nano.as_timestamp_sec() - &prev.timestamp_nano.as_timestamp_sec();
 
-            let delta_sec: u64 = delta / SEC_IN_NANOSEC;
             let nanosec: u64 = *curr.timestamp_nano % SEC_IN_NANOSEC;
 
             timestamps_deltas_second.push(delta_sec);
@@ -257,6 +257,25 @@ mod test {
     }
 
     #[test]
+    fn test_timestamp_deltas_3() {
+        let datapoints = float_data_points!(
+            {1629745451_715066000, vec![300f64,36f64]},
+            {1639745451_715061000, vec![1300f64,36f64]}
+        );
+
+        let timestamp_deltas = TimestampDeltas::from(datapoints.as_slice());
+
+        let tss = timestamp_deltas.as_timestamps();
+        assert_eq!(
+            tss,
+            vec![
+                TimestampNano::new(1629745451_715066000),
+                TimestampNano::new(1639745451_715061000)
+            ]
+        );
+    }
+
+    #[test]
     fn test_block_1() {
         let datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64]}
@@ -269,7 +288,6 @@ mod test {
 
         let readed = read::read_from_block(&data);
 
-        println!("== {:?},", readed);
         assert!(readed.is_ok());
         let readed = readed.unwrap();
         assert_eq!(readed.len(), 1);

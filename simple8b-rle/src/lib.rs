@@ -215,7 +215,6 @@ impl RLECompression {
     }
 }
 
-//TODO(tacogips) think about leading zero 0111_1110
 fn meaningful_bitsize(n: u64) -> usize {
     let mbs = (64u32 - n.leading_zeros()) as usize;
     if mbs == 0 {

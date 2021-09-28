@@ -20,10 +20,10 @@ where
     W: Write,
 {
     let meaningful_bits = 64 - src.leading_zeros();
-    let mut byte_size = meaningful_bits / 7;
-    let remaining = meaningful_bits % 7;
-    if remaining != 0 {
-        byte_size += 1;
+
+    let byte_size = match (meaningful_bits / 7, meaningful_bits % 7) {
+        (byte_size, 0) => byte_size,
+        (byte_size, _) => byte_size + 1,
     };
 
     for i in 0..byte_size {

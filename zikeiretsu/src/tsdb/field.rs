@@ -1,4 +1,5 @@
 use super::DataPoint;
+use std::fmt;
 use strum::AsRefStr;
 use thiserror::Error;
 
@@ -9,6 +10,9 @@ pub enum FieldError {
 
     #[error("all field size must be same but actually not. {0}")]
     DifferentFieldSize(usize),
+
+    #[error("invalid field type. expected {0} but actual is {1}")]
+    InvalidFieldType(String, String),
 
     //TODO(tacogips) ned to check max field value somewhere...
     #[error("muxiumu field number exeed. max:{0} actual {1}")]
@@ -22,19 +26,41 @@ type Result<T> = std::result::Result<T, FieldError>;
 #[derive(AsRefStr, Debug, PartialEq, Clone)]
 pub enum FieldValue {
     Float64(f64),
+    Bool(bool),
 }
 
 impl FieldValue {
     pub fn as_f64(&self) -> Result<f64> {
         match self {
             Self::Float64(v) => Ok(*v),
+            _ => Err(FieldError::InvalidFieldType(
+                "float64".to_string(),
+                format!("{}", self),
+            )),
+        }
+    }
+
+    pub fn as_bool(&self) -> Result<bool> {
+        match self {
+            Self::Bool(v) => Ok(*v),
+            _ => Err(FieldError::InvalidFieldType(
+                "bool".to_string(),
+                format!("{}", self),
+            )),
         }
     }
 
     pub fn as_type(&self) -> FieldType {
         match self {
             Self::Float64(_) => FieldType::Float64,
+            Self::Bool(_) => FieldType::Bool,
         }
+    }
+}
+
+impl fmt::Display for FieldValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -50,12 +76,14 @@ pub fn same_field_types(types: &Vec<FieldType>, values: &Vec<FieldValue>) -> boo
 #[derive(PartialEq, Eq, Debug)]
 pub enum FieldType {
     Float64,
+    Bool,
 }
 
-impl std::fmt::Display for FieldType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl fmt::Display for FieldType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         let name = match self {
             FieldType::Float64 => "Float64",
+            FieldType::Bool => "Bool",
         };
 
         write!(f, "{}", name)

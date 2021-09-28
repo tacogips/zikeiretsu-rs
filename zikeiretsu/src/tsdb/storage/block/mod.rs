@@ -24,12 +24,14 @@
 /// │(8)datas of field 1(n bytes)  │ ... (reapeat over number of fields)  │
 /// └──────────────────────────────┴──────────────────────────────────────┘
 ///
+mod compress;
 mod field_type_convert;
 pub mod read;
 pub mod write;
 
 use crate::tsdb::*;
 use crate::FieldError;
+use compress::CompressError;
 use memmap2::MmapOptions;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -73,6 +75,9 @@ pub enum BlockError {
 
     #[error("unknwon error : {0}")]
     UnKnownError(String),
+
+    #[error("compress error : {0}")]
+    CompressError(#[from] CompressError),
 }
 
 impl BlockError {
@@ -393,6 +398,76 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]},
             {1639745451_715061000, vec![1300f64,36f64]}
         );
+
+        let mut data = Vec::<u8>::new();
+        let result = write::write_to_block(&mut data, &datapoints);
+        assert!(result.is_ok());
+
+        let readed = read::read_from_block(&data);
+
+        assert!(readed.is_ok());
+        let readed = readed.unwrap();
+        assert_eq!(readed, datapoints);
+    }
+
+    #[test]
+    fn test_multiple_types_block_1() {
+        let datapoints = vec![DataPoint::new(
+            ts!(1629745451_715066000),
+            vec![FieldValue::Bool(true), FieldValue::Float64(300f64)],
+        )];
+
+        let mut data = Vec::<u8>::new();
+        let result = write::write_to_block(&mut data, &datapoints);
+        assert!(result.is_ok());
+
+        let readed = read::read_from_block(&data);
+
+        assert!(readed.is_ok());
+        let readed = readed.unwrap();
+        assert_eq!(readed, datapoints);
+    }
+
+    #[test]
+    fn test_multiple_types_block_2w() {
+        let datapoints = vec![
+            DataPoint::new(
+                ts!(1629745451_715066000),
+                vec![FieldValue::Bool(true), FieldValue::Float64(300f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745452_715066000),
+                vec![FieldValue::Bool(false), FieldValue::Float64(301f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745452_715066000),
+                vec![FieldValue::Bool(true), FieldValue::Float64(301f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745453_715066000),
+                vec![FieldValue::Bool(false), FieldValue::Float64(302f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745454_715066000),
+                vec![FieldValue::Bool(false), FieldValue::Float64(303f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745455_715066000),
+                vec![FieldValue::Bool(true), FieldValue::Float64(304f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745456_715066000),
+                vec![FieldValue::Bool(true), FieldValue::Float64(305f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745457_715066000),
+                vec![FieldValue::Bool(false), FieldValue::Float64(306f64)],
+            ),
+            DataPoint::new(
+                ts!(1629745458_715066000),
+                vec![FieldValue::Bool(false), FieldValue::Float64(307f64)],
+            ),
+        ];
 
         let mut data = Vec::<u8>::new();
         let result = write::write_to_block(&mut data, &datapoints);

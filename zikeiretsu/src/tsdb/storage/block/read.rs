@@ -1,3 +1,4 @@
+use super::compress::bools;
 use super::{field_type_convert, BlockError, Result, TimestampDeltas};
 use crate::tsdb::*;
 use bits_ope::*;
@@ -23,8 +24,8 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
     // 3.  field types
     let mut field_types = Vec::<FieldType>::new();
 
-    for i in 0..number_of_field {
-        match block_data.get(block_idx) {
+    for i in 0..number_of_field as usize {
+        match block_data.get(block_idx + i) {
             Some(b) => field_types.push(field_type_convert::val_to_type(*b)),
             None => {
                 return Err(BlockError::InvalidBlockfileError(
@@ -124,6 +125,23 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
                     float_values
                         .into_iter()
                         .map(|v| FieldValue::Float64(v))
+                        .collect(),
+                )
+            }
+
+            FieldType::Bool => {
+                let mut bool_values = Vec::<bool>::new();
+                let read_idx = bools::decompress(
+                    &&block_data[block_idx..],
+                    &mut bool_values,
+                    number_of_datapoints,
+                )?;
+                block_idx += read_idx;
+
+                block_field_values.push(
+                    bool_values
+                        .into_iter()
+                        .map(|v| FieldValue::Bool(v))
                         .collect(),
                 )
             }

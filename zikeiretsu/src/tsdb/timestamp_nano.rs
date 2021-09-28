@@ -1,4 +1,5 @@
 use super::timestamp_sec::TimestampSec;
+
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -30,8 +31,24 @@ impl TimestampNano {
         self.0 / SEC_IN_NANOSEC
     }
 
+    pub fn in_subsec_nano(&self) -> u32 {
+        (self.0 % SEC_IN_NANOSEC) as u32
+    }
+
     pub fn as_timestamp_sec(&self) -> TimestampSec {
         TimestampSec::new(self.in_seconds())
+    }
+
+    pub fn as_datetime(&self) -> DateTime<Utc> {
+        let ndt = NaiveDateTime::from_timestamp(self.in_seconds() as i64, self.in_subsec_nano());
+        DateTime::from_utc(ndt, Utc)
+    }
+}
+
+impl<Tz: TimeZone> From<DateTime<Tz>> for TimestampNano {
+    fn from(dt: DateTime<Tz>) -> Self {
+        let v = dt.timestamp() as u64 * SEC_IN_NANOSEC + dt.timestamp_subsec_nanos() as u64;
+        TimestampNano(v)
     }
 }
 
@@ -59,5 +76,19 @@ impl Sub<&TimestampNano> for &TimestampNano {
     type Output = u64;
     fn sub(self, other: &TimestampNano) -> Self::Output {
         **self - **other
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use chrono::DateTime;
+    #[test]
+    fn to_date_time() {
+        let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
+        let tsn: TimestampNano = dt.clone().into();
+        let cdt = tsn.as_datetime();
+        assert_eq!(cdt, dt);
     }
 }

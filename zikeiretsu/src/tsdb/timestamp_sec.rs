@@ -24,6 +24,13 @@ impl fmt::Display for TimestampSec {
     }
 }
 
+impl<Tz: TimeZone> From<DateTime<Tz>> for TimestampSec {
+    fn from(dt: DateTime<Tz>) -> Self {
+        let v = dt.timestamp() as u64;
+        TimestampSec(v)
+    }
+}
+
 impl Deref for TimestampSec {
     type Target = u64;
     fn deref(&self) -> &Self::Target {

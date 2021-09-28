@@ -18,7 +18,7 @@ pub struct PersistCondition {
 #[derive(Clone)]
 pub enum Persistence {
     OnMemory,
-    Storage(PathBuf, Option<storage_api::CloudSetting>),
+    Storage(PathBuf, Option<storage_api::CloudStorageSetting>),
 }
 
 pub struct PeriodicallyPeristenceShutdown {

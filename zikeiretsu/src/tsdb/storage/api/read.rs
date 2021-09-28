@@ -24,7 +24,7 @@ pub async fn search_datas<P: AsRef<Path>>(
     metrics: &Metrics,
     condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
-    cloud_setting: Option<&CloudSetting>,
+    cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<Vec<DataPoint>> {
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(&db_dir, metrics);
@@ -75,7 +75,7 @@ async fn read_block(
     root_dir: &Path,
     metrics: &Metrics,
     block_timestamp: &block_list::BlockTimestamp,
-    cloud_setting: Option<&CloudSetting>,
+    cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<Vec<DataPoint>> {
     let block_file_path = block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
     if let Some(cloud_setting) = cloud_setting {
@@ -113,7 +113,7 @@ pub(crate) async fn read_block_list(
     db_dir: &Path,
     metrics: &Metrics,
     cache_setting: &CacheSetting,
-    cloud_setting: Option<&CloudSetting>,
+    cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<block_list::BlockList> {
     let block_list_path = block_list_file_path(&db_dir, metrics);
     let downloaded_from_cloud = if let Some(cloud_setting) = cloud_setting {
@@ -126,6 +126,7 @@ pub(crate) async fn read_block_list(
             let download_result = cloud_block_list_file_path
                 .download(&block_list_path)
                 .await?;
+
             if download_result.is_none() {
                 log::warn!("downloading block list failed")
             }

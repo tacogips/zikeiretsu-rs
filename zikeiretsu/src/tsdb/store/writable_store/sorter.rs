@@ -14,3 +14,12 @@ impl DatapointSorter for DatapointDefaultSorter {
         lhs.timestamp_nano.cmp(&rhs.timestamp_nano)
     }
 }
+
+impl<F> DatapointSorter for F
+where
+    F: FnMut(&DataPoint, &DataPoint) -> Ordering + Clone + Send + Sync,
+{
+    fn compare(&mut self, lhs: &DataPoint, rhs: &DataPoint) -> Ordering {
+        self(lhs, rhs)
+    }
+}

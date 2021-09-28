@@ -239,7 +239,7 @@ where
                 Ok(None)
             }
         } else {
-            Ok(None)
+            Err(StoreError::NoPersistenceSettingError)
         }
     }
 

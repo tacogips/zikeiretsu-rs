@@ -73,7 +73,7 @@ pub fn same_field_types(types: &Vec<FieldType>, values: &Vec<FieldValue>) -> boo
     }
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum FieldType {
     Float64,
     Bool,

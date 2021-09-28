@@ -6,7 +6,7 @@ use crate::tsdb::cloudstorage::CloudStorageError;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::{block, block_list, persisted_error};
 use crate::tsdb::timestamp_nano::TimestampNano;
-pub use cloud_setting::CloudSetting;
+pub use cloud_setting::CloudStorageSetting;
 
 use std::path::{Path, PathBuf};
 use thiserror::Error;

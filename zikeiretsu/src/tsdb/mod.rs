@@ -12,6 +12,7 @@ pub mod timestamp_sec;
 
 pub use cloudstorage::*;
 pub use datapoint::*;
+pub use datapoints_searcher::*;
 pub use engine::*;
 pub use field::*;
 pub use metrics::*;

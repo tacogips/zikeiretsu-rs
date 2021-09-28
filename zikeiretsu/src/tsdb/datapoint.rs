@@ -23,6 +23,10 @@ impl DataPoint {
         self.field_values.len()
     }
 
+    pub fn get_field(&self, field_idx: usize) -> Option<&FieldValue> {
+        self.field_values.get(field_idx)
+    }
+
     pub async fn search<'a>(
         datapoints: &'a [DataPoint],
         cond: &DatapointSearchCondition,
@@ -78,6 +82,13 @@ impl DatapointSearchCondition {
         Self {
             inner_since,
             inner_until,
+        }
+    }
+
+    pub fn all() -> Self {
+        Self {
+            inner_since: None,
+            inner_until: None,
         }
     }
 

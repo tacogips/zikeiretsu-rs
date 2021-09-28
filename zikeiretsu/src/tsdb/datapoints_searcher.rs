@@ -3,10 +3,12 @@ use crate::tsdb::datapoint::*;
 pub struct DatapointSearcher<'a> {
     datapoints: &'a [DataPoint],
 }
+
 impl<'a> DatapointSearcher<'a> {
     pub fn new(datapoints: &'a [DataPoint]) -> Self {
         Self { datapoints }
     }
+
     pub async fn search(&self, cond: &DatapointSearchCondition) -> Option<&[DataPoint]> {
         DataPoint::search(self.datapoints, cond).await
     }

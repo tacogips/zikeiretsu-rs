@@ -11,13 +11,13 @@ use lockfile::Lockfile;
 use log;
 use log::*;
 use std::fs::create_dir_all;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub async fn write_datas<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
     data_points: &[DataPoint],
-    cloud_setting: Option<&CloudSetting>,
+    cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<()> {
     debug_assert!(!data_points.is_empty());
     debug_assert!(DataPoint::check_datapoints_is_sorted(&data_points).is_ok());
@@ -43,6 +43,64 @@ pub async fn write_datas<P: AsRef<Path>>(
     };
 
     let db_dir = db_dir.as_ref();
+
+    let write = || async {
+        let WrittenBlockInfo {
+            block_list_file_path,
+            block_file_path,
+            block_timestamp,
+        } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_setting).await {
+            Ok(r) => r,
+            Err(e) => {
+                log::error!("failed to write block file on local: {}", e);
+                return Err(e);
+            }
+        };
+
+        if cloud_lock_file_path.is_some() {
+            if let Err(e) = upload_to_cloud(
+                &block_list_file_path,
+                &block_file_path,
+                &metrics,
+                &block_timestamp,
+                &cloud_setting.unwrap().cloud_storage,
+            )
+            .await
+            {
+                log::error!("failed to update block files to the cloud :{:?}", e);
+                write_error_file(
+                    db_dir,
+                    TimestampNano::now(),
+                    &metrics,
+                    persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
+                    block_timestamp,
+                    Some(format!("error:{:?}", e)),
+                )
+                .await?;
+            }
+        }
+        Ok(())
+    };
+    let result = write().await;
+
+    if let Some(cloud_lock_file_path) = cloud_lock_file_path {
+        cloud_lock_file_path.remove().await?;
+    }
+
+    result
+}
+struct WrittenBlockInfo {
+    block_list_file_path: PathBuf,
+    block_file_path: PathBuf,
+    block_timestamp: block_list::BlockTimestamp,
+}
+
+async fn write_datas_to_local(
+    db_dir: &Path,
+    metrics: &Metrics,
+    data_points: &[DataPoint],
+    cloud_setting: Option<&CloudStorageSetting>,
+) -> Result<WrittenBlockInfo> {
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
@@ -97,33 +155,11 @@ pub async fn write_datas<P: AsRef<Path>>(
         block::write_to_block_file(&block_file_path, &data_points)?;
         block_file_path
     };
-
-    if let Some(cloud_lock_file_path) = cloud_lock_file_path {
-        if let Err(e) = upload_to_cloud(
-            &block_list_file_path,
-            &block_file_path,
-            &metrics,
-            &block_timestamp,
-            &cloud_setting.unwrap().cloud_storage,
-        )
-        .await
-        {
-            log::error!("failed to update block files to the cloud :{:?}", e);
-            write_error_file(
-                db_dir,
-                TimestampNano::now(),
-                &metrics,
-                persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
-                block_timestamp,
-                Some(format!("error:{:?}", e)),
-            )
-            .await?;
-        }
-
-        cloud_lock_file_path.remove().await?
-    }
-
-    Ok(())
+    Ok(WrittenBlockInfo {
+        block_list_file_path: block_list_file_path.to_path_buf(),
+        block_file_path: block_file_path.to_path_buf(),
+        block_timestamp,
+    })
 }
 
 async fn upload_to_cloud(

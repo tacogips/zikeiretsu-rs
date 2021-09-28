@@ -1,5 +1,10 @@
 use chrono::DateTime;
+
+use dotenv::dotenv;
+use env_logger::{Builder, Target};
+use log::LevelFilter;
 use serde::Deserialize;
+use std::env;
 use tempdir::TempDir;
 use zikeiretsu::*;
 
@@ -52,8 +57,7 @@ impl PriceRec {
     }
 }
 
-#[tokio::main]
-async fn main() {
+async fn persist_to_cloud() {
     let prices: Vec<Price> = serde_json::from_slice(PRICES_DATA).unwrap();
     let prices: Vec<DataPoint> = prices
         .into_iter()
@@ -61,8 +65,16 @@ async fn main() {
         .collect();
 
     let fields = vec![FieldType::Bool, FieldType::Float64, FieldType::Float64];
-    let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
-    let persistence = Persistence::Storage(temp_db_dir.path().to_path_buf(), None);
+    let temp_db_dir = TempDir::new("zikeretsu_local_example_write").unwrap();
+
+    let bucket = env::var("BUCKET").unwrap();
+    let cloud_storage = CloudStorage::new_gcp(&bucket, Some("zdb"));
+    let cloud_storage_setting = CloudStorageSetting::builder(cloud_storage).build();
+
+    let persistence = Persistence::Storage(
+        temp_db_dir.path().to_path_buf(),
+        Some(cloud_storage_setting),
+    );
 
     let mut wr = Zikeiretsu::writable_store_builder("price", fields.clone())
         .persistence(persistence)
@@ -89,43 +101,45 @@ async fn main() {
         })
         .build();
     wr.push_multi(prices).await.unwrap();
-    let expected = {
-        let datapoints = wr.datapoints_with_lock().await.unwrap();
-        let searcher = DatapointSearcher::new(&datapoints);
 
-        let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
-        let cond = DatapointSearchCondition::since(dt.into());
-        let found = searcher.search(&cond).await.unwrap();
-
-        println!("found len:{}", found.len());
-        for each in found {
-            println!("{}: {:?}", each.timestamp_nano.as_datetime(), each);
-        }
-        found.to_vec()
+    let condition = PersistCondition {
+        datapoint_search_condition: DatapointSearchCondition::all(),
+        clear_after_persisted: true,
     };
+    wr.persist(condition).await.unwrap();
+}
 
-    {
-        let cond = DatapointSearchCondition::all();
+async fn load_from_cloud() {
+    let temp_db_dir = TempDir::new("zikeretsu_local_example_readonly").unwrap();
+    let bucket = env::var("BUCKET").unwrap();
+    let cloud_storage = CloudStorage::new_gcp(&bucket, Some("zdb"));
+    let cloud_storage_setting = CloudStorageSetting::builder(cloud_storage).build();
+    let search_condition = DatapointSearchCondition::all();
+    let search_setting = SearchSettings::builder_with_no_cache()
+        .cloud_storage_setting(cloud_storage_setting)
+        .build();
+    let read_store = Zikeiretsu::readonly_store(
+        temp_db_dir.path(),
+        "price",
+        &search_condition,
+        &search_setting,
+    )
+    .await
+    .unwrap();
+    let searcher = read_store.searcher();
+    let result = searcher.search(&search_condition).await;
+    assert!(result.is_some());
+}
 
-        wr.persist(PersistCondition {
-            datapoint_search_condition: cond,
-            clear_after_persisted: false,
-        })
-        .await
-        .unwrap()
-    };
+#[tokio::main]
+async fn main() {
+    dotenv().ok();
 
-    // readonly store store
-    let condition = DatapointSearchCondition::all();
-    let setting = SearchSettings::builder_with_no_cache().build();
-    let read_only_store = Zikeiretsu::readonly_store(temp_db_dir, "price", &condition, &setting)
-        .await
-        .unwrap();
-    let searcher = read_only_store.searcher();
+    let mut logger_builder = Builder::new();
+    logger_builder.target(Target::Stdout);
+    logger_builder.filter_level(LevelFilter::Debug);
+    logger_builder.init();
 
-    let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
-    let cond = DatapointSearchCondition::since(dt.into());
-    let datapoints = searcher.search(&cond).await;
-
-    assert_eq!(datapoints.unwrap().to_vec(), expected);
+    persist_to_cloud().await;
+    //load_from_cloud().await;
 }

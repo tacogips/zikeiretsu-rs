@@ -16,6 +16,9 @@ pub enum CloudStorageError {
     #[error("invalid url. {0} {1}")]
     InvalidUrlError(String, String),
 
+    #[error("invalid path. {0} ")]
+    InvalidPathError(String),
+
     #[error("cloud storage url error. {0}")]
     UrlParseError(#[from] url::ParseError),
 
@@ -75,7 +78,7 @@ impl CloudStorage {
     pub fn as_url(&self) -> String {
         match self {
             Self::Gcp(Bucket(bucket_str), sub_dir) => {
-                let gcs_url = format!("gcs://{}", bucket_str);
+                let gcs_url = format!("gs://{}", bucket_str);
 
                 let gcs_url = match sub_dir {
                     Some(sub_dir) => {

@@ -55,9 +55,8 @@ where
         bits_writer.flush(&mut block_file)?;
     }
 
-    // (5)timestamp deltas seconds
     if !timestamps_deltas_second.is_empty() {
-        //TODO()
+        // (5)timestamp deltas seconds
         simple8b_rle::compress(&timestamps_deltas_second, &mut block_file)?;
 
         // (6) common trailing zero num of timestamp nano

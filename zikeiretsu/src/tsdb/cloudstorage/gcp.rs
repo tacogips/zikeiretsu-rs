@@ -1,7 +1,7 @@
-use super::{file_path::*, Result};
+use super::{file_path::*, CloudStorageError, Result};
 use file_dougu;
 use memmap2::MmapOptions;
-use std::fs::{File, OpenOptions};
+use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
@@ -46,10 +46,22 @@ pub async fn download_block_list_file<'a>(
     let src_url = src.as_url();
 
     let contents = file_dougu::get_file_contents(&src_url, None, None).await?;
+
+    let parent_dir = dest
+        .parent()
+        .ok_or_else(|| CloudStorageError::InvalidPathError(dest.display().to_string()))?;
+
+    create_dir_all(parent_dir)?;
+
     match contents {
         Some(contents_data) => {
-            let mut block_file = OpenOptions::new().write(true).truncate(true).open(dest)?;
-            block_file.write(&contents_data)?;
+            let mut block_list_file = if dest.exists() {
+                OpenOptions::new().write(true).truncate(true).open(dest)?
+            } else {
+                OpenOptions::new().create(true).write(true).open(dest)?
+            };
+
+            block_list_file.write(&contents_data)?;
             Ok(Some(()))
         }
         None => Ok(None),
@@ -78,6 +90,7 @@ pub async fn upload_block_list_file<'a>(
 
 pub async fn is_lock_file_exists<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Result<bool> {
     let gcs_file = file_dougu::gcs::GcsFile::new(lock_file_path.as_url())?;
+
     let exists = gcs_file.is_exists_with_retry(None).await?;
     Ok(exists)
 }

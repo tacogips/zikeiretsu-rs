@@ -27,6 +27,9 @@ pub enum StoreError {
     #[error("storage api error. {0}")]
     StorageErorr(#[from] storage_api::StorageApiError),
 
+    #[error("no persistence setting. ")]
+    NoPersistenceSettingError,
+
     #[error("datetime channel Sender Error. {0}")]
     DatetimeChannelSenderError(#[from] mpsc::error::SendError<DateTime<Utc>>),
 

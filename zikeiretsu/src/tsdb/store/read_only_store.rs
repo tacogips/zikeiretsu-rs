@@ -35,11 +35,11 @@ impl ReadonlyStore {
         Ok(Self { datapoints })
     }
 
-    pub async fn datapoints(&self) -> &[DataPoint] {
+    pub fn all_datapoints(&self) -> &[DataPoint] {
         &self.datapoints
     }
 
-    pub async fn searcher<'a>(&'a self) -> DatapointSearcher<'a> {
+    pub fn searcher<'a>(&'a self) -> DatapointSearcher<'a> {
         DatapointSearcher::new(&self.datapoints)
     }
 }

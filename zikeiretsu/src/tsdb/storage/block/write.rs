@@ -1,5 +1,6 @@
 use super::Result;
 
+use super::compress::bools;
 use super::{field_type_convert, BlockError, TimestampDeltas};
 use crate::tsdb::*;
 use base_128_variants;
@@ -29,6 +30,7 @@ where
 
     // (1). number of datapoints
     base_128_variants::compress_u64(datapoints.len() as u64, &mut block_file)?;
+
     // (2). data field num
     block_file.write(&[data_field_num as u8])?;
 
@@ -75,6 +77,15 @@ where
                     .collect::<std::result::Result<Vec<f64>, FieldError>>()?;
                 xor_encoding::compress_f64(&float_values, &mut block_file)?;
             }
+
+            FieldType::Bool => {
+                let bool_values = values
+                    .into_iter()
+                    .map(|v| v.as_bool())
+                    .collect::<std::result::Result<Vec<bool>, FieldError>>()?;
+
+                bools::compress(&bool_values, &mut block_file)?;
+            }
         }
     }
 
@@ -87,7 +98,6 @@ where
 {
     for each_field_type in field_types.iter() {
         let field_type_val = field_type_convert::type_to_val(each_field_type);
-
         w.write(&[field_type_val])?;
     }
     Ok(())

@@ -3,6 +3,7 @@ mod macros;
 pub use macros::*;
 use std::cmp::min;
 use std::io::Write;
+use std::iter::Iterator;
 use thiserror::Error;
 
 pub type BytesIndex = usize;
@@ -27,7 +28,7 @@ pub enum Error {
     WriterError(#[from] std::io::Error),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Bit {
     Zero,
     One,
@@ -225,7 +226,7 @@ impl BitsWriter {
         self.buffer.len()
     }
 
-    pub fn inner_value(&self) -> &[u8] {
+    pub fn as_inner(&self) -> &[u8] {
         self.buffer.as_slice()
     }
 
@@ -275,6 +276,9 @@ impl BitsWriter {
     }
 }
 
+///
+/// `meaning bits` is lower bits in a byte that represent some value
+///
 /// If bits value is "11" (3 in decimal)
 ///  bits buffer will be
 /// ```markdown
@@ -285,15 +289,17 @@ impl BitsWriter {
 ///
 pub struct BitsUnit {
     bits_buffer: u8,
-    most_sig_bit_offset: BitsIndex,
+    most_significant_bit_of_meaning_bits: BitsIndex,
 }
 
 impl BitsUnit {
     pub fn inner_value(&self) -> u8 {
         self.bits_buffer
     }
+
+    /// size of meaning bits
     pub fn meaningful_bits_len(&self) -> usize {
-        8 - self.most_sig_bit_offset
+        8 - self.most_significant_bit_of_meaning_bits
     }
 }
 
@@ -346,7 +352,7 @@ pub trait ByteArrayBitsReader {
     ///
     /// ## case 1 after
     /// ```markdown
-    ///   chompd value = [1 1 1]
+    ///   chomped value = [1 1 1]
     ///
     ///   src : [[ 1 0 1 0 1 0 1 1 ]  [ 1 0 1 0 1 0 1 0 ]]
     ///   idx      0 1 2 3 4 5 6 7      0 1 2 3 4 5 6 7
@@ -420,7 +426,7 @@ pub trait ByteArrayBitsReader {
 
         Ok(Some(BitsUnit {
             bits_buffer,
-            most_sig_bit_offset: 8 - actual_chomped_bit_size,
+            most_significant_bit_of_meaning_bits: 8 - actual_chomped_bit_size,
         }))
     }
 }
@@ -447,8 +453,19 @@ impl<'a> RefBitsReader<'a> {
             current_bits_offset_in_current_byte,
         }
     }
+
     pub fn current_byte_index(&self) -> BytesIndex {
         self.current_byte_index
+    }
+}
+
+impl<'a> Iterator for RefBitsReader<'a> {
+    type Item = Bit;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.chomp_as_bit() {
+            Ok(b) => b,
+            Err(_) => None,
+        }
     }
 }
 
@@ -456,9 +473,11 @@ impl<'a> ByteArrayBitsReader for RefBitsReader<'a> {
     fn src(&self, i: BytesIndex) -> u8 {
         self.src[i]
     }
+
     fn set_current_byte_index(&mut self, i: BytesIndex) {
         self.current_byte_index = i
     }
+
     fn set_current_bits_offset_in_current_byte(&mut self, i: BytesIndex) {
         self.current_bits_offset_in_current_byte = i
     }
@@ -466,9 +485,11 @@ impl<'a> ByteArrayBitsReader for RefBitsReader<'a> {
     fn bytes_buffer_len(&self) -> usize {
         self.src.len()
     }
+
     fn current_byte_index(&self) -> BytesIndex {
         self.current_byte_index
     }
+
     fn current_bits_offset_in_current_byte(&self) -> BytesIndex {
         self.current_bits_offset_in_current_byte
     }
@@ -506,15 +527,30 @@ impl ValBitsReader {
             current_bits_offset_in_current_byte,
         }
     }
+    pub fn as_inner(&self) -> &[u8] {
+        &self.src
+    }
+}
+
+impl Iterator for ValBitsReader {
+    type Item = Bit;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.chomp_as_bit() {
+            Ok(b) => b,
+            Err(_) => None,
+        }
+    }
 }
 
 impl ByteArrayBitsReader for ValBitsReader {
     fn src(&self, i: BytesIndex) -> u8 {
         self.src[i]
     }
+
     fn set_current_byte_index(&mut self, i: BytesIndex) {
         self.current_byte_index = i
     }
+
     fn set_current_bits_offset_in_current_byte(&mut self, i: BytesIndex) {
         self.current_bits_offset_in_current_byte = i
     }
@@ -522,9 +558,11 @@ impl ByteArrayBitsReader for ValBitsReader {
     fn bytes_buffer_len(&self) -> usize {
         self.src.len()
     }
+
     fn current_byte_index(&self) -> BytesIndex {
         self.current_byte_index
     }
+
     fn current_bits_offset_in_current_byte(&self) -> BytesIndex {
         self.current_bits_offset_in_current_byte
     }
@@ -559,7 +597,7 @@ mod test {
         let chomped = chomped.unwrap();
 
         assert_eq!(chomped.bits_buffer, 0b00000101u8);
-        assert_eq!(chomped.most_sig_bit_offset, 5);
+        assert_eq!(chomped.most_significant_bit_of_meaning_bits, 5);
         assert_eq!(chomped.meaningful_bits_len(), 3);
 
         assert_eq!(reader.current_byte_index, 0);
@@ -578,7 +616,7 @@ mod test {
         let chomped = chomped.unwrap();
 
         assert_eq!(chomped.bits_buffer, 0b110011u8);
-        assert_eq!(chomped.most_sig_bit_offset, 2);
+        assert_eq!(chomped.most_significant_bit_of_meaning_bits, 2);
         assert_eq!(chomped.meaningful_bits_len(), 6);
 
         assert_eq!(reader.current_byte_index, 1);
@@ -598,7 +636,7 @@ mod test {
         let chomped = chomped.unwrap();
 
         assert_eq!(chomped.bits_buffer, 0b111111u8);
-        assert_eq!(chomped.most_sig_bit_offset, 2);
+        assert_eq!(chomped.most_significant_bit_of_meaning_bits, 2);
         assert_eq!(chomped.meaningful_bits_len(), 6);
 
         assert_eq!(reader.current_byte_index, 1);
@@ -618,7 +656,7 @@ mod test {
         let chomped = chomped.unwrap();
 
         assert_eq!(chomped.bits_buffer, 0b1u8);
-        assert_eq!(chomped.most_sig_bit_offset, 7);
+        assert_eq!(chomped.most_significant_bit_of_meaning_bits, 7);
         assert_eq!(chomped.meaningful_bits_len(), 1);
 
         assert_eq!(reader.current_byte_index, 1);
@@ -732,6 +770,15 @@ mod test {
         assert_eq!(chomped.bits_buffer, 0b1u8);
         assert_eq!(reader.current_byte_index, 1);
         assert_eq!(reader.current_bits_offset_in_current_byte, 8);
+    }
+
+    #[test]
+    pub fn test_bits_reader_iter_1() {
+        let src = [0b10111001u8, 0b00000001];
+        let mut reader = RefBitsReader::new(&src);
+
+        reader.current_byte_index = 0;
+        reader.current_bits_offset_in_current_byte = 0;
     }
 
     #[test]
@@ -908,7 +955,7 @@ mod test {
 
         let mut writer = BitsWriter::new();
         assert!(writer.append(input, 10).is_ok());
-        let inner_value = writer.inner_value();
+        let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 2);
         assert_eq!(inner_value[0], 0b10101011);
         assert_eq!(inner_value[1], 0b00);
@@ -922,7 +969,7 @@ mod test {
 
         let mut writer = BitsWriter::new();
         assert!(writer.append(input, 10).is_ok());
-        let inner_value = writer.inner_value();
+        let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 2);
         assert_eq!(inner_value[0], 0b10101011);
         assert_eq!(inner_value[1], 0b11000000);
@@ -936,7 +983,7 @@ mod test {
 
         let mut writer = BitsWriter::new();
         assert!(writer.append(input, 8).is_ok());
-        let inner_value = writer.inner_value();
+        let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 1);
         assert_eq!(inner_value[0], 0b10101011);
     }

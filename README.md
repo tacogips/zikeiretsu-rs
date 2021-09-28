@@ -118,7 +118,7 @@ Data types of each fields.
 - float   	  			   ... 2
 - string      			   ... 3 (not implemented yet)
 - timestamp   			   ... 4 (not implemented yet)
-- bool        			   ... 5 (not implemented yet)
+- bool        			   ... 5
 - unsigned int   			 ... 6 (not implemented yet)
 
 ### (4) Head timestamp
@@ -219,13 +219,13 @@ every value has at least 3 trailing-zeros.drop these zeros.
 
 ### (8) Datas of field
 
-#### Compressing methods
+#### Compressing Algorithms of each type
 
 - integer ... (not implemented yet) if the value is less than (1 << 60) - 1 ,convert with [ZigZag Encoding](https://developers.google.com/protocol-buffers/docs/encoding) then compress with  [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h).We haven't decide how to handle with the outlier values(we are considering uncompress all values if the datas contains at least one value that exceed the maximum value, but it seems very unefficient...)
 - float   ... Facebook Gorilla of XOR encoding (http://www.vldb.org/pvldb/vol8/p1816-teller.pdf)
 - string      ...  (not implemented yet) consider to compress with [snappy](https://github.com/google/snappy)
 - timestamp   ...  (not implemented yet) delta encoding and [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h)
-- bool        ...  (not implemented yet) each boolean express by 1 bit.
+- bool        ...  simply packing 1bit values into 64bits
 
 
 

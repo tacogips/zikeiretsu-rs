@@ -1,7 +1,7 @@
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
-use crate::tsdb::store::writable_store::{DatapointDefaultSorter, DatapointSorter};
-use crate::tsdb::{datapoint::DatapointSearchCondition, metrics::*, storage::*, store::*};
+use crate::tsdb::store::writable_store::DatapointDefaultSorter;
+use crate::tsdb::{datapoint::DatapointSearchCondition, storage::*, store::*};
 use crate::tsdb::{storage::api as storage_api, store};
 use std::path::PathBuf;
 use thiserror::Error;

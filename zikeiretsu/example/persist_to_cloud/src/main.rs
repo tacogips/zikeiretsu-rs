@@ -129,6 +129,8 @@ async fn load_from_cloud() {
     let searcher = read_store.searcher();
     let result = searcher.search(&search_condition).await;
     assert!(result.is_some());
+    let result = result.unwrap();
+    assert_eq!(result.len(), 774);
 }
 
 #[tokio::main]

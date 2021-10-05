@@ -57,7 +57,6 @@ pub async fn search_datas<P: AsRef<Path>>(
             let data_points_of_blocks: Vec<_> =
                 data_points_of_blocks?.into_iter().flatten().collect();
 
-            println!(" 22222 ------------ ");
             Ok(data_points_of_blocks)
         }
     };

@@ -51,6 +51,16 @@ macro_rules! u32_bits_reader {
 }
 
 #[macro_export]
+macro_rules! u16_bits_reader {
+    ($val:expr, $meaningful_bit_size:expr) => {
+        match bytes_converter::from_u16($val, $meaningful_bit_size) {
+            Ok(b) => Ok(ValBitsReader::new(vec![b])),
+            Err(e) => Err(e),
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! u8_bits_reader {
     ($val:expr, $meaningful_bit_size:expr) => {
         match bytes_converter::from_u8($val, $meaningful_bit_size) {

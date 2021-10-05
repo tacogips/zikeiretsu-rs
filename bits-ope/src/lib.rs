@@ -76,6 +76,14 @@ pub mod bytes_converter {
         Ok(src)
     }
 
+    pub fn from_u16(src: u16, meaningful_bit_size: BitsSize) -> Result<u16> {
+        debug_assert!(meaningful_bit_size <= 16);
+        let left_shift_bits = 16 - meaningful_bit_size;
+        let src = src << left_shift_bits;
+
+        Ok(src)
+    }
+
     pub fn from_u64(src: u64, meaningful_bit_size: BitsSize, dst: &mut Vec<u8>) -> Result<()> {
         debug_assert!(meaningful_bit_size <= 64);
         let left_shift_bits = 64 - meaningful_bit_size;

@@ -23,7 +23,7 @@ pub enum Error {
 }
 
 const LEADING_ZERO_LENGTH_BITS_SIZE: usize = 6; // number of leading zeros: 0-63
-const DATA_LENGTH_BITS_SIZE: usize = 6; // 0-63, while (bits length - 1) stored in this field.
+const DATA_LENGTH_BITS_SIZE: usize = 6; // data bits length value may be between 1-64, we will minus 1 from the value to make the value range 0-63 to fit into 6 bits
 
 pub(crate) fn f64_to_u64(v: f64) -> u64 {
     unsafe { mem::transmute::<f64, u64>(v) }
@@ -85,7 +85,7 @@ where
                     LEADING_ZERO_LENGTH_BITS_SIZE,
                 )?;
 
-                //put (data bits size - 1) in 6 bits
+                // data_bits_length range is 1-64
                 let data_bits_length = 64 - leading_zeros - trailing_zeros;
                 writer.append(
                     u32_bits_reader!(data_bits_length - 1, DATA_LENGTH_BITS_SIZE)?,
@@ -181,7 +181,7 @@ pub fn decompress_f64(src: &[u8], num: usize, dst: &mut Vec<f64>) -> Result<usiz
 
                             let data_bits_size = reader.chomp_as_u8(DATA_LENGTH_BITS_SIZE)?;
                             let data_bits_size = match data_bits_size {
-                                Some(v) => v + 1, // add 1 by intention
+                                Some(v) => v + 1, // add 1 cause we decreased the value to make it fit to 6 bits length on compressing
                                 None => {
                                     return Err(Error::InvalidXorEncoding(
                                         reader.current_byte_index(),
@@ -202,7 +202,7 @@ pub fn decompress_f64(src: &[u8], num: usize, dst: &mut Vec<f64>) -> Result<usiz
                             };
 
                             //TODO(debug)
-                            println!("---- lz:{}, dbs:{}", leading_zero_num, data_bits_size);
+                            println!("---- lz: {}, dbs: {}", leading_zero_num, data_bits_size);
                             let trailing_zero_size = 64 - (leading_zero_num + data_bits_size);
 
                             let xor = xor << trailing_zero_size;
@@ -337,6 +337,57 @@ mod test {
             assert!(result.is_ok());
             let result = result.unwrap();
             assert_eq!(result, 23);
+            assert_eq!(decomp, src);
+        }
+    }
+
+    #[test]
+    fn test_compress_4() {
+        let mut dst = Vec::<u8>::new();
+
+        let src: Vec<f64> = vec![
+            5012606f64, 5012999f64, 5012999f64, 5013135f64, 5013266f64, 5013999f64, 5013999f64,
+            5013999f64, 5013952f64, 5013999f64, 5014006f64, 5014006f64, 5014006f64, 5014067f64,
+            5014227f64, 5014412f64, 5014409f64, 5014518f64, 5014518f64, 5014518f64, 5014263f64,
+            5014260f64, 5013650f64, 5013445f64, 5013274f64, 5013021f64, 5012603f64, 5012346f64,
+            5012646f64, 5012346f64, 5012860f64, 5012555f64, 5012334f64, 5012334f64, 5012143f64,
+            5011864f64, 5011829f64, 5011028f64, 5011027f64, 5011027f64, 5010999f64, 5010999f64,
+            5010999f64, 5010999f64, 5010667f64, 5010584f64, 5010583f64, 5010583f64, 5010746f64,
+            5010583f64, 5010561f64, 5010503f64, 5010455f64, 5010360f64, 5009624f64, 5009467f64,
+            5009203f64, 5009623f64, 5009624f64, 5009203f64, 5009623f64, 5009624f64, 5009624f64,
+            5009528f64, 5009404f64, 5008960f64, 5009404f64, 5009404f64, 5009624f64, 5009404f64,
+            5009043f64, 5009043f64, 5009043f64, 5009576f64, 5009591f64, 5009624f64, 5009043f64,
+            5009042f64, 5008623f64, 5008500f64, 5008500f64, 5008260f64, 5008188f64, 5008148f64,
+            5008134f64, 5008129f64,
+        ];
+
+        let result = compress_f64(&src, &mut dst);
+        assert!(result.is_ok());
+        assert_eq!(dst.len(), 170);
+
+        {
+            let mut reader = RefBitsReader::new(&dst);
+            let result = reader.chomp_as_u64(64);
+            assert!(result.is_ok());
+            let result = result.unwrap();
+            assert!(result.is_some());
+            let v = u64_to_f64(result.unwrap());
+            assert_eq!(v, src[0]);
+
+            let result = reader.chomp_as_bit();
+            assert!(result.is_ok());
+            let result = result.unwrap();
+            assert!(result.is_some());
+            assert_eq!(Bit::One, result.unwrap());
+        }
+
+        {
+            let mut decomp = Vec::<f64>::new();
+            let result = decompress_f64(&dst, 170, &mut decomp);
+
+            assert!(result.is_ok());
+            let result = result.unwrap();
+            assert_eq!(result, 17);
             assert_eq!(decomp, src);
         }
     }

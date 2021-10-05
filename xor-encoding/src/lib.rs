@@ -23,7 +23,7 @@ pub enum Error {
 }
 
 const LEADING_ZERO_LENGTH_BITS_SIZE: usize = 6; // number of leading zeros: 0-63
-const DATA_LENGHT_BITS_SIZE: usize = 6; // 0-63, while (bits length - 1) stored in this field.
+const DATA_LENGTH_BITS_SIZE: usize = 6; // 0-63, while (bits length - 1) stored in this field.
 
 pub(crate) fn f64_to_u64(v: f64) -> u64 {
     unsafe { mem::transmute::<f64, u64>(v) }
@@ -88,8 +88,8 @@ where
                 //put (data bits size - 1) in 6 bits
                 let data_bits_length = 64 - leading_zeros - trailing_zeros;
                 writer.append(
-                    u32_bits_reader!(data_bits_length - 1, DATA_LENGHT_BITS_SIZE)?,
-                    DATA_LENGHT_BITS_SIZE,
+                    u32_bits_reader!(data_bits_length - 1, DATA_LENGTH_BITS_SIZE)?,
+                    DATA_LENGTH_BITS_SIZE,
                 )?;
 
                 let xor = xor >> trailing_zeros;
@@ -179,7 +179,7 @@ pub fn decompress_f64(src: &[u8], num: usize, dst: &mut Vec<f64>) -> Result<usiz
                                 }
                             };
 
-                            let data_bits_size = reader.chomp_as_u8(DATA_LENGHT_BITS_SIZE)?;
+                            let data_bits_size = reader.chomp_as_u8(DATA_LENGTH_BITS_SIZE)?;
                             let data_bits_size = match data_bits_size {
                                 Some(v) => v + 1, // add 1 by intention
                                 None => {
@@ -201,6 +201,8 @@ pub fn decompress_f64(src: &[u8], num: usize, dst: &mut Vec<f64>) -> Result<usiz
                                 }
                             };
 
+                            //TODO(debug)
+                            println!("---- lz:{}, dbs:{}", leading_zero_num, data_bits_size);
                             let trailing_zero_size = 64 - (leading_zero_num + data_bits_size);
 
                             let xor = xor << trailing_zero_size;

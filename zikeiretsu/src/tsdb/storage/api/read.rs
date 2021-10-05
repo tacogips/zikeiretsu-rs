@@ -43,18 +43,21 @@ pub async fn search_datas<P: AsRef<Path>>(
         None => Ok(vec![]),
         Some(block_timestamps) => {
             if !no_block_timestamps_overlapping_nor_unsorted(block_timestamps) {
-                return Err(StorageApiError::UnsupportedStorageStatus("timestamps of datapoints overlapping. `zikeiretsu` not supported datas like this yet...".to_string()));
+                return Err(StorageApiError::UnsupportedStorageStatus("timestamps of datapoints overlapping or unsorted. `zikeiretsu` not supported datas like this yet...".to_string()));
             }
 
             let tasks = block_timestamps.iter().map(|block_timestamp| {
                 read_block(&db_dir, &metrics, &block_timestamp, cloud_setting)
             });
+
             let data_points_of_blocks = join_all(tasks).await;
             let data_points_of_blocks: Result<Vec<Vec<_>>> =
                 data_points_of_blocks.into_iter().collect();
+
             let data_points_of_blocks: Vec<_> =
                 data_points_of_blocks?.into_iter().flatten().collect();
 
+            println!(" 22222 ------------ ");
             Ok(data_points_of_blocks)
         }
     };
@@ -68,7 +71,7 @@ fn no_block_timestamps_overlapping_nor_unsorted(
     block_timestamps
         .iter()
         .zip(block_timestamps[1..].iter())
-        .all(|(l, r)| l.is_before(r))
+        .all(|(l, r)| l.is_before(r) || l == r)
 }
 
 async fn read_block(
@@ -78,6 +81,7 @@ async fn read_block(
     cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<Vec<DataPoint>> {
     let block_file_path = block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
+
     if let Some(cloud_setting) = cloud_setting {
         if !block_file_path.exists() {
             if cloud_setting.download_block_if_not_exits {
@@ -88,6 +92,7 @@ async fn read_block(
                 );
 
                 let download_result = cloud_block_file_path.download(&block_file_path).await?;
+
                 if download_result.is_none() {
                     return Err(StorageApiError::NoBlockFile(
                         block_file_path.display().to_string(),

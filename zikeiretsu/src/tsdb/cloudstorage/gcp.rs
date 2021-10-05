@@ -5,6 +5,15 @@ use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
+fn create_parent_dir_if_not_exists(dest: &Path) -> Result<()> {
+    let parent_dir = dest
+        .parent()
+        .ok_or_else(|| CloudStorageError::InvalidPathError(dest.display().to_string()))?;
+
+    create_dir_all(parent_dir)?;
+    Ok(())
+}
+
 pub async fn download_block_file<'a>(
     src: &CloudBlockFilePath<'a>,
     dest: &Path,
@@ -14,7 +23,13 @@ pub async fn download_block_file<'a>(
     let contents = file_dougu::get_file_contents(&src_url, None, None).await?;
     match contents {
         Some(contents_data) => {
-            let mut block_file = OpenOptions::new().write(true).truncate(true).open(dest)?;
+            let mut block_file = if dest.exists() {
+                OpenOptions::new().write(true).truncate(true).open(dest)?
+            } else {
+                create_parent_dir_if_not_exists(dest)?;
+                OpenOptions::new().create(true).write(true).open(dest)?
+            };
+
             block_file.write(&contents_data)?;
             Ok(Some(()))
         }
@@ -47,17 +62,12 @@ pub async fn download_block_list_file<'a>(
 
     let contents = file_dougu::get_file_contents(&src_url, None, None).await?;
 
-    let parent_dir = dest
-        .parent()
-        .ok_or_else(|| CloudStorageError::InvalidPathError(dest.display().to_string()))?;
-
-    create_dir_all(parent_dir)?;
-
     match contents {
         Some(contents_data) => {
             let mut block_list_file = if dest.exists() {
                 OpenOptions::new().write(true).truncate(true).open(dest)?
             } else {
+                create_parent_dir_if_not_exists(dest)?;
                 OpenOptions::new().create(true).write(true).open(dest)?
             };
 

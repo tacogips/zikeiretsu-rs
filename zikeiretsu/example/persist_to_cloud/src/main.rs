@@ -141,5 +141,5 @@ async fn main() {
     logger_builder.init();
 
     persist_to_cloud().await;
-    //load_from_cloud().await;
+    load_from_cloud().await;
 }

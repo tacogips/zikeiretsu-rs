@@ -13,10 +13,10 @@ use lockfile::Lockfile;
 use log;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 lazy_static! {
-    static ref CACHE: Arc<Mutex<cache::Cache>> = Arc::new(Mutex::new(cache::Cache::new()));
+    static ref CACHE: Arc<RwLock<cache::Cache>> = Arc::new(RwLock::new(cache::Cache::new()));
 }
 
 pub async fn search_datas<P: AsRef<Path>>(
@@ -146,7 +146,7 @@ pub(crate) async fn read_block_list(
     };
 
     let block_list = if use_cache {
-        let cache = CACHE.lock().await;
+        let cache = CACHE.read().await;
         let block_list = cache.block_list_cache.get(metrics).await;
         block_list.map(|e| e.clone())
     } else {
@@ -170,7 +170,7 @@ pub(crate) async fn read_block_list(
     };
 
     if cache_setting.write_cache {
-        let mut cache = CACHE.lock().await;
+        let mut cache = CACHE.write().await;
         cache
             .block_list_cache
             .write(&metrics, block_list.clone())

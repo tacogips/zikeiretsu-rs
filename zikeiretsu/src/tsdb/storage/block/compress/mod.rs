@@ -1,6 +1,5 @@
 pub mod bools;
 
-use std::io::Write;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, CompressError>;

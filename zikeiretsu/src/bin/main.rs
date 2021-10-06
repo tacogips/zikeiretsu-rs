@@ -1,5 +1,5 @@
 mod config;
-use ::zikeiretsu::*;
+//use ::zikeiretsu::*;
 
 pub fn main() {
     //TODO(tacogips) impl client

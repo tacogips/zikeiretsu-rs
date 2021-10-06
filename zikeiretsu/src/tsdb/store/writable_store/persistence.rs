@@ -5,8 +5,9 @@ use crate::tsdb::timestamp_nano::TimestampNano;
 use chrono::{DateTime, Utc};
 use log;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
 use tokio::{task, time};
 
 #[derive(Clone)]
@@ -35,19 +36,31 @@ impl PeriodicallyPeristenceShutdown {
 }
 
 pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
-    mut store: WritableStore<S>,
+    store: Arc<Mutex<WritableStore<S>>>,
     interval_duration: Duration,
     clear_after_persisted: bool,
 ) -> PeriodicallyPeristenceShutdown {
     let (persistence_tx, mut persistence_rx) = mpsc::channel::<DateTime<Utc>>(1);
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<chrono::DateTime<chrono::Utc>>(1);
-    //invoker
     task::spawn(async move {
         loop {
             let waiting_shutdown =
                 time::timeout(interval_duration.clone(), shutdown_rx.recv()).await;
             if !waiting_shutdown.is_err() {
                 log::info!("breaking the periodicaly persistence loop");
+
+                let datapoint_search_condition =
+                    DatapointSearchCondition::new(None, Some(TimestampNano::now()));
+                let condition = PersistCondition {
+                    datapoint_search_condition,
+                    clear_after_persisted,
+                };
+                let mut mutext_store = store.lock().await;
+                if let Err(e) = &mutext_store.persist(condition).await {
+                    log::error!("store persisted error:{}", e);
+                    //TODO(tacogips) the process should be interrupted ?
+                }
+
                 break;
             }
             if let Err(e) = persistence_tx.send(chrono::Utc::now()).await {
@@ -60,7 +73,9 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 datapoint_search_condition,
                 clear_after_persisted,
             };
-            if let Err(e) = store.persist(condition).await {
+
+            let mut mutext_store = store.lock().await;
+            if let Err(e) = &mutext_store.persist(condition).await {
                 log::error!("store persisted error:{}", e);
                 //TODO(tacogips) the process should be interrupted ?
             }

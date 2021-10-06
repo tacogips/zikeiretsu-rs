@@ -86,7 +86,7 @@ mod test {
         );
         ////TODO(tacogips) remove this
         //store.apply_dirties().await.unwrap();
-        let data_points = store.datapoints_with_lock().await;
+        let data_points = store.datapoints().await;
 
         assert!(data_points.is_ok());
         let data_points = data_points.unwrap();
@@ -125,7 +125,7 @@ mod test {
         //store.apply_dirties().await.unwrap();
         {
             //getting datapoint first
-            let data_points = store.datapoints_with_lock().await;
+            let data_points = store.datapoints().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -142,7 +142,7 @@ mod test {
                 {1629745451_715062000, vec![100f64,12f64]},
                 {1629745451_715066000, vec![300f64,36f64]}
             );
-            let data_points = store.datapoints_with_lock().await;
+            let data_points = store.datapoints().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -152,17 +152,15 @@ mod test {
 
     #[tokio::test]
     async fn remove_range_1() {
-        let datapoints = float_data_points!(
+        let mut datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64,12f64]},
             {1629745451_715063000, vec![200f64,36f64]},
             {1629745451_715064000, vec![200f64,36f64]},
             {1629745451_715065000, vec![300f64,36f64]},
             {1629745451_715066000, vec![300f64,36f64]}
         );
-        let datapoints = Mutex::new(datapoints);
-        let lock_datapoints = datapoints.lock().await;
 
-        remove_range(lock_datapoints, (2, 3));
+        remove_range(&mut datapoints, (2, 3));
 
         let expected_datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64,12f64]},
@@ -170,43 +168,37 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
 
-        let lock_datapoints = datapoints.lock().await;
-        assert_eq!(*lock_datapoints, expected_datapoints);
+        assert_eq!(*datapoints, expected_datapoints);
     }
 
     #[tokio::test]
     async fn remove_range_2() {
-        let datapoints = float_data_points!(
+        let mut datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64,12f64]},
             {1629745451_715063000, vec![200f64,36f64]},
             {1629745451_715064000, vec![200f64,36f64]},
             {1629745451_715065000, vec![300f64,36f64]},
             {1629745451_715066000, vec![300f64,36f64]}
         );
-        let datapoints = Mutex::new(datapoints);
-        let lock_datapoints = datapoints.lock().await;
 
-        remove_range(lock_datapoints, (0, 4));
+        remove_range(&mut datapoints, (0, 4));
 
         let expected_datapoints = float_data_points!();
 
-        let lock_datapoints = datapoints.lock().await;
-        assert_eq!(*lock_datapoints, expected_datapoints);
+        assert_eq!(*datapoints, expected_datapoints);
     }
 
     #[tokio::test]
     async fn remove_range_3() {
-        let datapoints = float_data_points!(
+        let mut datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64,12f64]},
             {1629745451_715063000, vec![200f64,36f64]},
             {1629745451_715064000, vec![200f64,36f64]},
             {1629745451_715065000, vec![300f64,36f64]},
             {1629745451_715066000, vec![300f64,36f64]}
         );
-        let datapoints = Mutex::new(datapoints);
-        let lock_datapoints = datapoints.lock().await;
 
-        remove_range(lock_datapoints, (4, 4));
+        remove_range(&mut datapoints, (4, 4));
 
         let expected_datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64,12f64]},
@@ -215,8 +207,7 @@ mod test {
             {1629745451_715065000, vec![300f64,36f64]}
         );
 
-        let lock_datapoints = datapoints.lock().await;
-        assert_eq!(*lock_datapoints, expected_datapoints);
+        assert_eq!(*datapoints, expected_datapoints);
     }
 
     #[tokio::test]
@@ -251,7 +242,7 @@ mod test {
                 {1629745451_715066000, vec![300f64,36f64]}
             );
 
-            let stored_datapoints = store.datapoints_with_lock().await.unwrap();
+            let stored_datapoints = store.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -275,7 +266,7 @@ mod test {
                 {1629745451_715067000, vec![700f64,100f64]}
             );
 
-            let stored_datapoints = store.datapoints_with_lock().await.unwrap();
+            let stored_datapoints = store.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -300,7 +291,7 @@ mod test {
                 {1629745451_715067000, vec![700f64,100f64]}
             );
 
-            let stored_datapoints = store.datapoints_with_lock().await.unwrap();
+            let stored_datapoints = store.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -326,7 +317,7 @@ mod test {
             let datapoints = datapoints.unwrap();
 
             let store = ReadonlyStore::new(datapoints, false).unwrap();
-            let searcher = store.searcher().await;
+            let searcher = store.searcher();
 
             {
                 let result = searcher.search(&condition).await;
@@ -398,7 +389,7 @@ mod test {
                 {1639745451_715062000, vec![1200f64,37f64]}
             );
 
-            let stored_datapoints = store.datapoints_with_lock().await.unwrap();
+            let stored_datapoints = store.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -418,7 +409,7 @@ mod test {
             // retaining datapoints
             let expected_datapoints = float_data_points!();
 
-            let stored_datapoints = store.datapoints_with_lock().await.unwrap();
+            let stored_datapoints = store.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -441,7 +432,7 @@ mod test {
             let datapoints = datapoints.unwrap();
 
             let store = ReadonlyStore::new(datapoints, false).unwrap();
-            let searcher = store.searcher().await;
+            let searcher = store.searcher();
 
             {
                 let expected = float_data_points!(

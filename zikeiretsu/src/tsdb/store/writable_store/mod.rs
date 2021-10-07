@@ -10,9 +10,11 @@ pub use persistence::*;
 pub use sorter::*;
 use std::marker::Send;
 use std::ptr;
-use tokio::sync::{Mutex, MutexGuard};
+pub use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::{mpsc, Mutex};
 
-pub struct WritableStoreBuilder<S: DatapointSorter> {
+pub struct WritableStoreBuilder<S: DatapointSorter + 'static> {
     metrics: Metrics,
     field_types: Vec<FieldType>,
     convert_dirty_to_sorted_on_read: bool,
@@ -38,7 +40,7 @@ impl WritableStoreBuilder<DatapointDefaultSorter> {
     }
 }
 
-impl<S: DatapointSorter + Send> WritableStoreBuilder<S> {
+impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
     pub fn convert_dirty_to_sorted_on_read(
         mut self,
         convert_dirty_to_sorted_on_read: bool,
@@ -70,28 +72,29 @@ impl<S: DatapointSorter + Send> WritableStoreBuilder<S> {
         self
     }
 
-    pub fn build(self) -> WritableStore<S> {
-        WritableStore {
+    pub fn build(self) -> Arc<Mutex<WritableStore<S>>> {
+        let store = WritableStore {
             metrics: self.metrics,
             field_types: self.field_types,
             convert_dirty_to_sorted_on_read: self.convert_dirty_to_sorted_on_read,
-            dirty_datapoints: Mutex::new(vec![]),
-            sorted_datapoints: Mutex::new(vec![]),
+            dirty_datapoints: vec![],
+            sorted_datapoints: vec![],
             sorter: self.sorter,
             persistence: self.persistence,
-        }
+        };
+        Arc::new(Mutex::new(store))
     }
 }
 
-pub struct WritableStore<S: DatapointSorter> {
+pub struct WritableStore<S: DatapointSorter + 'static> {
     metrics: Metrics,
     field_types: Vec<FieldType>,
 
     convert_dirty_to_sorted_on_read: bool,
 
     //TODO(tacogips) Consider LEFT-RIGHT pattern instead of locking for performance if need.
-    dirty_datapoints: Mutex<Vec<DataPoint>>,
-    sorted_datapoints: Mutex<Vec<DataPoint>>,
+    dirty_datapoints: Vec<DataPoint>,
+    sorted_datapoints: Vec<DataPoint>,
     sorter: S,
     persistence: Persistence,
 }
@@ -107,7 +110,7 @@ impl WritableStore<DatapointDefaultSorter> {
 
 impl<S> WritableStore<S>
 where
-    S: DatapointSorter,
+    S: DatapointSorter + 'static,
 {
     pub async fn push(&mut self, data_point: DataPoint) -> Result<()> {
         #[cfg(feature = "validate")]
@@ -122,9 +125,7 @@ where
             return Err(StoreError::DataFieldTypesMismatched(data_point_fields));
         }
 
-        let mut dirty_datapoints = self.dirty_datapoints.lock().await;
-
-        dirty_datapoints.push(data_point);
+        self.dirty_datapoints.push(data_point);
         Ok(())
     }
 
@@ -143,54 +144,50 @@ where
             }
         }
 
-        let mut dirty_datapoints = self.dirty_datapoints.lock().await;
-
         for each_data_point in data_points {
-            dirty_datapoints.push(each_data_point);
+            self.dirty_datapoints.push(each_data_point);
         }
         Ok(())
     }
 
     pub async fn apply_dirties(&mut self) -> Result<()> {
-        let mut dirty_datapoints = self.dirty_datapoints.lock().await;
-        if dirty_datapoints.is_empty() {
+        if self.dirty_datapoints.is_empty() {
             return Ok(());
         }
 
-        let mut sorted_datapoints = self.sorted_datapoints.lock().await;
-
         let mut sorter = self.sorter.clone();
-        dirty_datapoints.sort_by(|l, r| sorter.compare(l, r));
+        self.dirty_datapoints.sort_by(|l, r| sorter.compare(l, r));
 
-        if sorted_datapoints.is_empty() {
-            sorted_datapoints.append(&mut dirty_datapoints);
+        //let mut sorted_datapoints = self.sorted_datapoints.lock().await;
+        if self.sorted_datapoints.is_empty() {
+            self.sorted_datapoints.append(&mut self.dirty_datapoints);
         } else {
-            while let Some(head) = dirty_datapoints.get(0) {
-                let last = sorted_datapoints.last().unwrap();
+            while let Some(head) = self.dirty_datapoints.get(0) {
+                let last = self.sorted_datapoints.last().unwrap();
                 match last.timestamp_nano.cmp(&head.timestamp_nano) {
                     Ordering::Equal | Ordering::Less => {
-                        sorted_datapoints.append(&mut dirty_datapoints);
+                        self.sorted_datapoints.append(&mut self.dirty_datapoints);
                         break;
                     }
                     _ => {
-                        let head = dirty_datapoints.remove(0);
+                        let head = self.dirty_datapoints.remove(0);
                         match binary_search_by(
-                            &sorted_datapoints,
+                            &self.sorted_datapoints,
                             |datapoint| datapoint.timestamp_nano.cmp(&head.timestamp_nano),
                             BinaryRangeSearchType::AtMost,
                         ) {
                             Some(idx) => {
-                                sorted_datapoints.insert(idx, head);
+                                self.sorted_datapoints.insert(idx, head);
                             }
                             None => {
-                                sorted_datapoints.insert(0, head);
+                                self.sorted_datapoints.insert(0, head);
                             }
                         }
                     }
                 };
             }
         }
-        dirty_datapoints.clear();
+        self.dirty_datapoints.clear();
 
         Ok(())
     }
@@ -199,7 +196,7 @@ where
         &mut self,
         datapoint_search_condition: DatapointSearchCondition,
     ) -> Result<()> {
-        let datapoints = self.datapoints_with_lock().await?;
+        let datapoints = self.datapoints().await?;
         let datapoints_searcher = DatapointSearcher::new(&datapoints);
 
         if let Some((_, indices)) = datapoints_searcher
@@ -216,7 +213,7 @@ where
     pub async fn persist(&mut self, condition: PersistCondition) -> Result<Option<()>> {
         if let Persistence::Storage(db_dir, cloud_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
-            let datapoints = self.datapoints_with_lock().await?;
+            let datapoints = self.datapoints().await?;
             let datapoints_searcher = DatapointSearcher::new(&datapoints);
 
             if let Some((_datapoints, indices)) = datapoints_searcher
@@ -243,15 +240,38 @@ where
         }
     }
 
-    pub async fn datapoints_with_lock(&mut self) -> Result<MutexGuard<'_, Vec<DataPoint>>> {
+    pub async fn datapoints(&mut self) -> Result<&mut Vec<DataPoint>> {
         if self.convert_dirty_to_sorted_on_read {
             self.apply_dirties().await?;
         }
-        Ok(self.sorted_datapoints.lock().await)
+        Ok(&mut self.sorted_datapoints)
+    }
+
+    pub fn push_multi_sender(
+        store: Arc<Mutex<WritableStore<S>>>,
+    ) -> mpsc::UnboundedSender<Vec<DataPoint>> {
+        let (datapoints_tx, mut datapoints_rx) = mpsc::unbounded_channel::<Vec<DataPoint>>();
+        task::spawn(async move {
+            while let Some(datapoint) = datapoints_rx.recv().await {
+                let mut locked_store = store.lock().await;
+                if let Err(e) = locked_store.push_multi(datapoint).await {
+                    log::error!("error on push multiple datapoints :{:?}", e);
+                }
+            }
+        });
+        datapoints_tx
+    }
+
+    pub fn start_repetedly_persist(
+        store: Arc<Mutex<WritableStore<S>>>,
+        persist_interval_duration: Duration,
+        clear_after_persisted: bool,
+    ) -> PeriodicallyPeristenceShutdown {
+        start_periodically_persistence(store, persist_interval_duration, clear_after_persisted)
     }
 }
 
-pub fn remove_range(mut datapoints: MutexGuard<'_, Vec<DataPoint>>, range: (usize, usize)) {
+pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
     let len = datapoints.len();
     let (start, end) = range;
     assert!(

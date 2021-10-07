@@ -6,6 +6,7 @@ use log::LevelFilter;
 use serde::Deserialize;
 use std::env;
 use tempdir::TempDir;
+use uuid::Uuid;
 use zikeiretsu::*;
 
 const PRICES_DATA: &[u8] = include_bytes!("resources/prices.json");
@@ -57,7 +58,7 @@ impl PriceRec {
     }
 }
 
-async fn persist_to_cloud() {
+async fn persist_to_cloud(cloud_dir: &str) {
     let prices: Vec<Price> = serde_json::from_slice(PRICES_DATA).unwrap();
     let prices: Vec<DataPoint> = prices
         .into_iter()
@@ -68,7 +69,7 @@ async fn persist_to_cloud() {
     let temp_db_dir = TempDir::new("zikeretsu_local_example_write").unwrap();
 
     let bucket = env::var("BUCKET").unwrap();
-    let cloud_storage = CloudStorage::new_gcp(&bucket, Some("zdb"));
+    let cloud_storage = CloudStorage::new_gcp(&bucket, Some(cloud_dir));
     let cloud_storage_setting = CloudStorageSetting::builder(cloud_storage).build();
 
     let persistence = Persistence::Storage(
@@ -76,7 +77,7 @@ async fn persist_to_cloud() {
         Some(cloud_storage_setting),
     );
 
-    let mut wr = Zikeiretsu::writable_store_builder("price", fields.clone())
+    let wr = Zikeiretsu::writable_store_builder("price", fields.clone())
         .persistence(persistence)
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {
             if lhs.timestamp_nano == rhs.timestamp_nano {
@@ -100,19 +101,20 @@ async fn persist_to_cloud() {
             }
         })
         .build();
-    wr.push_multi(prices).await.unwrap();
+
+    wr.lock().await.push_multi(prices).await.unwrap();
 
     let condition = PersistCondition {
         datapoint_search_condition: DatapointSearchCondition::all(),
         clear_after_persisted: true,
     };
-    wr.persist(condition).await.unwrap();
+    wr.lock().await.persist(condition).await.unwrap();
 }
 
-async fn load_from_cloud() {
+async fn load_from_cloud(cloud_dir: &str) {
     let temp_db_dir = TempDir::new("zikeretsu_local_example_readonly").unwrap();
     let bucket = env::var("BUCKET").unwrap();
-    let cloud_storage = CloudStorage::new_gcp(&bucket, Some("zdb"));
+    let cloud_storage = CloudStorage::new_gcp(&bucket, Some(cloud_dir));
     let cloud_storage_setting = CloudStorageSetting::builder(cloud_storage).build();
     let search_condition = DatapointSearchCondition::all();
     let search_setting = SearchSettings::builder_with_no_cache()
@@ -130,7 +132,7 @@ async fn load_from_cloud() {
     let result = searcher.search(&search_condition).await;
     assert!(result.is_some());
     let result = result.unwrap();
-    assert_eq!(result.len(), 774);
+    assert_eq!(result.len(), 86);
 }
 
 #[tokio::main]
@@ -142,6 +144,8 @@ async fn main() {
     logger_builder.filter_level(LevelFilter::Debug);
     logger_builder.init();
 
-    persist_to_cloud().await;
-    load_from_cloud().await;
+    let my_uuid = Uuid::new_v4();
+    let cloud_dir = format!("zdb_{}", my_uuid.to_string());
+    persist_to_cloud(&cloud_dir).await;
+    load_from_cloud(&cloud_dir).await;
 }

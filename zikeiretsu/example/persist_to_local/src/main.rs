@@ -64,7 +64,7 @@ async fn main() {
     let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
     let persistence = Persistence::Storage(temp_db_dir.path().to_path_buf(), None);
 
-    let mut wr = Zikeiretsu::writable_store_builder("price", fields.clone())
+    let wr = Zikeiretsu::writable_store_builder("price", fields.clone())
         .persistence(persistence)
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {
             if lhs.timestamp_nano == rhs.timestamp_nano {
@@ -88,9 +88,10 @@ async fn main() {
             }
         })
         .build();
-    wr.push_multi(prices).await.unwrap();
+    wr.lock().await.push_multi(prices).await.unwrap();
     let expected = {
-        let datapoints = wr.datapoints_with_lock().await.unwrap();
+        let mut wr_lock = wr.lock().await;
+        let datapoints = wr_lock.datapoints().await.unwrap();
         let searcher = DatapointSearcher::new(&datapoints);
 
         let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
@@ -107,12 +108,14 @@ async fn main() {
     {
         let cond = DatapointSearchCondition::all();
 
-        wr.persist(PersistCondition {
-            datapoint_search_condition: cond,
-            clear_after_persisted: false,
-        })
-        .await
-        .unwrap()
+        wr.lock()
+            .await
+            .persist(PersistCondition {
+                datapoint_search_condition: cond,
+                clear_after_persisted: false,
+            })
+            .await
+            .unwrap()
     };
 
     // readonly store store

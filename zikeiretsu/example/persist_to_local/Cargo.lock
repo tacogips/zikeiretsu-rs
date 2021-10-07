@@ -1591,7 +1591,7 @@ dependencies = [
 
 [[package]]
 name = "zikeiretsu"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "base-128-variants",

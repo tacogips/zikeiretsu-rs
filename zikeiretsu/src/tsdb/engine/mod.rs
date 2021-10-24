@@ -30,6 +30,10 @@ impl SearchSettings {
         Self::builder_with_cache_setting(true, true)
     }
 
+    pub fn builder_with_no_cache() -> SearchSettingsBuilder {
+        Self::builder_with_cache_setting(false, false)
+    }
+
     pub fn builder_with_cache_setting(
         read_cache: bool,
         write_cache: bool,
@@ -42,10 +46,6 @@ impl SearchSettings {
             cache_setting,
             cloud_setting: None,
         }
-    }
-
-    pub fn builder_with_no_cache() -> SearchSettingsBuilder {
-        Self::builder_with_cache_setting(false, false)
     }
 }
 
@@ -79,6 +79,31 @@ impl SearchSettingsBuilder {
 pub struct Zikeiretsu;
 
 impl Zikeiretsu {
+    pub async fn list_metrics<P: AsRef<Path>>(
+        db_dir: Option<P>,
+        setting: &SearchSettings,
+    ) -> Result<Vec<Metrics>> {
+        let metrics = api::read::fetch_all_metrics(db_dir, setting.cloud_setting.as_ref()).await?;
+
+        Ok(metrics)
+    }
+
+    pub async fn block_list_data<P: AsRef<Path>>(
+        db_dir: P,
+        metrics: &Metrics,
+        setting: &SearchSettings,
+    ) -> Result<block_list::BlockList> {
+        let block_list = api::read::read_block_list(
+            db_dir.as_ref(),
+            metrics,
+            &setting.cache_setting,
+            setting.cloud_setting.as_ref(),
+        )
+        .await?;
+
+        Ok(block_list)
+    }
+
     pub fn writable_store_builder<M: Into<Metrics>>(
         metics: M,
         field_types: Vec<FieldType>,

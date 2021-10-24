@@ -2,10 +2,12 @@ use super::field::*;
 use super::timestamp_nano::*;
 use super::timestamp_sec::*;
 use std::cmp::Ordering;
+use std::convert::TryFrom;
 
 use crate::tsdb::search::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataPoint {
     pub timestamp_nano: TimestampNano,
     pub field_values: Vec<FieldValue>,
@@ -121,5 +123,25 @@ impl DatapointSearchCondition {
     pub fn with_until(mut self, until: TimestampNano) -> Self {
         self.inner_until = Some(until);
         self
+    }
+
+    pub fn from_str_opts(
+        since: Option<&String>,
+        until: Option<&String>,
+    ) -> Result<Self, chrono::ParseError> {
+        let inner_since = match since {
+            Some(since) => Some(TimestampNano::try_from(since.as_ref())?),
+            None => None,
+        };
+
+        let inner_until = match until {
+            Some(until) => Some(TimestampNano::try_from(until.as_ref())?),
+            None => None,
+        };
+
+        Ok(DatapointSearchCondition {
+            inner_since,
+            inner_until,
+        })
     }
 }

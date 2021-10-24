@@ -1,9 +1,19 @@
 use super::{file_path::*, CloudStorageError, Result};
+use crate::tsdb::storage::block_list;
+use crate::Metrics;
 use file_dougu;
+use lazy_static::lazy_static;
 use memmap2::MmapOptions;
+use regex::Regex;
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
+
+lazy_static! {
+    static ref BLOCK_LIST_FILE_PATTERN: Regex =
+        Regex::new(format!(r"gs://.*/{}", block_list::BLOCK_LIST_FILE_NAME_PATTERN).as_str())
+            .unwrap();
+}
 
 fn create_parent_dir_if_not_exists(dest: &Path) -> Result<()> {
     let parent_dir = dest
@@ -78,6 +88,25 @@ pub async fn download_block_list_file<'a>(
     }
 }
 
+pub fn extract_metrics_from_url(dest_url: &str) -> Result<Metrics> {
+    let captured = BLOCK_LIST_FILE_PATTERN.captures(dest_url);
+    if let Some(captured) = captured {
+        if let Some(matched) = captured.get(1) {
+            return Ok(Metrics::new(matched.as_str()));
+        }
+    }
+
+    Err(CloudStorageError::InvalidBlockListFileUrl(
+        dest_url.to_string(),
+    ))
+}
+
+pub async fn list_block_list_files<'a>(dest_url: String) -> Result<Vec<String>> {
+    let list = file_dougu::list_files(&dest_url, None).await?;
+
+    Ok(list)
+}
+
 pub async fn upload_block_list_file<'a>(
     src: &Path,
     dest: &CloudBlockListFilePath<'a>,
@@ -117,4 +146,20 @@ pub async fn remove_lock_file<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Res
     let gcs_file = file_dougu::gcs::GcsFile::new(lock_file_path.as_url())?;
     gcs_file.delete_with_retry(None).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use crate::Metrics;
+
+    #[test]
+    pub fn extract_metrics_from_url_test() {
+        let result = extract_metrics_from_url("gs://some_bucket/aaa/blocklist/some_metrics.list");
+        assert!(result.is_ok());
+        let result = result.unwrap();
+
+        assert_eq!(Metrics::new("some_metrics"), result);
+    }
 }

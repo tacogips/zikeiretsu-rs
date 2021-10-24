@@ -18,8 +18,8 @@ pub enum StoreError {
     #[error("unsorted datapoints. {0}")]
     UnsortedDatapoints(String),
 
-    #[error("data field types mismatched. {0}")]
-    DataFieldTypesMismatched(String),
+    #[error("data field types mismatched. expected fields {0}, acutual:{1}")]
+    DataFieldTypesMismatched(String, String),
 
     #[error("search error. {0}")]
     SearchError(String),

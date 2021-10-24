@@ -115,6 +115,13 @@ where
     pub async fn push(&mut self, data_point: DataPoint) -> Result<()> {
         #[cfg(feature = "validate")]
         if !same_field_types(&self.field_types, &data_point.field_values) {
+            let expectged = self
+                .field_types
+                .iter()
+                .map(|e| e.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+
             let data_point_fields = data_point
                 .field_values
                 .iter()
@@ -122,7 +129,10 @@ where
                 .collect::<Vec<String>>()
                 .join(",");
 
-            return Err(StoreError::DataFieldTypesMismatched(data_point_fields));
+            return Err(StoreError::DataFieldTypesMismatched(
+                expectged,
+                data_point_fields,
+            ));
         }
 
         self.dirty_datapoints.push(data_point);
@@ -133,6 +143,13 @@ where
         #[cfg(feature = "validate")]
         for data_point in data_points.iter() {
             if !same_field_types(&self.field_types, &data_point.field_values) {
+                let expectged = self
+                    .field_types
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<String>>()
+                    .join(",");
+
                 let data_point_fields = data_point
                     .field_values
                     .iter()
@@ -140,7 +157,10 @@ where
                     .collect::<Vec<String>>()
                     .join(",");
 
-                return Err(StoreError::DataFieldTypesMismatched(data_point_fields));
+                return Err(StoreError::DataFieldTypesMismatched(
+                    expectged,
+                    data_point_fields,
+                ));
             }
         }
 

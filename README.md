@@ -2,7 +2,7 @@
 A toy time series DB
 
 ## Features
-- Nanoseconds accuracy timestamp
+- Nanoseconds accuracy timestamps
 - Multiple values in a datapoint
 - Sync with Cloud storage
 
@@ -132,52 +132,58 @@ The encoded timestamps deltas following the head timemstamp in seconds .
 these values are compressed with [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h)
 The delta value that is greater than (1 << 60) - 1 can't be stored (error will occured when encoding)
 
-#### example
-Say, there are 3 timestamps as below.
+#### Example
+Say, there are 4 timestamps as below.
 
-##### timestamps
--  1627467076985012256 (head timestamp)
--  1627467250785267037
--  1627468063600895795
--  1627468158257010309
+##### Timestamps
+-  1627467076_985012256
+-  1627467250_785267037
+-  1627468063_600895795
+-  1627468158_257010309
 
-##### timestamps (round by seconds)
--  162746707 (head timestamp)
--  162746725
--  162746806
--  162746815
+##### Timestamps (floor by seconds)
+-  1627467076[985012000] ->  1627467076
+-  1627467257[85267000]  ->  1627467257
+-  1627468063[600895000] ->  1627468063
+-  1627468158[257010000] ->  1627468158
 
-##### deltas
--  18
--  81
--  9
+##### Deltas
+- 1627467257 - 1627467076 -> 181
+- 1627468063 - 1627467257 -> 806
+- 1627468158 - 1627468063 -> 95
 
 ### (6) common trailing zero num of timestamp nano (8 bits)
 
-common trailing zero num that all values in `(7) timestamp (< sec as nano sec )` have.
+common trailing zero num that all values in `(7) timestamp (< sec as nano sec)` have.
 
-#### example
-##### nano seconds that put to (7) fields
+#### Example
+##### Nano seconds that put to (7) fields
 
--  6985012000
--  785267000
--  3600895000
--  8257010000
-
+-  [1627467076]985012000  -> 985012000
+-  [1627467250]785267000  -> 785267000
+-  [1627468063]600895000  -> 600895000
+-  [1627468158]257010000  -> 257010000
 
 ##### to binary
 
-- 110100000010101101101001100100000
+- 111010101101100001011100100000
 - 101110110011100011100100111000
-- 11010110101000010100110000011000
-- 111101100001001111111100101010000
+- 100011110100001110111000011000
+- 1111010100011010100101010000
+
+
+##### pick common trailing zeros
+
+- 111010101101100001011100100[000]
+- 101110110011100011100100111[000]
+- 100011110100001110111000011[000]
+- 1111010100011010100101010[000]
 
 every value has at least 3 trailing-zeros,so `3` will be stored .
 
-
-#### the field size
+#### About field size
 the max value of nano seconds that put to `(7)` fields is 999999999,
-`111011100110101100100111111111` in binary.so `29` is the max value that will be this field. 5 bits in the 8 bits is sufficient but we're remaining heading 3 bits for future extension.
+`111011100110101100100111111111` in binary.so `29` is the max value that will be this field. 5 bits in the 8 bits is sufficient but we're remaining heading 3 bits for extension in the future.
 
 ### (7) timestamp (sub nano sec since latest second)
 
@@ -187,17 +193,17 @@ the values will be encoded by simple8b-rle
 #### example
 
 ##### timestamps
--  1627467076_985012000
--  1627467250_785267000
--  1627468063_600895000
--  1627468158_257010000
+- 1627467076_985012000
+- 1627467250_785267000
+- 1627468063_600895000
+- 1627468158_257010000
 
 ##### to nano seconds
 
--  985012000  (remove 1627467076 at the head)
--  785267000  (remove 1627467250 at the head)
--  600895000  (remove 1627468063 at the head)
--  257010000  (remove 1627468158 at the head)
+- [1627467076]985012000  -> 985012000
+- [1627467250]785267000  -> 785267000
+- [1627468063]600895000  -> 600895000
+- [1627468158]257010000  -> 257010000
 
 ##### to binary
 

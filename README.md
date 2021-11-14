@@ -4,7 +4,7 @@ A  toy time seriese DB
 ## Motivation
 TODO wrtie
 
-##  Data files structure
+## Structure of Files
 
 ```
 

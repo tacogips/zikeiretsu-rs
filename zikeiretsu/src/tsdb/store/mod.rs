@@ -18,8 +18,8 @@ pub enum StoreError {
     #[error("unsorted datapoints. {0}")]
     UnsortedDatapoints(String),
 
-    #[error("data field types mismatched. {0}")]
-    DataFieldTypesMismatched(String),
+    #[error("data field types mismatched. expected fields {0}, acutual:{1}")]
+    DataFieldTypesMismatched(String, String),
 
     #[error("search error. {0}")]
     SearchError(String),
@@ -45,7 +45,6 @@ mod test {
     use crate::tsdb::*;
     use std::path::PathBuf;
     use tempdir::TempDir;
-    use tokio::sync::Mutex;
 
     macro_rules! float_data_points {
         ($({$timestamp:expr,$values:expr}),*) => {
@@ -68,14 +67,15 @@ mod test {
             {1629745451_715064000, vec![200f64,36f64]},
             {1629745451_715063000, vec![200f64,36f64]}
         );
-        let mut store = WritableStoreBuilder::default(
+        let store = WritableStoreBuilder::default(
             Metrics::new("default"),
             vec![FieldType::Float64, FieldType::Float64],
         )
         .build();
 
         for each in datapoints.into_iter() {
-            let result = store.push(each).await;
+            let mut s = store.lock().await;
+            let result = s.push(each).await;
             assert!(result.is_ok())
         }
 
@@ -86,7 +86,8 @@ mod test {
         );
         ////TODO(tacogips) remove this
         //store.apply_dirties().await.unwrap();
-        let data_points = store.datapoints().await;
+        let mut s = store.lock().await;
+        let data_points = s.datapoints().await;
 
         assert!(data_points.is_ok());
         let data_points = data_points.unwrap();
@@ -102,14 +103,15 @@ mod test {
             {1629745451_715063000, vec![200f64,36f64]},
             {1629745451_715066000, vec![300f64,36f64]}
         );
-        let mut store = WritableStoreBuilder::default(
+        let store = WritableStoreBuilder::default(
             Metrics::new("default"),
             vec![FieldType::Float64, FieldType::Float64],
         )
         .build();
 
         for each in datapoints.into_iter() {
-            let result = store.push(each).await;
+            let mut s = store.lock().await;
+            let result = s.push(each).await;
             assert!(result.is_ok())
         }
 
@@ -125,7 +127,9 @@ mod test {
         //store.apply_dirties().await.unwrap();
         {
             //getting datapoint first
-            let data_points = store.datapoints().await;
+
+            let mut s = store.lock().await;
+            let data_points = s.datapoints().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -134,15 +138,20 @@ mod test {
 
         let condition = DatapointSearchCondition::since(TimestampNano::new(1629745451_715063000))
             .with_until(TimestampNano::new(1629745451_715065000));
-        let purge_result = store.purge(condition).await;
-        assert!(purge_result.is_ok());
+
+        {
+            let mut s = store.lock().await;
+            let purge_result = s.purge(condition).await;
+            assert!(purge_result.is_ok());
+        }
 
         {
             let expected = float_data_points!(
                 {1629745451_715062000, vec![100f64,12f64]},
                 {1629745451_715066000, vec![300f64,36f64]}
             );
-            let data_points = store.datapoints().await;
+            let mut s = store.lock().await;
+            let data_points = s.datapoints().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -218,7 +227,7 @@ mod test {
         let metrics: Metrics = "test_metrics".into();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
-        let mut store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types)
             .persistence(persistence)
             .build();
 
@@ -231,7 +240,10 @@ mod test {
                 {1629745451_715064000, vec![200f64,37f64]}
             );
 
-            let result = store.push_multi(input_datapoints.clone()).await;
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
             assert!(result.is_ok());
 
             let expected_datapoints = float_data_points!(
@@ -242,7 +254,8 @@ mod test {
                 {1629745451_715066000, vec![300f64,36f64]}
             );
 
-            let stored_datapoints = store.datapoints().await.unwrap();
+            let mut s = store.lock().await;
+            let stored_datapoints = s.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -253,7 +266,10 @@ mod test {
                 {1629745451_715067000, vec![700f64,100f64]}
             );
 
-            let result = store.push_multi(input_datapoints.clone()).await;
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
             assert!(result.is_ok());
 
             let expected_datapoints = float_data_points!(
@@ -266,7 +282,9 @@ mod test {
                 {1629745451_715067000, vec![700f64,100f64]}
             );
 
-            let stored_datapoints = store.datapoints().await.unwrap();
+            let mut s = store.lock().await;
+            let stored_datapoints = s.datapoints().await.unwrap();
+
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -280,7 +298,10 @@ mod test {
                 clear_after_persisted: true,
             };
 
-            let result = store.persist(condition).await;
+            let result = {
+                let mut s = store.lock().await;
+                s.persist(condition).await
+            };
 
             assert!(result.is_ok());
         }
@@ -291,7 +312,8 @@ mod test {
                 {1629745451_715067000, vec![700f64,100f64]}
             );
 
-            let stored_datapoints = store.datapoints().await.unwrap();
+            let mut s = store.lock().await;
+            let stored_datapoints = s.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -361,7 +383,7 @@ mod test {
         let metrics: Metrics = "test_metrics".into();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
-        let mut store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types)
             .persistence(persistence)
             .build();
 
@@ -376,7 +398,10 @@ mod test {
                 {1639745451_715062000, vec![1200f64,37f64]}
             );
 
-            let result = store.push_multi(input_datapoints.clone()).await;
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
             assert!(result.is_ok());
 
             let expected_datapoints = float_data_points!(
@@ -389,7 +414,10 @@ mod test {
                 {1639745451_715062000, vec![1200f64,37f64]}
             );
 
-            let stored_datapoints = store.datapoints().await.unwrap();
+            let stored_datapoints = {
+                let mut s = store.lock().await;
+                s.datapoints().await.unwrap().clone()
+            };
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -400,16 +428,20 @@ mod test {
                 clear_after_persisted: true,
             };
 
-            let result = store.persist(condition).await;
+            let result = {
+                let mut s = store.lock().await;
+                s.persist(condition).await
+            };
 
             assert!(result.is_ok());
         }
 
         {
-            // retaining datapoints
+            // retaining datapoints.clone()
             let expected_datapoints = float_data_points!();
 
-            let stored_datapoints = store.datapoints().await.unwrap();
+            let mut s = store.lock().await;
+            let stored_datapoints = s.datapoints().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }

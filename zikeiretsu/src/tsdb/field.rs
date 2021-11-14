@@ -1,4 +1,5 @@
 use super::DataPoint;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use strum::AsRefStr;
 use thiserror::Error;
@@ -23,7 +24,7 @@ const MAX_FIELD_SIZE: usize = 255;
 
 type Result<T> = std::result::Result<T, FieldError>;
 
-#[derive(AsRefStr, Debug, PartialEq, Clone)]
+#[derive(AsRefStr, Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub enum FieldValue {
     Float64(f64),
     Bool(bool),
@@ -60,7 +61,10 @@ impl FieldValue {
 
 impl fmt::Display for FieldValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            FieldValue::Float64(v) => write!(f, "{:?}", v),
+            FieldValue::Bool(v) => write!(f, "{:?}", v),
+        }
     }
 }
 

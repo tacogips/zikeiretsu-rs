@@ -6,21 +6,6 @@ use std::env;
 use std::str::FromStr;
 use thiserror::Error;
 
-macro_rules! env_value {
-    ($env_key:expr) => {
-        env::var($env_key).map_err(|e| anyhow!("env {} not found. Err:{:?}", $env_key, e))
-    };
-}
-
-macro_rules! env_value_i64 {
-    ($env_key:expr) => {
-        env::var($env_key).and_then(|v| {
-            v.parse::<u64>()
-                .map_err(|_| ArgsError::InvalidEnvVar($env_key, "u64", v))
-        })
-    };
-}
-
 macro_rules! set_str_env_var_if_empty {
     ($receiver:expr,$env_key:expr) => {
         if $receiver.is_none() {
@@ -30,22 +15,6 @@ macro_rules! set_str_env_var_if_empty {
         }
     };
 }
-
-////macro_rules! set_bool_env_var_if_empty {
-////    ($receiver:expr,$env_key:expr) => {
-////        if $receiver.is_none() {
-////            if let Ok(v) = env::var($env_key) {
-////                match v.as_ref() {
-////                    "1" | "true" | "TRUE" => {
-////                        $receiver = true;
-////                        Ok(())
-////                    }
-////                    _ => ArgsError::InvalidEnvVar($env_key, "bool_value", v),
-////                }
-////            }
-////        }
-////    };
-////}
 
 #[derive(Error, Debug)]
 pub enum ArgsError {

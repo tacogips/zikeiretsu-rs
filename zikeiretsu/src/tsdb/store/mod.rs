@@ -383,7 +383,7 @@ mod test {
         let metrics: Metrics = "test_metrics".into();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
-        let mut store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types)
             .persistence(persistence)
             .build();
 

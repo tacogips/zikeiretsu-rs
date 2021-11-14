@@ -1,4 +1,3 @@
-mod cloud;
 pub(crate) mod output;
 use ::zikeiretsu::*;
 

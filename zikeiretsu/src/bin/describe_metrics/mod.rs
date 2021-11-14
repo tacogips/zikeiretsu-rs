@@ -1,4 +1,4 @@
-use super::{operation::*, Result, ZikeiretsuBinError};
+use super::{operation::*, Result};
 
 use ::zikeiretsu::*;
 use serde::Serialize;

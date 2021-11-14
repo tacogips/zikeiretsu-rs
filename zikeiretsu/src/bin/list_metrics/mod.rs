@@ -1,6 +1,6 @@
 use super::{
     operation::{output, ListMetricsCondition},
-    Result, ZikeiretsuBinError,
+    Result,
 };
 use serde_json;
 

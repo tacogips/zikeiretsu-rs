@@ -1,6 +1,6 @@
 [package]
 name = "zikeiretsu"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,14 +19,13 @@ bits-ope = { path = "../bits-ope" }
 xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
 base-128-variants = {path ="../base-128-variants" }
-file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.2" }
+file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.8" }
 
 chrono = "0.4"
 lazy_static = "1"
-pico-args = "0.4"
 strum = { version = "0.21", features = ["derive"] }
 thiserror = "1"
-tokio = { version = "1", features= ["rt","macros"] }
+tokio = { version = "1", features= ["rt-multi-thread","macros"] }
 async-trait = "0.1"
 memmap2 = "0.3"
 itertools = "0.10"
@@ -37,6 +36,9 @@ futures = "0.3"
 serde = "1"
 serde_json = "1"
 owning_ref = "0.4"
+argh = "0.1"
+regex = "1"
+dotenv = "0.15"
 
 [dev-dependencies]
 tempfile = "3.2"

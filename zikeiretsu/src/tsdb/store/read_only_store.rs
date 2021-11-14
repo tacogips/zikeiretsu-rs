@@ -35,6 +35,10 @@ impl ReadonlyStore {
         Ok(Self { datapoints })
     }
 
+    pub fn len(&self) -> usize {
+        self.datapoints.len()
+    }
+
     pub fn all_datapoints(&self) -> &[DataPoint] {
         &self.datapoints
     }

@@ -30,6 +30,9 @@ pub enum CloudStorageError {
 
     #[error("cloud open file error. {0}")]
     IoError(#[from] io::Error),
+
+    #[error("invalid block list file url. {0}")]
+    InvalidBlockListFileUrl(String),
 }
 
 #[derive(Debug, Clone)]
@@ -52,12 +55,12 @@ impl Display for SubDir {
 
 #[derive(Debug, Clone)]
 pub enum CloudStorage {
-    Gcp(Bucket, Option<SubDir>),
+    Gcp(Bucket, SubDir),
 }
 
 impl CloudStorage {
-    pub fn new_gcp(bucket: &str, sub_dir: Option<&str>) -> Self {
-        let sub_dir = sub_dir.map(|sub_dir| {
+    pub fn new_gcp(bucket: &str, sub_dir: &str) -> Self {
+        let sub_dir = {
             let sub_dir: &str = if sub_dir.ends_with("/") {
                 &sub_dir[..sub_dir.len() - 1]
             } else {
@@ -70,7 +73,7 @@ impl CloudStorage {
                 sub_dir
             };
             SubDir(sub_dir.to_string())
-        });
+        };
 
         Self::Gcp(Bucket(bucket.to_string()), sub_dir)
     }
@@ -78,19 +81,21 @@ impl CloudStorage {
     pub fn as_url(&self) -> String {
         match self {
             Self::Gcp(Bucket(bucket_str), sub_dir) => {
-                let gcs_url = format!("gs://{}", bucket_str);
-
-                let gcs_url = match sub_dir {
-                    Some(sub_dir) => {
-                        let sub_dir_str = &sub_dir.0;
-
-                        format!("{}/{}", gcs_url, sub_dir_str)
-                    }
-                    None => gcs_url,
-                };
-
+                let gcs_url = format!("gs://{}/{}/", bucket_str, sub_dir);
                 gcs_url
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn cloud_block_list_file_path() {
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+
+        assert_eq!("gs://some_bucket/some_dir/".to_string(), storage.as_url());
     }
 }

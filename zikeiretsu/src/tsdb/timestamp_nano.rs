@@ -2,9 +2,9 @@ use super::timestamp_sec::TimestampSec;
 
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Deref, Sub};
-
 pub const SEC_IN_NANOSEC: u64 = 1_000_000_000;
 #[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TimestampNano(pub u64);
@@ -49,6 +49,31 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for TimestampNano {
     fn from(dt: DateTime<Tz>) -> Self {
         let v = dt.timestamp() as u64 * SEC_IN_NANOSEC + dt.timestamp_subsec_nanos() as u64;
         TimestampNano(v)
+    }
+}
+
+impl TryFrom<&str> for TimestampNano {
+    type Error = chrono::ParseError;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let num_val = s.parse::<u64>();
+
+        let dt = match num_val {
+            Ok(num_val) => {
+                // unixtime: 10_000_000_000 => "Sat Nov 20 2286 17:46:40 GMT+0000"
+                if num_val < 10_000_000_000 {
+                    let ndt = NaiveDateTime::from_timestamp(num_val as i64, 0);
+                    DateTime::from_utc(ndt, Utc)
+                } else {
+                    let sec = (num_val / SEC_IN_NANOSEC) as i64;
+                    let nano_sec_sub = (num_val % SEC_IN_NANOSEC) as u32;
+
+                    let ndt = NaiveDateTime::from_timestamp(sec, nano_sec_sub);
+                    DateTime::from_utc(ndt, Utc)
+                }
+            }
+            Err(_) => DateTime::parse_from_rfc3339(s)?.with_timezone(&Utc),
+        };
+        Ok(TimestampNano::from(dt))
     }
 }
 

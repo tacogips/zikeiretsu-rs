@@ -4,6 +4,7 @@ use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::block_list;
 use std::path::Path;
 
+#[derive(Debug)]
 pub struct CloudBlockFilePath<'a> {
     metrics: &'a Metrics, //TODO(tacogips) tobe reference
     block_timestamp: &'a block_list::BlockTimestamp,
@@ -34,7 +35,7 @@ impl<'a> CloudBlockFilePath<'a> {
             self.block_timestamp.until_sec,
         );
 
-        format!("{}/{}", self.cloud_storage.as_url(), block_path)
+        format!("{}{}", self.cloud_storage.as_url(), block_path)
     }
 
     pub async fn upload(&self, src: &Path) -> Result<()> {
@@ -50,6 +51,7 @@ impl<'a> CloudBlockFilePath<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct CloudBlockListFilePath<'a> {
     metrics: &'a Metrics, //TODO(tacogips) tobe reference
     cloud_storage: &'a CloudStorage,
@@ -63,9 +65,24 @@ impl<'a> CloudBlockListFilePath<'a> {
         }
     }
 
+    pub(crate) fn extract_metrics_from_url(
+        url: &str,
+        cloud_storage: &CloudStorage,
+    ) -> Result<Metrics> {
+        match cloud_storage {
+            CloudStorage::Gcp(_, _) => gcp::extract_metrics_from_url(url),
+        }
+    }
+
+    pub(crate) async fn list_files_urls(cloud_storage: &CloudStorage) -> Result<Vec<String>> {
+        match cloud_storage {
+            CloudStorage::Gcp(_, _) => gcp::list_block_list_files(cloud_storage.as_url()).await,
+        }
+    }
+
     pub fn as_url(&self) -> String {
         let path = format!("{}.list", self.metrics);
-        format!("{}/{}", self.cloud_storage.as_url(), path)
+        format!("{}blocklist/{}", self.cloud_storage.as_url(), path)
     }
 
     pub async fn upload(&self, src: &Path) -> Result<()> {
@@ -96,7 +113,7 @@ impl<'a> CloudLockfilePath<'a> {
 
     pub fn as_url(&self) -> String {
         let path = format!("{}.lock", self.metrics);
-        format!("{}/{}", self.cloud_storage.as_url(), path)
+        format!("{}{}", self.cloud_storage.as_url(), path)
     }
 
     pub async fn exists(&self) -> Result<bool> {
@@ -115,5 +132,55 @@ impl<'a> CloudLockfilePath<'a> {
         match self.cloud_storage {
             CloudStorage::Gcp(_, _) => gcp::remove_lock_file(&self).await,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::tsdb::storage::block_list::*;
+    use crate::tsdb::*;
+
+    #[test]
+    pub fn cloud_block_list_file_path() {
+        let metrics = Metrics::new("some_metrics");
+
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let file_path = CloudBlockListFilePath::new(&metrics, &storage);
+
+        assert_eq!(
+            "gs://some_bucket/some_dir/blocklist/some_metrics.list".to_string(),
+            file_path.as_url()
+        );
+    }
+
+    #[test]
+    pub fn cloud_block_file_path() {
+        let metrics = Metrics::new("some_metrics");
+
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+
+        let ts = BlockTimestamp::new(TimestampSec::new(1629745452), TimestampSec::new(1629745453));
+
+        let file_path = CloudBlockFilePath::new(&metrics, &ts, &storage);
+
+        assert_eq!(
+            "gs://some_bucket/some_dir/block/some_metrics/16297/1629745452_1629745453/block"
+                .to_string(),
+            file_path.as_url()
+        );
+    }
+
+    #[test]
+    pub fn cloud_lock_file_path() {
+        let metrics = Metrics::new("some_metrics");
+
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let file_path = CloudLockfilePath::new(&metrics, &storage);
+
+        assert_eq!(
+            "gs://some_bucket/some_dir/some_metrics.lock".to_string(),
+            file_path.as_url()
+        );
     }
 }

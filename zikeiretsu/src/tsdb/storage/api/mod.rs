@@ -2,11 +2,11 @@ pub mod cloud_setting;
 pub mod read;
 pub mod write;
 
-use crate::tsdb::cloudstorage::CloudStorageError;
+use crate::tsdb::cloudstorage::*;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::{block, block_list, persisted_error};
 use crate::tsdb::timestamp_nano::TimestampNano;
-pub use cloud_setting::CloudStorageSetting;
+pub use cloud_setting::*;
 
 use std::path::{Path, PathBuf};
 use thiserror::Error;
@@ -81,6 +81,12 @@ pub enum StorageApiError {
 
     #[error("error on persisted error. {0}")]
     PersistedError(#[from] persisted_error::PersistedErrorIOError),
+
+    #[error("invalid block list file name. {0}")]
+    InvalidBlockListFileName(String),
+
+    #[error("Local DB path required. {0}")]
+    DbDirPathRequired(String),
 }
 
 pub(crate) fn lockfile_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
@@ -89,6 +95,10 @@ pub(crate) fn lockfile_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
 
 pub(crate) fn block_list_file_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
     db_dir.join(format!("block_list/{}.list", metrics))
+}
+
+pub(crate) fn block_list_dir_path(db_dir: &Path) -> PathBuf {
+    db_dir.join("block_list")
 }
 
 pub(crate) fn persisted_error_file_path(db_dir: &Path, timestamp_nano: &TimestampNano) -> PathBuf {

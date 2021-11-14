@@ -24,6 +24,8 @@ use std::path::Path;
 use thiserror::Error;
 use xor_encoding;
 
+pub const BLOCK_LIST_FILE_NAME_PATTERN: &str = r"([\w-]+?).list";
+
 type Result<T> = std::result::Result<T, BlockListError>;
 
 #[derive(Error, Debug)]
@@ -101,8 +103,8 @@ impl From<Vec<TimestampSec>> for TimestampSecDeltas {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub(crate) struct BlockList {
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct BlockList {
     pub updated_timestamp_sec: TimestampNano,
     pub block_timestamps: Vec<BlockTimestamp>,
 }
@@ -246,7 +248,7 @@ impl BlockList {
 }
 
 #[derive(Copy, Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub(crate) struct BlockTimestamp {
+pub struct BlockTimestamp {
     pub since_sec: TimestampSec,
     pub until_sec: TimestampSec,
 }

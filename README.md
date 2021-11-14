@@ -1,8 +1,10 @@
 ## zikeiretsu-rs
-A  toy time seriese DB
+A toy time series DB
 
-## Motivation
-TODO wrtie
+## Features
+- Nanoseconds accuracy timestamp
+- Multiple values in a datapoint
+- Sync with Cloud storage
 
 ## Structure of Files
 
@@ -52,17 +54,15 @@ TODO wrtie
 ### File name
 `{metrics_1}.list`
 
-timestamp of the block files. Its file name identical with the metrics ID (thatg contains only [a-zA-Z_-]).
-This file will be compressed with `ZStandard`
+timestamp of the block files. Its file name identical with the metrics ID (thatg contains only [a-zA-Z_-0-9]).
 
 ```
 ┌──────────────────────────────┬──────────────────────────────────┬───────────────────────────────────────────┬──────────────────────────────────────────────┐
-│ (1)updated timestamp(8 byte) | (2)number of timestamp (n bytes) │ (3) timestamp second head(since) (v byte) │ (4) timestamp second deltas (until)(v byte)  │
+│ (1)updated timestamp(8 byte) | (2)number of timestamp (n bytes) │ (3) timestamp second head(since) (v byte) │ (4) timestamp second deltas (since)(v byte)  │
 └──────────────────────────────┴──────────────────────────────────┴───────────────────────────────────────────┴──────────────────────────────────────────────┘
 ┌────────────────────────────────────────────┬──────────────────────────────────────────────┐
 │ (5) timestamp second head (until) (v byte) │ (6) timestamp second deltas (until)(v byte)  │
 └────────────────────────────────────────────┴──────────────────────────────────────────────┘
-
 
 ```
 
@@ -210,10 +210,10 @@ the values will be encoded by simple8b-rle
 ##### drop common trailing zeros
 every value has at least 3 trailing-zeros.drop these zeros.
 
-- 111010101101100001011100100
-- 101110110011100011100100111
-- 100011110100001110111000011
-- 1111010100011010100101010
+- 111010101101100001011100100[000]
+- 101110110011100011100100111[000]
+- 100011110100001110111000011[000]
+- 1111010100011010100101010[000]
 
 ( then `3` will be stored to `(6) common trailing zero num of timestamp nano`)
 
@@ -222,12 +222,10 @@ every value has at least 3 trailing-zeros.drop these zeros.
 #### Compressing Algorithms of each type
 
 - integer ... (not implemented yet) if the value is less than (1 << 60) - 1 ,convert with [ZigZag Encoding](https://developers.google.com/protocol-buffers/docs/encoding) then compress with  [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h).We haven't decide how to handle with the outlier values(we are considering uncompress all values if the datas contains at least one value that exceed the maximum value, but it seems very unefficient...)
-- float   ... Facebook Gorilla of XOR encoding (http://www.vldb.org/pvldb/vol8/p1816-teller.pdf)
+- float   ... XOR encoding of Facebook Gorilla (http://www.vldb.org/pvldb/vol8/p1816-teller.pdf)
 - string      ...  (not implemented yet) consider to compress with [snappy](https://github.com/google/snappy)
 - timestamp   ...  (not implemented yet) delta encoding and [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h)
-- bool        ...  simply packing 1bit values into 64bits
-
-
+- bool        ...  Simply packing 1bit values into 64bits space
 
 ### WAL (WIP)
 ### format (WIP)
@@ -239,5 +237,15 @@ every value has at least 3 trailing-zeros.drop these zeros.
 
 ```
 
-### references
+
+## TODO
+- [ ] Validations
+	- [ ] Metrics
+	- [ ] Number of field
+- [ ] WAL
+- [ ] Support field types
+
+
+### References
 [nakabonne's article](https://zenn.dev/nakabonne/articles/d300838a1500c7)
+

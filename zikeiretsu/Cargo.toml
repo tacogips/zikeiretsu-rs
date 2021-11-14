@@ -20,7 +20,6 @@ xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
 base-128-variants = {path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.8" }
-#file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", branch = "feature/debug1" }
 
 chrono = "0.4"
 lazy_static = "1"

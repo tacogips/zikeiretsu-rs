@@ -15,6 +15,7 @@ use regex::Regex;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use walkdir::WalkDir;
 
 lazy_static! {
     static ref CACHE: Arc<RwLock<cache::Cache>> = Arc::new(RwLock::new(cache::Cache::new()));
@@ -82,12 +83,16 @@ pub(crate) fn extract_metrics_from_file_name(file_name: &str) -> Result<Metrics>
 
 pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
     let db_dir = db_dir.as_ref();
-    let mut block_list_dir = block_list_dir_path(db_dir);
+    let block_list_dir = block_list_dir_path(db_dir);
     let mut file_names = vec![];
 
-    while block_list_dir.pop() {
-        if let Some(file_name) = block_list_dir.file_name() {
-            if let Some(file_name) = file_name.to_str() {
+    for each_entry in WalkDir::new(block_list_dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        let file_name = each_entry.file_name();
+        if let Some(file_name) = file_name.to_str() {
+            if file_name.ends_with(".list") {
                 file_names.push(file_name.to_string());
             }
         }

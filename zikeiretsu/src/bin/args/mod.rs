@@ -47,7 +47,8 @@ pub enum ArgsError {
 }
 
 type Result<T> = std::result::Result<T, ArgsError>;
-/// Timeseries DB
+
+/// A Toy Timeseries DB 0.1.5
 #[derive(FromArgs)]
 pub struct Args {
     /// path to block files. it could be specify by environment variable `ZDB_DIR`

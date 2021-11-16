@@ -1,6 +1,6 @@
 [package]
 name = "zikeiretsu"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -39,6 +39,7 @@ owning_ref = "0.4"
 argh = "0.1"
 regex = "1"
 dotenv = "0.15"
+walkdir = "2.3"
 
 [dev-dependencies]
 tempfile = "3.2"

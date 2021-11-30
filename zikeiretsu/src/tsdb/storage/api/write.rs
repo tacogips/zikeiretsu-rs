@@ -126,7 +126,7 @@ async fn write_datas_to_local(
         let mut block_list = match block_list {
             Ok(block_list) => block_list,
             Err(StorageApiError::NoBlockListFile(_)) => {
-                block_list::BlockList::new(TimestampNano::now(), vec![])
+                block_list::BlockList::new(metrics.clone(), TimestampNano::now(), vec![])
             }
             Err(e) => return Err(e),
         };

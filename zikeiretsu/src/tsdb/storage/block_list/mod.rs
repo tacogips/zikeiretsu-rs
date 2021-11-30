@@ -128,7 +128,7 @@ impl BlockList {
         // in almost  all case,  the block_timestamp will be stored at the tail
         let mut insert_at = 0;
         for (idx, each) in self.block_timestamps.iter().rev().enumerate() {
-            if each.until_sec <= new_block_timestamp.since_sec {
+            if each.since_sec <= new_block_timestamp.since_sec {
                 insert_at = self.block_timestamps.len() - idx;
                 break;
             }
@@ -748,7 +748,7 @@ mod test {
     }
 
     #[test]
-    fn test_block_list_add_timestamps() {
+    fn test_block_list_add_timestamps_1() {
         let updated_timestamp = TimestampNano::new(1629745452_715062000);
         let mut blocklist = BlockList::new(updated_timestamp, vec![]);
         block_timestamps!({10,20});
@@ -784,7 +784,7 @@ mod test {
             let result = blocklist.add_timestamp(block_timestamp);
             assert!(result.is_ok());
 
-            let expected = block_timestamps!({9, 10}, {10, 10}, {10, 20},{21, 22});
+            let expected = block_timestamps!({9, 10}, {10, 20},{10, 10},{21, 22});
             assert_eq!(blocklist.block_timestamps, expected);
         }
 
@@ -793,7 +793,73 @@ mod test {
             let result = blocklist.add_timestamp(block_timestamp);
             assert!(result.is_ok());
 
-            let expected = block_timestamps!({9, 10}, {10, 10}, {10, 20},{21, 22},{23,23});
+            let expected = block_timestamps!({9, 10}, {10, 20}, {10, 10}, {21, 22},{23,23});
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
+    }
+
+    #[test]
+    fn test_block_list_add_timestamps_2() {
+        let updated_timestamp = TimestampNano::new(1629745452_715062000);
+
+        let init_timestamp = block_timestamps!(
+            { 1638257405, 1638257436 },
+            { 1638257435, 1638257467 },
+            { 1638268342, 1638268372 },
+            { 1638268372, 1638268404 },
+            { 1638275138, 1638275169 }
+        );
+        let mut blocklist = BlockList::new(updated_timestamp, init_timestamp);
+        {
+            let block_timestamp = blts!(1638275168, 1638275200);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!(
+                { 1638257405, 1638257436 },
+                { 1638257435, 1638257467 },
+                { 1638268342, 1638268372 },
+                { 1638268372, 1638268404 },
+                { 1638275138, 1638275169 },
+                { 1638275168, 1638275200 }
+            );
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
+    }
+
+    #[test]
+    fn test_block_list_add_timestamps_3() {
+        let updated_timestamp = TimestampNano::new(1629745452_715062000);
+
+        let init_timestamp = block_timestamps!(
+        {1638257405,1638257436 },
+        {1638257435,1638257467 },
+        {1638268342,1638268372 },
+        {1638268372,1638268404 },
+        {1638275138,1638275169 },
+        {1638275615,1638275617 },
+        {1638276635,1638276665 },
+        {1638276665,1638276697 }
+
+            );
+        let mut blocklist = BlockList::new(updated_timestamp, init_timestamp);
+        {
+            let block_timestamp = blts!(1638276696, 1638276728);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!(
+            { 1638257405,1638257436 },
+            { 1638257435,1638257467 },
+            { 1638268342,1638268372 },
+            { 1638268372,1638268404 },
+            { 1638275138,1638275169 },
+            { 1638275615,1638275617 },
+            { 1638276635,1638276665 },
+            { 1638276665,1638276697 },
+            { 1638276696,1638276728 }
+
+                        );
             assert_eq!(blocklist.block_timestamps, expected);
         }
     }

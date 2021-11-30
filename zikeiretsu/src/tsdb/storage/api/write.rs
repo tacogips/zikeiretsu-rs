@@ -131,12 +131,7 @@ async fn write_datas_to_local(
             Err(e) => return Err(e),
         };
 
-        //TODO(tacogips) debug
-        println!("==== metrics:{:?} before:{:?}", metrics, block_list);
         block_list.add_timestamp(block_timestamp)?;
-
-        //TODO(tacogips) debug
-        println!("==== metrics:{:?} after:{:?}", metrics, block_list);
         block_list.update_updated_at(TimestampNano::now());
 
         let block_list_file_path = block_list_file_path(&db_dir, &metrics);

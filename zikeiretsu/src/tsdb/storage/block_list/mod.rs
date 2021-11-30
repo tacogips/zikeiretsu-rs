@@ -124,19 +124,19 @@ impl BlockList {
         self.updated_timestamp_sec = dt;
     }
 
-    pub fn add_timestamp(&mut self, block_timestamp: BlockTimestamp) -> Result<()> {
+    pub fn add_timestamp(&mut self, new_block_timestamp: BlockTimestamp) -> Result<()> {
         // in almost  all case,  the block_timestamp will be stored at the tail
-        let mut insert_at = self.block_timestamps.len();
+        let mut insert_at = 0;
         for (idx, each) in self.block_timestamps.iter().rev().enumerate() {
-            if each.until_sec <= block_timestamp.since_sec {
+            if each.until_sec <= new_block_timestamp.since_sec {
                 insert_at = self.block_timestamps.len() - idx;
                 break;
             }
         }
         if insert_at == self.block_timestamps.len() {
-            self.block_timestamps.push(block_timestamp);
+            self.block_timestamps.push(new_block_timestamp);
         } else {
-            self.block_timestamps.insert(insert_at, block_timestamp);
+            self.block_timestamps.insert(insert_at, new_block_timestamp);
         }
 
         Ok(())
@@ -745,5 +745,56 @@ mod test {
             result.unwrap(),
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30})
         );
+    }
+
+    #[test]
+    fn test_block_list_add_timestamps() {
+        let updated_timestamp = TimestampNano::new(1629745452_715062000);
+        let mut blocklist = BlockList::new(updated_timestamp, vec![]);
+        block_timestamps!({10,20});
+        {
+            let block_timestamp = blts!(10, 20);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!({10,20});
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
+
+        {
+            let block_timestamp = blts!(21, 22);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!({10, 20},{21, 22});
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
+
+        {
+            let block_timestamp = blts!(9, 10);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!({9, 10}, {10, 20},{21, 22});
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
+
+        {
+            let block_timestamp = blts!(10, 10);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!({9, 10}, {10, 10}, {10, 20},{21, 22});
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
+
+        {
+            let block_timestamp = blts!(23, 23);
+            let result = blocklist.add_timestamp(block_timestamp);
+            assert!(result.is_ok());
+
+            let expected = block_timestamps!({9, 10}, {10, 10}, {10, 20},{21, 22},{23,23});
+            assert_eq!(blocklist.block_timestamps, expected);
+        }
     }
 }

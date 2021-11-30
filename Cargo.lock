@@ -1619,7 +1619,7 @@ dependencies = [
 
 [[package]]
 name = "zikeiretsu"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "argh",
  "async-trait",

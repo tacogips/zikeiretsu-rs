@@ -33,13 +33,13 @@ pub enum BlockListError {
     #[error(" block timstamp is empty")]
     EmptyBlockTimestampNano,
 
-    #[error("invalid block timestamp: block timstamp is not sorted ")]
-    BlockTimestampIsNotSorted,
+    #[error("invalid block timestamp: block timstamp is not sorted. {0} ")]
+    BlockTimestampIsNotSorted(Metrics),
 
-    #[error("invalid block list path error")]
+    #[error("invalid block list path error. {0}")]
     InvalidBlockListPathError(String),
 
-    #[error("block list file error {0}")]
+    #[error("block list file error. {0}")]
     FileError(#[from] std::io::Error),
 
     #[error("invalid block list file : {0} at {1}")]
@@ -152,7 +152,9 @@ impl BlockList {
             let mut prev = unsafe { self.block_timestamps.get_unchecked(0) };
             for each_block_timestamp in self.block_timestamps.as_slice()[1..].iter() {
                 if each_block_timestamp.since_sec.cmp(&prev.since_sec) == Ordering::Less {
-                    return Err(BlockListError::BlockTimestampIsNotSorted);
+                    return Err(BlockListError::BlockTimestampIsNotSorted(
+                        self.metrics.clone(),
+                    ));
                 }
                 prev = each_block_timestamp;
             }

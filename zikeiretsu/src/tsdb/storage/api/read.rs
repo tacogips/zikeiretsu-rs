@@ -34,6 +34,7 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
                 CloudBlockListFilePath::list_files_urls(&cloud_setting.cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
+
             for each_block_file_url in block_file_urls.iter() {
                 match CloudBlockListFilePath::extract_metrics_from_url(
                     each_block_file_url,
@@ -194,13 +195,13 @@ fn read_from_block_file(block_file_path: &PathBuf) -> Result<Vec<DataPoint>> {
     Ok(result)
 }
 
-pub(crate) async fn read_block_list(
+pub(crate) async fn read_block_list<'a>(
     db_dir: &Path,
     metrics: &Metrics,
     cache_setting: &CacheSetting,
     cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<block_list::BlockList> {
-    let block_list_path = block_list_file_path(&db_dir, metrics);
+    let block_list_path = block_list_file_path(&db_dir, &metrics);
     let downloaded_from_cloud = if let Some(cloud_setting) = cloud_setting {
         if cloud_setting.update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
@@ -213,7 +214,7 @@ pub(crate) async fn read_block_list(
                 .await?;
 
             if download_result.is_none() {
-                log::warn!("downloading block list failed")
+                log::warn!("downloading block list failed.metrics:{}", metrics)
             }
         }
         true
@@ -228,7 +229,7 @@ pub(crate) async fn read_block_list(
 
     let block_list = if use_cache {
         let cache = CACHE.read().await;
-        let block_list = cache.block_list_cache.get(metrics).await;
+        let block_list = cache.block_list_cache.get(&metrics).await;
         block_list.map(|e| e.clone())
     } else {
         None
@@ -246,7 +247,7 @@ pub(crate) async fn read_block_list(
                 //TODO(tacogips) call google cloud hear
                 return Err(StorageApiError::NoBlockListFile(metrics.to_string()));
             }
-            block_list::read_from_blocklist_file(block_list_path)?
+            block_list::read_from_blocklist_file(&metrics, block_list_path)?
         }
     };
 

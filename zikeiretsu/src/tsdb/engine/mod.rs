@@ -95,7 +95,7 @@ impl Zikeiretsu {
     ) -> Result<block_list::BlockList> {
         let block_list = api::read::read_block_list(
             db_dir.as_ref(),
-            metrics,
+            &metrics,
             &setting.cache_setting,
             setting.cloud_setting.as_ref(),
         )

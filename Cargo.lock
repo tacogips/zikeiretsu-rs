@@ -241,7 +241,7 @@ dependencies = [
 [[package]]
 name = "file-dougu"
 version = "0.1.4"
-source = "git+https://github.com/tacogips/file-dougu-rs?tag=0.1.8#13c27c34ce7e85026a1bad6e93dec550cb7a953b"
+source = "git+https://github.com/tacogips/file-dougu-rs?branch=feature/cost_down#ef06db39dff8e83a23307a339e71803bb156bfb4"
 dependencies = [
  "backoff",
  "bytes",

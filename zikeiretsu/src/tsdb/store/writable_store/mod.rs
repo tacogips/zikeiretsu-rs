@@ -249,7 +249,18 @@ where
                 .await?;
 
                 if condition.clear_after_persisted {
+                    log::debug!(
+                        "clear writable store after persistence. indices:{:?}, datapoint len: {}",
+                        indices,
+                        datapoints.len(),
+                    );
                     remove_range(datapoints, indices);
+
+                    log::debug!(
+                        "after clear writable store, sorted datapoint len: {},dirty datapoint len: {}",
+                        self.sorted_datapoints.len(),
+                        self.dirty_datapoints.len(),
+                    );
                 }
                 Ok(Some(()))
             } else {
@@ -319,5 +330,44 @@ pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
             len - start - purge_len,
         );
         datapoints.set_len(len - purge_len);
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::tsdb::*;
+    macro_rules! float_data_points {
+        ($({$timestamp:expr,$values:expr}),*) => {
+            vec![
+            $(DataPoint::new(ts!($timestamp), $values.into_iter().map(|each| FieldValue::Float64(each as f64)).collect())),*
+            ]
+        };
+    }
+
+    macro_rules! ts {
+        ($v:expr) => {
+            TimestampNano::new($v)
+        };
+    }
+
+    #[test]
+    fn test_remove_range() {
+        let mut datapoints = float_data_points!(
+            {1629745451_715062000, vec![200f64,12f64]},
+            {1629745451_715063000, vec![300f64,36f64]},
+            {1629745451_715064000, vec![400f64,36f64]},
+            {1629745451_715065000, vec![500f64,36f64]},
+            {1629745451_715066000, vec![600f64,36f64]}
+        );
+
+        remove_range(&mut datapoints, (1, 3));
+
+        let expected = float_data_points!(
+            {1629745451_715062000, vec![200f64,12f64]},
+            {1629745451_715066000, vec![600f64,36f64]}
+        );
+
+        assert_eq!(expected, datapoints);
     }
 }

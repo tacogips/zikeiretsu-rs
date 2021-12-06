@@ -73,8 +73,9 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 datapoint_search_condition,
                 clear_after_persisted,
             };
-
             let mut mutext_store = store.lock().await;
+
+            log::debug!("start periodically persistent ");
             if let Err(e) = &mutext_store.persist(condition).await {
                 log::error!("store persisted error:{}", e);
                 //TODO(tacogips) the process should be interrupted ?
@@ -82,6 +83,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
         }
     });
 
+    // TODO(tacogips) what's this doing?
     // persist
     let join_handle =
         task::spawn(async move { while let Some(_dt) = persistence_rx.recv().await {} });

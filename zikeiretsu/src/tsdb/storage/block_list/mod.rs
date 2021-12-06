@@ -784,7 +784,9 @@ mod test {
     #[test]
     fn test_block_list_add_timestamps_1() {
         let updated_timestamp = TimestampNano::new(1629745452_715062000);
-        let mut blocklist = BlockList::new(updated_timestamp, vec![]);
+
+        let metrics = Metrics::new("dummy");
+        let mut blocklist = BlockList::new(metrics, updated_timestamp, vec![]);
         block_timestamps!({10,20});
         {
             let block_timestamp = blts!(10, 20);
@@ -843,7 +845,9 @@ mod test {
             { 1638268372, 1638268404 },
             { 1638275138, 1638275169 }
         );
-        let mut blocklist = BlockList::new(updated_timestamp, init_timestamp);
+
+        let metrics = Metrics::new("dummy");
+        let mut blocklist = BlockList::new(metrics, updated_timestamp, init_timestamp);
         {
             let block_timestamp = blts!(1638275168, 1638275200);
             let result = blocklist.add_timestamp(block_timestamp);
@@ -876,7 +880,9 @@ mod test {
         {1638276665,1638276697 }
 
             );
-        let mut blocklist = BlockList::new(updated_timestamp, init_timestamp);
+
+        let metrics = Metrics::new("dummy");
+        let mut blocklist = BlockList::new(metrics, updated_timestamp, init_timestamp);
         {
             let block_timestamp = blts!(1638276696, 1638276728);
             let result = blocklist.add_timestamp(block_timestamp);

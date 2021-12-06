@@ -273,7 +273,7 @@ where
         let (datapoints_tx, mut datapoints_rx) = mpsc::unbounded_channel::<Vec<DataPoint>>();
         task::spawn(async move {
             while let Some(datapoints) = datapoints_rx.recv().await {
-                log::debug!("datapoints to push multi {:?}", datapoints);
+                log::trace!("datapoints to push multi {:?}", datapoints);
                 let mut locked_store = store.lock().await;
                 if let Err(e) = locked_store.push_multi(datapoints).await {
                     log::error!("error on push multiple datapoints :{:?}", e,);

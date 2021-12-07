@@ -92,7 +92,7 @@ pub struct WritableStore<S: DatapointSorter + 'static> {
 
     convert_dirty_to_sorted_on_read: bool,
 
-    //TODO(tacogips) Consider LEFT-RIGHT pattern instead of locking for performance if need.
+    //TODO(tacogips) Consider LEFT-RIGHT pattern instead of locking to increase performance.
     dirty_datapoints: Vec<DataPoint>,
     sorted_datapoints: Vec<DataPoint>,
     sorter: S,
@@ -229,14 +229,14 @@ where
         Ok(())
     }
 
-    /// persist on disk and cloud
+    /// persist on disk and to cloud
     pub async fn persist(&mut self, condition: PersistCondition) -> Result<Option<()>> {
         if let Persistence::Storage(db_dir, cloud_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
-            let datapoints = self.datapoints().await?;
-            let datapoints_searcher = DatapointSearcher::new(&datapoints);
+            let all_datapoints = self.datapoints().await?;
+            let datapoints_searcher = DatapointSearcher::new(&all_datapoints);
 
-            if let Some((_datapoints, indices)) = datapoints_searcher
+            if let Some((datapoints, indices)) = datapoints_searcher
                 .search_with_indices(condition.datapoint_search_condition)
                 .await
             {
@@ -248,13 +248,13 @@ where
                 )
                 .await?;
 
-                if condition.clear_after_persisted {
+                if condition.remove_from_store_after_persisted {
                     log::debug!(
                         "clear writable store after persistence. indices:{:?}, datapoint len: {}",
                         indices,
                         datapoints.len(),
                     );
-                    remove_range(datapoints, indices);
+                    remove_range(all_datapoints, indices);
 
                     log::debug!(
                         "after clear writable store, sorted datapoint len: {},dirty datapoint len: {}",
@@ -304,33 +304,38 @@ where
 }
 
 pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
-    let len = datapoints.len();
-    let (start, end) = range;
-    assert!(
-        start <= end,
-        "invalid purge index start:{} > end:{}",
-        start,
-        end
-    );
+    datapoints.drain(range.0..range.1 + 1);
+    // original code below causes memory leak somehow...
+    //let orig_len = datapoints.len();
+    //let (start, end) = range;
+    //assert!(
+    //    start <= end,
+    //    "invalid purge index start:{} > end:{}",
+    //    start,
+    //    end
+    //);
 
-    assert!(
-        end < len,
-        "invalid purge end index  end:{}, len:{}",
-        end,
-        len
-    );
+    //assert!(
+    //    end < orig_len,
+    //    "invalid purge end index  end:{}, len:{}",
+    //    end,
+    //    orig_len
+    //);
 
-    let purge_len = end - start + 1;
+    //let purge_len = end - start + 1;
 
-    unsafe {
-        let purge_start_ptr = datapoints.as_mut_ptr().add(start);
-        ptr::copy(
-            purge_start_ptr.offset(purge_len as isize),
-            purge_start_ptr,
-            len - start - purge_len,
-        );
-        datapoints.set_len(len - purge_len);
-    }
+    //let remaining_len = orig_len - purge_len;
+    //let shift_elem_len = orig_len - end;
+    //unsafe {
+    //    let purge_start_ptr = datapoints.as_mut_ptr().add(start);
+    //    ptr::copy(
+    //        purge_start_ptr.offset(purge_len as isize),
+    //        purge_start_ptr,
+    //        shift_elem_len,
+    //    );
+
+    //    datapoints.set_len(remaining_len);
+    //}
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ use tokio::{task, time};
 #[derive(Clone)]
 pub struct PersistCondition {
     pub datapoint_search_condition: DatapointSearchCondition,
-    pub clear_after_persisted: bool,
+    pub remove_from_store_after_persisted: bool,
 }
 
 #[derive(Clone)]
@@ -38,7 +38,7 @@ impl PeriodicallyPeristenceShutdown {
 pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
     store: Arc<Mutex<WritableStore<S>>>,
     interval_duration: Duration,
-    clear_after_persisted: bool,
+    remove_from_store_after_persisted: bool,
 ) -> PeriodicallyPeristenceShutdown {
     let (persistence_tx, mut persistence_rx) = mpsc::channel::<DateTime<Utc>>(1);
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<chrono::DateTime<chrono::Utc>>(1);
@@ -53,7 +53,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                     DatapointSearchCondition::new(None, Some(TimestampNano::now()));
                 let condition = PersistCondition {
                     datapoint_search_condition,
-                    clear_after_persisted,
+                    remove_from_store_after_persisted,
                 };
                 let mut mutext_store = store.lock().await;
                 if let Err(e) = &mutext_store.persist(condition).await {
@@ -71,7 +71,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 DatapointSearchCondition::new(None, Some(TimestampNano::now()));
             let condition = PersistCondition {
                 datapoint_search_condition,
-                clear_after_persisted,
+                remove_from_store_after_persisted,
             };
             let mut mutext_store = store.lock().await;
 

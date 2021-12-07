@@ -161,7 +161,8 @@ async fn read_block(
     block_timestamp: &block_list::BlockTimestamp,
     cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<Vec<DataPoint>> {
-    let block_file_path = block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
+    let (_, block_file_path) =
+        block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
     if let Some(cloud_setting) = cloud_setting {
         if !block_file_path.exists() {

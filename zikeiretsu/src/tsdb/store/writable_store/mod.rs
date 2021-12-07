@@ -229,14 +229,14 @@ where
         Ok(())
     }
 
-    /// persist on disk and cloud
+    /// persist on disk and to cloud
     pub async fn persist(&mut self, condition: PersistCondition) -> Result<Option<()>> {
         if let Persistence::Storage(db_dir, cloud_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
-            let datapoints = self.datapoints().await?;
-            let datapoints_searcher = DatapointSearcher::new(&datapoints);
+            let all_datapoints = self.datapoints().await?;
+            let datapoints_searcher = DatapointSearcher::new(&all_datapoints);
 
-            if let Some((_datapoints, indices)) = datapoints_searcher
+            if let Some((datapoints, indices)) = datapoints_searcher
                 .search_with_indices(condition.datapoint_search_condition)
                 .await
             {
@@ -248,13 +248,13 @@ where
                 )
                 .await?;
 
-                if condition.clear_after_persisted {
+                if condition.remove_from_store_after_persisted {
                     log::debug!(
                         "clear writable store after persistence. indices:{:?}, datapoint len: {}",
                         indices,
                         datapoints.len(),
                     );
-                    remove_range(datapoints, indices);
+                    remove_range(all_datapoints, indices);
 
                     log::debug!(
                         "after clear writable store, sorted datapoint len: {},dirty datapoint len: {}",

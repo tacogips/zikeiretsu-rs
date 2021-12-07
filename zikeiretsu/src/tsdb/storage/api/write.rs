@@ -10,6 +10,7 @@ use crate::tsdb::{datapoint::*, metrics::Metrics};
 use lockfile::Lockfile;
 use log;
 use log::*;
+use std::fs;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 
@@ -47,6 +48,7 @@ pub async fn write_datas<P: AsRef<Path>>(
     let write = || async {
         let WrittenBlockInfo {
             block_list_file_path,
+            block_file_dir,
             block_file_path,
             block_timestamp,
         } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_setting).await {
@@ -58,25 +60,37 @@ pub async fn write_datas<P: AsRef<Path>>(
         };
 
         if cloud_lock_file_path.is_some() {
-            if let Err(e) = upload_to_cloud(
+            let upload_result = upload_to_cloud(
                 &block_list_file_path,
                 &block_file_path,
                 &metrics,
                 &block_timestamp,
                 &cloud_setting.unwrap().cloud_storage,
             )
-            .await
-            {
-                log::error!("failed to update block files to the cloud :{:?}", e);
-                write_error_file(
-                    db_dir,
-                    TimestampNano::now(),
-                    &metrics,
-                    persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
-                    block_timestamp,
-                    Some(format!("error:{:?}", e)),
-                )
-                .await?;
+            .await;
+            match upload_result {
+                Ok(_) => {
+                    if cloud_setting.unwrap().remove_local_file_after_upload {
+                        fs::remove_dir_all(block_file_dir.as_path())
+                            .map_err(StorageApiError::RemoveBlockDirError)?;
+                        log::debug!(
+                            "remove block dir on local at {}",
+                            block_file_dir.as_path().display()
+                        );
+                    }
+                }
+                Err(e) => {
+                    log::error!("failed to update block files to the cloud :{:?}", e);
+                    write_error_file(
+                        db_dir,
+                        TimestampNano::now(),
+                        &metrics,
+                        persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
+                        block_timestamp,
+                        Some(format!("error:{:?}", e)),
+                    )
+                    .await?;
+                }
             }
         }
         Ok(())
@@ -91,6 +105,7 @@ pub async fn write_datas<P: AsRef<Path>>(
 }
 struct WrittenBlockInfo {
     block_list_file_path: PathBuf,
+    block_file_dir: PathBuf,
     block_file_path: PathBuf,
     block_timestamp: block_list::BlockTimestamp,
 }
@@ -140,8 +155,8 @@ async fn write_datas_to_local(
     };
 
     // write block file
-    let block_file_path = {
-        let block_file_path =
+    let (block_file_dir, block_file_path) = {
+        let (block_file_dir, block_file_path) =
             block_timestamp_to_block_file_path(db_dir, &metrics, &block_timestamp);
         if block_file_path.exists() {
             return Err(StorageApiError::UnsupportedStorageStatus(format!(
@@ -150,13 +165,14 @@ async fn write_datas_to_local(
             )));
         }
 
-        let block_file_dir = block_file_path.parent().unwrap();
-        create_dir_all(block_file_dir).map_err(|e| StorageApiError::CreateBlockFileError(e))?;
+        create_dir_all(block_file_dir.as_path())
+            .map_err(|e| StorageApiError::CreateBlockFileError(e))?;
         block::write_to_block_file(&block_file_path, &data_points)?;
-        block_file_path
+        (block_file_dir, block_file_path)
     };
     Ok(WrittenBlockInfo {
         block_list_file_path: block_list_file_path.to_path_buf(),
+        block_file_dir: block_file_dir.to_path_buf(),
         block_file_path: block_file_path.to_path_buf(),
         block_timestamp,
     })

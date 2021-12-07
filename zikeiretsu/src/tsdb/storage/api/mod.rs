@@ -64,8 +64,11 @@ pub enum StorageApiError {
     #[error("could not acquire lock {0}")]
     AcquireLockError(String, std::io::Error),
 
-    #[error("failed to create block file dir or file. {0}")]
+    #[error("failed to create block dir or file. {0}")]
     CreateBlockFileError(std::io::Error),
+
+    #[error("failed to remove block dir or file. {0}")]
+    RemoveBlockDirError(std::io::Error),
 
     #[error("database being on not supported status: {0}")]
     UnsupportedStorageStatus(String),
@@ -109,16 +112,22 @@ pub(crate) fn block_timestamp_to_block_file_path(
     root_dir: &Path,
     metrics: &Metrics,
     block_timestamp: &block_list::BlockTimestamp,
-) -> PathBuf {
+) -> (PathBuf, PathBuf) {
     let timestamp_head: u64 = block_timestamp.since_sec.0 / (10u64.pow(5u32));
 
     // path format:
     //  {root_dir}/block/{metrics}/{timestamp_sec_since[:4]}/{timestamp_sec_since}_{timestamp_sec_since}}/block
+
+    let block_path_dir = root_dir.to_path_buf().join(format!(
+        "block/{}/{}/{}_{}/",
+        metrics, timestamp_head, block_timestamp.since_sec, block_timestamp.until_sec,
+    ));
+
     let block_path = root_dir.to_path_buf().join(format!(
         "block/{}/{}/{}_{}/block",
         metrics, timestamp_head, block_timestamp.since_sec, block_timestamp.until_sec,
     ));
-    block_path
+    (block_path_dir, block_path)
 }
 
 #[cfg(test)]
@@ -133,10 +142,15 @@ mod test {
     fn test_block_timestamp_to_block_file_path() {
         let block_timestamp =
             BlockTimestamp::new(TimestampSec::new(162688734), TimestampSec::new(162688735));
-        let path_buf = block_timestamp_to_block_file_path(
+        let (path_dir, path_buf) = block_timestamp_to_block_file_path(
             &PathBuf::from("root_dir"),
             &Metrics::new("some_metrics"),
             &block_timestamp,
+        );
+
+        assert_eq!(
+            path_dir.display().to_string(),
+            "root_dir/block/some_metrics/1626/162688734_162688735/"
         );
 
         assert_eq!(

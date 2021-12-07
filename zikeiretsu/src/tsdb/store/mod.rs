@@ -295,7 +295,7 @@ mod test {
                     Some(TimestampNano::new(1629745451_715061000)),
                     Some(TimestampNano::new(1629745451_715066000)),
                 ),
-                clear_after_persisted: true,
+                remove_from_store_after_persisted: true,
             };
 
             let result = {
@@ -425,7 +425,7 @@ mod test {
         {
             let condition = PersistCondition {
                 datapoint_search_condition: DatapointSearchCondition::new(None, None),
-                clear_after_persisted: true,
+                remove_from_store_after_persisted: true,
             };
 
             let result = {

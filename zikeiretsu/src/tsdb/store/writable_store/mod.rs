@@ -92,7 +92,7 @@ pub struct WritableStore<S: DatapointSorter + 'static> {
 
     convert_dirty_to_sorted_on_read: bool,
 
-    //TODO(tacogips) Consider LEFT-RIGHT pattern instead of locking for performance if need.
+    //TODO(tacogips) Consider LEFT-RIGHT pattern instead of locking to increase performance.
     dirty_datapoints: Vec<DataPoint>,
     sorted_datapoints: Vec<DataPoint>,
     sorter: S,

@@ -306,8 +306,6 @@ where
 pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
     // thie method is same  as
     // datapoints.drain(range.0..range.1 + 1);
-    //
-    // original code below causes memory leak somehow...
     let orig_len = datapoints.len();
     let (start, end) = range;
     assert!(

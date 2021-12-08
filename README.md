@@ -8,7 +8,7 @@ A toy time series DB
 
 ## Install
 ```toml
-zikeiretsu = {git = "https://github.com/tacogips/zikeiretsu-rs", tag = "0.1.5" }
+zikeiretsu = {git = "https://github.com/tacogips/zikeiretsu-rs", tag = "0.1.10" }
 ```
 
 ```

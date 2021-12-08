@@ -9,6 +9,7 @@ use crate::tsdb::{
 pub use persistence::*;
 pub use sorter::*;
 use std::marker::Send;
+use std::ptr;
 pub use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
@@ -303,38 +304,38 @@ where
 }
 
 pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
-    datapoints.drain(range.0..range.1 + 1);
+    //datapoints.drain(range.0..range.1 + 1);
     // same code as below causes memory leak somehow..
-    //let orig_len = datapoints.len();
-    //let (start, end) = range;
-    //assert!(
-    //    start <= end,
-    //    "invalid purge index start:{} > end:{}",
-    //    start,
-    //    end
-    //);
+    let orig_len = datapoints.len();
+    let (start, end) = range;
+    assert!(
+        start <= end,
+        "invalid purge index start:{} > end:{}",
+        start,
+        end
+    );
 
-    //assert!(
-    //    end < orig_len,
-    //    "invalid purge end index  end:{}, len:{}",
-    //    end,
-    //    orig_len
-    //);
+    assert!(
+        end < orig_len,
+        "invalid purge end index  end:{}, len:{}",
+        end,
+        orig_len
+    );
 
-    //let purge_len = end - start + 1;
+    let purge_len = end - start + 1;
 
-    //let remaining_len = orig_len - purge_len;
-    //let shift_elem_len = orig_len - end - 1;
-    //unsafe {
-    //    let purge_start_ptr = datapoints.as_mut_ptr().add(start);
-    //    ptr::copy(
-    //        purge_start_ptr.offset(purge_len as isize),
-    //        purge_start_ptr,
-    //        shift_elem_len,
-    //    );
+    let remaining_len = orig_len - purge_len;
+    let shift_elem_len = orig_len - end - 1;
+    unsafe {
+        let purge_start_ptr = datapoints.as_mut_ptr().add(start);
+        ptr::copy(
+            purge_start_ptr.offset(purge_len as isize),
+            purge_start_ptr,
+            shift_elem_len,
+        );
 
-    //    datapoints.set_len(remaining_len);
-    //}
+        datapoints.set_len(remaining_len);
+    }
 }
 
 #[cfg(test)]

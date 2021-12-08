@@ -211,7 +211,7 @@ where
         Ok(())
     }
 
-    pub async fn shrink_to_fit_vec(&mut self) {
+    pub fn shrink_to_fit_vec(&mut self) {
         self.dirty_datapoints.shrink_to_fit();
         self.sorted_datapoints.shrink_to_fit();
     }
@@ -259,6 +259,7 @@ where
                         datapoints.len(),
                     );
                     remove_range(all_datapoints, indices);
+                    self.shrink_to_fit_vec();
 
                     log::debug!(
                         "after clear writable store, sorted datapoint len: {},dirty datapoint len: {}",

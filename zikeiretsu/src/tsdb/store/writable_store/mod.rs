@@ -211,6 +211,11 @@ where
         Ok(())
     }
 
+    pub async fn shrink_to_fit_vec(&mut self) {
+        self.dirty_datapoints.shrink_to_fit();
+        self.sorted_datapoints.shrink_to_fit();
+    }
+
     pub async fn purge(
         &mut self,
         datapoint_search_condition: DatapointSearchCondition,

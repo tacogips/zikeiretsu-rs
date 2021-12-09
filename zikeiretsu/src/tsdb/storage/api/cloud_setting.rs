@@ -44,6 +44,14 @@ impl CloudStorageSettingBuilder {
         }
     }
 
+    pub fn remove_local_file_after_upload(
+        mut self,
+        remove_local_file_after_upload: bool,
+    ) -> CloudStorageSettingBuilder {
+        self.remove_local_file_after_upload = remove_local_file_after_upload;
+        self
+    }
+
     pub fn update_block_list(mut self, update_block_list: bool) -> CloudStorageSettingBuilder {
         self.update_block_list = update_block_list;
         self

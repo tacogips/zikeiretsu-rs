@@ -81,7 +81,7 @@ impl CloudStorage {
     pub fn as_url(&self) -> String {
         match self {
             Self::Gcp(Bucket(bucket_str), sub_dir) => {
-                let gcs_url = format!("gs://{}/{}/", bucket_str, sub_dir);
+                let gcs_url = format!("gs://{bucket_str}/{sub_dir}/");
                 gcs_url
             }
         }

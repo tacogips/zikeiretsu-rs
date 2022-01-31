@@ -58,7 +58,7 @@ fn write_to_stdout<I: IntoIterator<Item = D>, D: std::fmt::Display>(datas: I) ->
     let mut out = BufWriter::new(out.lock());
 
     for each in datas {
-        writeln!(out, "{}", each)?;
+        writeln!(out, "{data}", data = each)?;
     }
     Ok(())
 }
@@ -71,7 +71,7 @@ fn write_to_file<'a, I: IntoIterator<Item = D>, D: std::fmt::Display>(
     let mut dest = BufWriter::new(dest);
 
     for each_data in datas {
-        dest.write(format!("{}", each_data).as_bytes())?;
+        dest.write(format!("{data}", data = each_data).as_bytes())?;
     }
 
     dest.flush()?;

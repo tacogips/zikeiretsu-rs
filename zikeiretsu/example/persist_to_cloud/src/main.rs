@@ -145,7 +145,7 @@ async fn main() {
     logger_builder.init();
 
     let my_uuid = Uuid::new_v4();
-    let cloud_dir = format!("zdb_{}", my_uuid.to_string());
+    let cloud_dir = format!("zdb_{uuid}", uuid = my_uuid.to_string());
     persist_to_cloud(&cloud_dir).await;
     load_from_cloud(&cloud_dir).await;
 }

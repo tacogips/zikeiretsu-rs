@@ -44,7 +44,7 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
                         result.push(metrics);
                     }
                     Err(e) => {
-                        log::warn!("invalid block list file path found when listing metrics. it has skipped. {}",e)
+                        log::warn!("invalid block list file path found when listing metrics. it has skipped. {e}")
                     }
                 }
             }
@@ -215,7 +215,7 @@ pub(crate) async fn read_block_list<'a>(
                 .await?;
 
             if download_result.is_none() {
-                log::warn!("downloading block list failed.metrics:{}", metrics)
+                log::warn!("downloading block list failed.metrics: {metrics}")
             }
         }
         true

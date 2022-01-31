@@ -98,9 +98,13 @@ async fn main() {
         let cond = DatapointSearchCondition::since(dt.into());
         let found = searcher.search(&cond).await.unwrap();
 
-        println!("found len:{}", found.len());
+        println!("found len:{len}", len = found.len());
         for each in found {
-            println!("{}: {:?}", each.timestamp_nano.as_datetime(), each);
+            println!(
+                "{ts}: {data:?}",
+                ts = each.timestamp_nano.as_datetime(),
+                data = each
+            );
         }
         found.to_vec()
     };
@@ -112,7 +116,7 @@ async fn main() {
             .await
             .persist(PersistCondition {
                 datapoint_search_condition: cond,
-                clear_after_persisted: false,
+                remove_from_store_after_persisted: false,
             })
             .await
             .unwrap()

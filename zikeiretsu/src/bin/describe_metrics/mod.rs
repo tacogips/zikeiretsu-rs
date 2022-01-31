@@ -53,11 +53,16 @@ impl DatabaseDescribe {
         let mut result = Vec::<String>::new();
         for each in describes {
             result.push(format!(
-                "{}\tupdated at:{}",
-                each.metrics, each.block_list.updated_timestamp_sec
+                "{metrics}\tupdated at:{updated_at}",
+                metrics = each.metrics,
+                updated_at = each.block_list.updated_timestamp_sec
             ));
             for ts in each.block_list.block_timestamps {
-                result.push(format!("\t{}\t{}", ts.since_sec, ts.until_sec));
+                result.push(format!(
+                    "\t{since}\t{until}",
+                    since = ts.since_sec,
+                    until = ts.until_sec
+                ));
             }
         }
         result

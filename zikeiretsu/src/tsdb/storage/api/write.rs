@@ -29,8 +29,8 @@ pub async fn write_datas<P: AsRef<Path>>(
                 CloudLockfilePath::new(metrics, &cloud_setting.cloud_storage);
             if cloud_lock_file_path.exists().await? {
                 return Err(StorageApiError::CreateLockfileError(format!(
-                    "cloud lock file already exists at {} ",
-                    cloud_lock_file_path.as_url()
+                    "cloud lock file already exists at {lock_file_url} ",
+                    lock_file_url = cloud_lock_file_path.as_url()
                 )));
             } else {
                 cloud_lock_file_path.create().await?;
@@ -54,7 +54,7 @@ pub async fn write_datas<P: AsRef<Path>>(
         } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_setting).await {
             Ok(r) => r,
             Err(e) => {
-                log::error!("failed to write block file on local: {}", e);
+                log::error!("failed to write block file on local: {e}");
                 return Err(e);
             }
         };
@@ -74,20 +74,20 @@ pub async fn write_datas<P: AsRef<Path>>(
                         fs::remove_dir_all(block_file_dir.as_path())
                             .map_err(StorageApiError::RemoveBlockDirError)?;
                         log::debug!(
-                            "remove block dir on local at {}",
-                            block_file_dir.as_path().display()
+                            "remove block dir on local at {block_file_path}",
+                            block_file_path = block_file_dir.as_path().display()
                         );
                     }
                 }
                 Err(e) => {
-                    log::error!("failed to update block files to the cloud :{:?}", e);
+                    log::error!("failed to update block files to the cloud :{e:?}");
                     write_error_file(
                         db_dir,
                         TimestampNano::now(),
                         &metrics,
                         persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
                         block_timestamp,
-                        Some(format!("error:{:?}", e)),
+                        Some(format!("error:{e:?}")),
                     )
                     .await?;
                 }
@@ -160,8 +160,8 @@ async fn write_datas_to_local(
             block_timestamp_to_block_file_path(db_dir, &metrics, &block_timestamp);
         if block_file_path.exists() {
             return Err(StorageApiError::UnsupportedStorageStatus(format!(
-                "block file already exists at {}. merging block files is not supported yet...",
-                block_file_path.display()
+                "block file already exists at {block_file_path}. merging block files is not supported yet...",
+                block_file_path =block_file_path.display()
             )));
         }
 

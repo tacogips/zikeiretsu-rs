@@ -10,9 +10,14 @@ use std::io::Write;
 use std::path::Path;
 
 lazy_static! {
-    static ref BLOCK_LIST_FILE_PATTERN: Regex =
-        Regex::new(format!(r"gs://.*/{}", block_list::BLOCK_LIST_FILE_NAME_PATTERN).as_str())
-            .unwrap();
+    static ref BLOCK_LIST_FILE_PATTERN: Regex = Regex::new(
+        format!(
+            r"gs://.*/{file_name_pattern}",
+            file_name_pattern = block_list::BLOCK_LIST_FILE_NAME_PATTERN
+        )
+        .as_str()
+    )
+    .unwrap();
 }
 
 fn create_parent_dir_if_not_exists(dest: &Path) -> Result<()> {

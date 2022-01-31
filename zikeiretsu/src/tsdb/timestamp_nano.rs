@@ -79,7 +79,7 @@ impl TryFrom<&str> for TimestampNano {
 
 impl fmt::Display for TimestampNano {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{nano}", nano = self.0)
     }
 }
 

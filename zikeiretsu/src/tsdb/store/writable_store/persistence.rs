@@ -57,14 +57,14 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 };
                 let mut mutext_store = store.lock().await;
                 if let Err(e) = &mutext_store.persist(condition).await {
-                    log::error!("store persisted error:{}", e);
+                    log::error!("store persisted error:{e}");
                     //TODO(tacogips) the process should be interrupted ?
                 }
 
                 break;
             }
             if let Err(e) = persistence_tx.send(chrono::Utc::now()).await {
-                log::error!("periodicaly persistence failed:{}", e);
+                log::error!("periodicaly persistence failed:{e}");
             }
 
             let datapoint_search_condition =
@@ -77,7 +77,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
 
             log::debug!("start periodically persistent ");
             if let Err(e) = &mutext_store.persist(condition).await {
-                log::error!("store persisted error:{}", e);
+                log::error!("store persisted error:{e}");
                 //TODO(tacogips) the process should be interrupted ?
             }
         }

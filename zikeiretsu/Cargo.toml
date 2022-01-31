@@ -1,7 +1,8 @@
 [package]
 name = "zikeiretsu"
-version = "0.1.6"
-edition = "2018"
+version = "0.1.7"
+edition = "2021"
+rust = "1.58.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

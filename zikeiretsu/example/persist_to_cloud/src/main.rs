@@ -69,7 +69,7 @@ async fn persist_to_cloud(cloud_dir: &str) {
     let temp_db_dir = TempDir::new("zikeretsu_local_example_write").unwrap();
 
     let bucket = env::var("BUCKET").unwrap();
-    let cloud_storage = CloudStorage::new_gcp(&bucket, Some(cloud_dir));
+    let cloud_storage = CloudStorage::new_gcp(&bucket, cloud_dir);
     let cloud_storage_setting = CloudStorageSetting::builder(cloud_storage).build();
 
     let persistence = Persistence::Storage(
@@ -106,7 +106,7 @@ async fn persist_to_cloud(cloud_dir: &str) {
 
     let condition = PersistCondition {
         datapoint_search_condition: DatapointSearchCondition::all(),
-        clear_after_persisted: true,
+        remove_from_store_after_persisted: true,
     };
     wr.lock().await.persist(condition).await.unwrap();
 }
@@ -114,7 +114,7 @@ async fn persist_to_cloud(cloud_dir: &str) {
 async fn load_from_cloud(cloud_dir: &str) {
     let temp_db_dir = TempDir::new("zikeretsu_local_example_readonly").unwrap();
     let bucket = env::var("BUCKET").unwrap();
-    let cloud_storage = CloudStorage::new_gcp(&bucket, Some(cloud_dir));
+    let cloud_storage = CloudStorage::new_gcp(&bucket, cloud_dir);
     let cloud_storage_setting = CloudStorageSetting::builder(cloud_storage).build();
     let search_condition = DatapointSearchCondition::all();
     let search_setting = SearchSettings::builder_with_no_cache()

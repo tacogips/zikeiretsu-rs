@@ -4,6 +4,7 @@ pub mod datapoints_searcher;
 mod engine;
 pub mod field;
 pub mod metrics;
+pub mod query;
 pub mod search;
 pub mod storage;
 pub mod store;

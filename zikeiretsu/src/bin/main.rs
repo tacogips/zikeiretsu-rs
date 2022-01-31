@@ -25,6 +25,27 @@ pub enum ZikeiretsuBinError {
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuBinError>;
 
+//#[tokio::main]
+//pub async fn main() -> Result<()> {
+//    //TODO(tacogips) impl client
+//    let arg = parse_args_or_exits()?;
+//    let operation = arg.to_operation()?;
+//    match operation {
+//        Operation::ListMetrics(list_metrics_condition) => {
+//            list_metrics::execute(list_metrics_condition).await?;
+//        }
+//
+//        Operation::FetchMetics(fetch_metrics_condition) => {
+//            fetch_metrics::execute(fetch_metrics_condition).await?;
+//        }
+//
+//        Operation::Describe(describe_database_condition) => {
+//            describe_metrics::execute(describe_database_condition).await?;
+//        }
+//    }
+//    Ok(())
+//}
+
 #[tokio::main]
 pub async fn main() -> Result<()> {
     //TODO(tacogips) impl client

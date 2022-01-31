@@ -19,7 +19,7 @@ path = "src/bin/main.rs"
 bits-ope = { path = "../bits-ope" }
 xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
-base-128-variants = {path ="../base-128-variants" }
+base-128-variants = { path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.9" }
 
 chrono = "0.4"
@@ -41,6 +41,7 @@ argh = "0.1"
 regex = "1"
 dotenv = "0.15"
 walkdir = "2.3"
+rustyline = "9.1"
 
 [dev-dependencies]
 tempfile = "3.2"

@@ -28,14 +28,16 @@ impl<'a> CloudBlockFilePath<'a> {
         let timestamp_head: u64 = self.block_timestamp.since_sec.0 / (10u64.pow(5u32));
 
         let block_path = format!(
-            "block/{}/{}/{}_{}/block",
-            self.metrics,
-            timestamp_head,
-            self.block_timestamp.since_sec,
-            self.block_timestamp.until_sec,
+            "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/block",
+            metrics = self.metrics,
+            since_sec = self.block_timestamp.since_sec,
+            until_sec = self.block_timestamp.until_sec,
         );
 
-        format!("{}{}", self.cloud_storage.as_url(), block_path)
+        format!(
+            "{storage_url}{block_path}",
+            storage_url = self.cloud_storage.as_url()
+        )
     }
 
     pub async fn upload(&self, src: &Path) -> Result<()> {
@@ -81,8 +83,11 @@ impl<'a> CloudBlockListFilePath<'a> {
     }
 
     pub fn as_url(&self) -> String {
-        let path = format!("{}.list", self.metrics);
-        format!("{}blocklist/{}", self.cloud_storage.as_url(), path)
+        let path = format!("{metrics}.list", metrics = self.metrics);
+        format!(
+            "{storage_url}blocklist/{path}",
+            storage_url = self.cloud_storage.as_url(),
+        )
     }
 
     pub async fn upload(&self, src: &Path) -> Result<()> {
@@ -112,8 +117,11 @@ impl<'a> CloudLockfilePath<'a> {
     }
 
     pub fn as_url(&self) -> String {
-        let path = format!("{}.lock", self.metrics);
-        format!("{}{}", self.cloud_storage.as_url(), path)
+        let path = format!("{metrics}.lock", metrics = self.metrics);
+        format!(
+            "{storage_url}{path}",
+            storage_url = self.cloud_storage.as_url()
+        )
     }
 
     pub async fn exists(&self) -> Result<bool> {

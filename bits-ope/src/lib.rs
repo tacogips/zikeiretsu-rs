@@ -190,7 +190,7 @@ pub trait BitsReader {
         Ok(val.map(|v| match v.inner_value() {
             0 => Bit::Zero,
             1 => Bit::One,
-            v @ _ => unreachable!("chomp as bits returns with invalid value :{}", v),
+            v => unreachable!("chomp as bits returns with invalid value :{}", v),
         }))
     }
 }

@@ -33,9 +33,9 @@ pub async fn execute(fetch_metrics: FetchMetricsCondition) -> Result<()> {
 //TODO(tacogip) To be more sophisticatged at output
 fn datapoint_as_tsv(datapoint: &DataPoint) -> String {
     format!(
-        "{}\t{}",
-        datapoint.timestamp_nano,
-        datapoint
+        "{timestamp_nano}\t{tsv_record}",
+        timestamp_nano = datapoint.timestamp_nano,
+        tsv_record = datapoint
             .field_values
             .iter()
             .map(|field_value| field_value.to_string())

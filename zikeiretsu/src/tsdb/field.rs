@@ -36,7 +36,7 @@ impl FieldValue {
             Self::Float64(v) => Ok(*v),
             _ => Err(FieldError::InvalidFieldType(
                 "float64".to_string(),
-                format!("{}", self),
+                format!("{self}"),
             )),
         }
     }
@@ -46,7 +46,7 @@ impl FieldValue {
             Self::Bool(v) => Ok(*v),
             _ => Err(FieldError::InvalidFieldType(
                 "bool".to_string(),
-                format!("{}", self),
+                format!("{self}"),
             )),
         }
     }
@@ -62,8 +62,8 @@ impl FieldValue {
 impl fmt::Display for FieldValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FieldValue::Float64(v) => write!(f, "{:?}", v),
-            FieldValue::Bool(v) => write!(f, "{:?}", v),
+            FieldValue::Float64(v) => write!(f, "{v:?}"),
+            FieldValue::Bool(v) => write!(f, "{v:?}"),
         }
     }
 }
@@ -90,7 +90,7 @@ impl fmt::Display for FieldType {
             FieldType::Bool => "Bool",
         };
 
-        write!(f, "{}", name)
+        write!(f, "{name}")
     }
 }
 
@@ -147,8 +147,8 @@ impl<'data> Iterator for FieldValuesIter<'data> {
                 None => {
                     //TODO(tacogips) more reasonable error handling needed?
                     panic!(
-                        "invalid field value num in datapoint field point num :{}",
-                        self.current_idx
+                        "invalid field value num in datapoint field point num :{current_idx}",
+                        current_idx = self.current_idx
                     )
                 }
             }

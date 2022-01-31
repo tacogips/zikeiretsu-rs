@@ -40,7 +40,7 @@ pub struct Bucket(pub String);
 
 impl Display for Bucket {
     fn fmt(&self, f: &mut Formatter<'_>) -> FormatterResult {
-        write!(f, "{}", self.0)
+        write!(f, "{bucket}", bucket = self.0)
     }
 }
 
@@ -49,7 +49,7 @@ pub struct SubDir(pub String);
 
 impl Display for SubDir {
     fn fmt(&self, f: &mut Formatter<'_>) -> FormatterResult {
-        write!(f, "{}", self.0)
+        write!(f, "{subdir}", subdir = self.0)
     }
 }
 
@@ -81,7 +81,7 @@ impl CloudStorage {
     pub fn as_url(&self) -> String {
         match self {
             Self::Gcp(Bucket(bucket_str), sub_dir) => {
-                let gcs_url = format!("gs://{}/{}/", bucket_str, sub_dir);
+                let gcs_url = format!("gs://{bucket_str}/{sub_dir}/");
                 gcs_url
             }
         }

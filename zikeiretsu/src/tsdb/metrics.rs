@@ -12,7 +12,7 @@ impl Metrics {
 
 impl Display for Metrics {
     fn fmt(&self, f: &mut Formatter<'_>) -> FormatterResult {
-        write!(f, "{}", self.0)
+        write!(f, "{metrics}", metrics = self.0)
     }
 }
 

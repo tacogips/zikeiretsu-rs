@@ -56,14 +56,12 @@ pub fn decompress_u64(src: &[u8]) -> Result<(u64, usize)> {
 
     if variants_size >= 11 {
         return Err(Error::ValueOutOfBound(format!(
-            "variants size out of bound of u64 size:{}",
-            variants_size
+            "variants size out of bound of u64 size:{variants_size}"
         )));
     } else if variants_size >= 10 {
         if variants.last().unwrap().leading_zeros() <= 6 {
             return Err(Error::ValueOutOfBound(format!(
-                "variants size out of bound of u64 size:{}",
-                variants_size
+                "variants size out of bound of u64 size:{variants_size}"
             )));
         }
     }

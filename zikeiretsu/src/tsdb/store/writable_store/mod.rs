@@ -254,17 +254,16 @@ where
 
                 if condition.remove_from_store_after_persisted {
                     log::debug!(
-                        "clear writable store after persistence. indices:{:?}, datapoint len: {}",
-                        indices,
-                        datapoints.len(),
+                        "clear writable store after persistence. indices:{indices:?}, datapoint len: {data_len}",
+                        data_len = datapoints.len(),
                     );
                     remove_range(all_datapoints, indices);
                     self.shrink_to_fit_vec();
 
                     log::debug!(
-                        "after clear writable store, sorted datapoint len: {},dirty datapoint len: {}",
-                        self.sorted_datapoints.len(),
-                        self.dirty_datapoints.len(),
+                        "after clear writable store, sorted datapoint len: {sorted_datapoint_len }, dirty datapoint len: {dirty_datapoint_len}",
+                        sorted_datapoint_len = self.sorted_datapoints.len(),
+                        dirty_datapoint_len = self.dirty_datapoints.len(),
                     );
                 }
                 Ok(Some(()))

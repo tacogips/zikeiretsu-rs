@@ -10,6 +10,6 @@ pub fn val_to_type(v: u8) -> FieldType {
     match v {
         2u8 => FieldType::Float64,
         5u8 => FieldType::Bool,
-        v @ _ => panic!("invalid field type value {}", v),
+        v => panic!("invalid field type value {}", v),
     }
 }

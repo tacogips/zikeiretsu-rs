@@ -24,12 +24,12 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
     // 3.  field types
     let mut field_types = Vec::<FieldType>::new();
 
-    for i in 0..number_of_field as usize {
-        match block_data.get(block_idx + i) {
+    for field_idx in 0..number_of_field as usize {
+        match block_data.get(block_idx + field_idx) {
             Some(b) => field_types.push(field_type_convert::val_to_type(*b)),
             None => {
                 return Err(BlockError::InvalidBlockfileError(
-                    format!("no {}th `field type` data", i),
+                    format!("no {field_idx}th `field type` data"),
                     block_idx,
                 ))
             }

@@ -20,7 +20,7 @@ impl TimestampSec {
 
 impl fmt::Display for TimestampSec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{timestamp}", timestamp = self.0)
     }
 }
 
@@ -63,5 +63,16 @@ impl Add<u64> for TimestampSec {
     type Output = TimestampSec;
     fn add(self, other: u64) -> Self::Output {
         TimestampSec::new(*self + other)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_display() {
+        let ts = TimestampSec::new(1638257405);
+
+        assert_eq!("1638257405", format!("{ts}"))
     }
 }

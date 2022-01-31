@@ -93,11 +93,11 @@ pub enum StorageApiError {
 }
 
 pub(crate) fn lockfile_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
-    db_dir.join(format!("{}.lock", metrics))
+    db_dir.join(format!("{metrics}.lock"))
 }
 
 pub(crate) fn block_list_file_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
-    db_dir.join(format!("block_list/{}.list", metrics))
+    db_dir.join(format!("block_list/{metrics}.list"))
 }
 
 pub(crate) fn block_list_dir_path(db_dir: &Path) -> PathBuf {
@@ -105,7 +105,7 @@ pub(crate) fn block_list_dir_path(db_dir: &Path) -> PathBuf {
 }
 
 pub(crate) fn persisted_error_file_path(db_dir: &Path, timestamp_nano: &TimestampNano) -> PathBuf {
-    db_dir.join(format!("error/{}.list", timestamp_nano))
+    db_dir.join(format!("error/{timestamp_nano}.list"))
 }
 
 pub(crate) fn block_timestamp_to_block_file_path(
@@ -119,13 +119,15 @@ pub(crate) fn block_timestamp_to_block_file_path(
     //  {root_dir}/block/{metrics}/{timestamp_sec_since[:4]}/{timestamp_sec_since}_{timestamp_sec_since}}/block
 
     let block_path_dir = root_dir.to_path_buf().join(format!(
-        "block/{}/{}/{}_{}/",
-        metrics, timestamp_head, block_timestamp.since_sec, block_timestamp.until_sec,
+        "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/",
+        since_sec = block_timestamp.since_sec,
+        until_sec = block_timestamp.until_sec,
     ));
 
     let block_path = root_dir.to_path_buf().join(format!(
-        "block/{}/{}/{}_{}/block",
-        metrics, timestamp_head, block_timestamp.since_sec, block_timestamp.until_sec,
+        "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/block",
+        since_sec = block_timestamp.since_sec,
+        until_sec = block_timestamp.until_sec,
     ));
     (block_path_dir, block_path)
 }

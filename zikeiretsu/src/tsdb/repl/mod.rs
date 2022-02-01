@@ -1,3 +1,4 @@
+use super::query::*;
 use thiserror::Error;
 
 use crate::EngineError;
@@ -14,15 +15,22 @@ pub enum ZikeiretsuReplError {
 }
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuReplError>;
-pub fn start() -> Result<()> {
-    let editor = Editor::<()>::new();
+pub fn start(_ctx: &mut QueryContext) -> Result<()> {
+    let mut editor = Editor::<()>::new();
 
     loop {
         let readline = editor.readline(">>");
 
         match readline {
-            Ok(line) => {}
-            Err(_) => {}
+            Ok(line) => {
+                println!("input line [{line}]")
+            }
+
+            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
+                println!("bye.");
+                return Ok(());
+            }
+            Err(err) => return Err(ZikeiretsuReplError::from(err)),
         }
     }
 }

@@ -18,6 +18,7 @@ pub use datapoints_searcher::*;
 pub use engine::*;
 pub use field::*;
 pub use metrics::*;
+pub use query::*;
 pub use repl::*;
 pub use search::*;
 pub use storage::*;

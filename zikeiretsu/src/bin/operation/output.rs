@@ -77,7 +77,6 @@ fn write_to_file<'a, I: IntoIterator<Item = D>, D: std::fmt::Display>(
     dest.flush()?;
     Ok(())
 }
-
 pub enum OutputDestination {
     Stdout,
     File(PathBuf),

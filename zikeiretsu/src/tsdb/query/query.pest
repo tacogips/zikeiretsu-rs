@@ -1,7 +1,26 @@
-field = { (ASCII_DIGIT | "." | "-")+ }
-record = { field ~ ("," ~ field)* }
-new_line  = { ("\r\n" | "\n") }
-WHITESPACE = _{ (" "|"\t") }
-file = { SOI ~ (record ~ new_line*)* ~  EOI }
+
+WHITESPACE = _{ " " | "\t" }
+COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+
+star_selector =  { "*" }
 
 
+with_clause = { "cols " ~}
+
+column_name_compat_symbol = { "_" | "-" | "@" | "."}
+column_name = { @(ASCII_ALPHANUMERIC|column_name_compat_symbol)+ }
+
+
+timezone_offset_val = {("+"|"-") ~ ASCII_DIGIT+)}
+timezone_offset_val = {("+"|"-") ~ ASCII_DIGIT+)}
+
+columns = {column  ("," ~ columns)*~!","}
+
+specify_columns  = {"cols" ~ "=" ~}
+
+kw_select = { ^"select" }
+kw_from = { ^"from" }
+kw_with = { ^"with" }
+kw_where = { ^"where" }
+
+query = {SOI ~ EOI}

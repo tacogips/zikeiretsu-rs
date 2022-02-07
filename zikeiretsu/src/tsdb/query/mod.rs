@@ -11,3 +11,5 @@ pub enum QueryError {
     #[error("engine error :{0}")]
     EngineError(#[from] EngineError),
 }
+
+fn aaa() {}

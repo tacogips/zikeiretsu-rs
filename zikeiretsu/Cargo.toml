@@ -2,7 +2,7 @@
 name = "zikeiretsu"
 version = "0.1.7"
 edition = "2021"
-rust = "1.58.1"
+rust-version = "1.58.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -43,6 +43,10 @@ dotenv = "0.15"
 walkdir = "2.3"
 rustyline = "9.1"
 rustyline-derive = "0.6"
+
+pest = "2.1"
+pest_derive = "2.1"
+
 
 [dev-dependencies]
 tempfile = "3.2"

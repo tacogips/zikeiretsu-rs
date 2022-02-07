@@ -1,0 +1,7 @@
+field = { (ASCII_DIGIT | "." | "-")+ }
+record = { field ~ ("," ~ field)* }
+new_line  = { ("\r\n" | "\n") }
+WHITESPACE = _{ (" "|"\t") }
+file = { SOI ~ (record ~ new_line*)* ~  EOI }
+
+

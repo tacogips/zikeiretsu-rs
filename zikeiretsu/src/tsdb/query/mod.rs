@@ -1,5 +1,6 @@
 mod context;
 mod output;
+mod parser;
 
 use crate::EngineError;
 pub use context::*;

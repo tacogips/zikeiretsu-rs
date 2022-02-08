@@ -1,27 +1,97 @@
 
 WHITESPACE = _{ " " | "\t" }
-COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
 
-star_selector =  { "*" }
+STAR_SELECTOR =  { "*" }
 
-with_clause = { "cols " ~}
+TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ ASCII_DIGIT+  }
+TIMEZONE_NAME = { ASCII_ALPHA{3} }
 
-column_name_compat_symbol = { "_" | "-" | "."}
-column_name = { @(ASCII_ALPHANUMERIC | column_name_compat_symbol)+ }
+COLUMN_NAME_COMPAT_SYMBOL = { "_" | "-"}
+COLUMN_NAME = {  ( ASCII_ALPHANUMERIC | COLUMN_NAME_COMPAT_SYMBOL )+ }
+COLUMNS = { COLUMN_NAME  ~ ( "," ~ COLUMN_NAME )* ~ !"," }
 
-timezone_offset_val = { ( "+" | "-" ) ~ ASCII_DIGIT+ ) }
-timezone_name = { ASCII_ALPHA }
+TABLE_NAME_COMPAT_SYMBOL = { "_" | "-" | "."}
+TABLE_NAME = {  (ASCII_ALPHANUMERIC | TABLE_NAME_COMPAT_SYMBOL )+ }
 
-columns = { column ~ ("," ~ columns )* ~ !"," }
+DEFINE_COLUMNS = {"COLS" ~ "=" ~ "[" ~ COLUMNS ~ "]" }
+DEFINE_TZ      = {"TZ" ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
 
-define_columns  = {"cols" ~ "=" ~ "["~ columns ~"]"}
-define_tz  = {"tz" ~ "=" ~ (timezone_offset_val|timezone_name ) }
+KW_SELECT = { ^"SELECT" }
+KW_FROM   = { ^"FROM" }
+KW_WITH   = { ^"WITH" }
+KW_WHERE  = { ^"WHERE" }
 
-kw_select = { ^"select" }
-kw_from = { ^"from" }
-kw_with = { ^"with" }
-kw_where = { ^"where" }
+KW_AND  = { ^"AND" }
+KW_OR  = { ^"OR" }
 
-fn_today = { "today()" }
+KW_ASC  = { ^"DESC" }
+KW_DESC = { ^"ASC" }
 
-query = {SOI ~ EOI}
+KW_OFFSET = { ^"OFFSET" }
+KW_LIMIT  = { ^"LIMIT" }
+
+DATE_STR = { ( ASCII_ALPHANUMERIC | " " | ":" | ","| "/" )+ }
+FN_TODAY = { ^"TODAY()" }
+CHRONOS =   { DATE_STR | FN_TODAY }
+CHRONOS_RANGE =  { "(" ~ CHRONOS "," ~ CHRONOS  ~ ")"}
+
+REL_IN  = { ^"IN" }
+REL_GTE = { ">=" }
+REL_GT  = { ">" }
+REL_LTE = { "<=" }
+REL_LT  = { "<" }
+REL_EQ  = { "=" }
+
+REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
+
+REL_OP_VAL = { FN_TODAY | DATE_STR }
+
+
+// ### 1. show datapoints in today
+// ```
+// with
+// 	cols = [is_buy, volume, price],
+// 	tz = +9
+//
+// select ts, is_buy, volume, price
+// from trades
+// where ts in today()
+// offset 10 limit 200
+// ```
+//
+// ### 2. show datapoints in specific range
+// ```
+// with
+// 	cols = [_, volume, price],
+// 	tz = JST
+//
+// select ts, volume, price
+// from trades
+// where ts in ('2012-12-13 9:00:00+09:00', '2012-12-13 9:00:00+09:00')
+//
+// ```
+
+// === WITH CLAUS =========================================
+WITH_CLAUSE   = { KW_WITH ~ ( DEFINE_COLUMNS|DEFINE_TZ ) ~ ("," ~ DEFINE_COLUMNS|DEFINE_TZ)* }
+SELECT_CLAUSE = { KW_SELECT ~ COLUMNS }
+FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME }
+
+WHERE_CLAUSE  = { "ts" ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE )  } // only simple condition is allowed now
+LIMIT_CLAUSE  = { KW_LIMIT "~" ASCII_DIGIT } // only simple condition is allowed now
+OFFSET_CLAUSE  = { KW_OFFSET "~" ASCII_DIGIT } // only simple condition is allowed now
+ORDER_CLAUSE = { KW_ASC | KW_DESC }
+ORDER_OR_CUT_CLAUSE = { ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE  }
+
+
+
+
+QUERY = {
+		SOI
+	~ WITH_CLAUSE?
+	~ SELECT_CLAUSE
+	~ FROM_CLAUSE
+	~ WHERE_CLAUSE?
+	~ ORDER_OR_CUT_CLAUSE*
+	~ EOI }
+

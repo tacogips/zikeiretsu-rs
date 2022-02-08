@@ -79,7 +79,6 @@ pub async fn main() -> Result<()> {
 
     //TODO(tacogips) for debugging
     //TODO(tacogips) for debugging
-    println!(function_name);
 
     Ok(())
 }

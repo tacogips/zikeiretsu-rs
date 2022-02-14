@@ -1,6 +1,6 @@
 
 // === silents =================
-WHITESPACE = _{ " " | "\t" }
+WHITESPACE = _{ " " | "\t" | "\n"}
 COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
 
 // === selector =================
@@ -9,15 +9,15 @@ STAR_SELECTOR =  { "*" }
 TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ ASCII_DIGIT+  }
 TIMEZONE_NAME = { ASCII_ALPHA{3} }
 
-COLUMN_NAME_COMPAT_SYMBOL = { "_" | "-"}
-COLUMN_NAME = {  ( ASCII_ALPHANUMERIC | COLUMN_NAME_COMPAT_SYMBOL )+ }
+COLUMN_NAME_AVAILABLE_SYMBOL = { "_" | "-"}
+COLUMN_NAME = {  ( ASCII_ALPHANUMERIC | COLUMN_NAME_AVAILABLE_SYMBOL  )+ }
 COLUMNS = { COLUMN_NAME  ~ ( "," ~ COLUMN_NAME )* ~ !"," }
 
 TABLE_NAME_COMPAT_SYMBOL = { "_" | "-" | "."}
 TABLE_NAME = {  (ASCII_ALPHANUMERIC | TABLE_NAME_COMPAT_SYMBOL )+ }
 
-DEFINE_COLUMNS = {"COLS" ~ "=" ~ "[" ~ COLUMNS ~ "]" }
-DEFINE_TZ      = {"TZ" ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
+DEFINE_COLUMNS = { ^"COLS" ~ "=" ~ "[" ~ COLUMNS ~ "]" }
+DEFINE_TZ      = { ^"TZ" ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
 
 KW_SELECT = { ^"SELECT" }
 KW_FROM   = { ^"FROM" }
@@ -75,11 +75,11 @@ REL_OP_VAL = { FN_TODAY | DATE_STR }
 // ```
 
 // === WITH CLAUS =========================================
-WITH_CLAUSE   = { KW_WITH ~ ( DEFINE_COLUMNS|DEFINE_TZ ) ~ ("," ~ DEFINE_COLUMNS|DEFINE_TZ)* }
+WITH_CLAUSE   = { KW_WITH ~ ( DEFINE_COLUMNS | DEFINE_TZ ) ~ ("," ~ (DEFINE_COLUMNS | DEFINE_TZ))* }
 SELECT_CLAUSE = { KW_SELECT ~ COLUMNS }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME }
 
-WHERE_CLAUSE  = { "ts" ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE )  } // only simple condition is allowed now
+WHERE_CLAUSE  = { KW_WHERE ~ "ts" ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE ) } // only simple condition is allowed now
 LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGIT } // only simple condition is allowed now
 OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGIT } // only simple condition is allowed now
 ORDER_CLAUSE = { KW_ASC | KW_DESC }

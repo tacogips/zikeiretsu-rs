@@ -112,6 +112,9 @@ pub enum BuildinFunction {
 pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
     let pairs = QueryGrammer::parse(Rule::QUERY, query)?;
 
+    //TODO(tacogips) for debugging
+    println!("==== {:?}", "ssss");
+
     let mut parsed_query = ParsedQuery::<'q>::empty();
     for each_pair in pairs.into_iter() {
         match each_pair.as_rule() {
@@ -147,11 +150,34 @@ mod test {
     use super::*;
 
     #[test]
+    fn parse_timezone_offset_val() {
+        let pairs = QueryGrammer::parse(Rule::TIMEZONE_OFFSET_VAL, "+1");
+
+        assert!(pairs.is_ok());
+        let mut pairs = pairs.unwrap();
+
+        let tz = pairs.next().unwrap();
+        assert_eq!(tz.as_rule(), Rule::TIMEZONE_OFFSET_VAL);
+        assert_eq!(tz.as_str(), "+1");
+    }
+
+    #[test]
+    fn parse_column() {
+        let pairs = QueryGrammer::parse(Rule::COLUMNS, "aa,bb,cc_cc,dd");
+
+        assert!(pairs.is_ok());
+        let mut pairs = pairs.unwrap();
+
+        let tz = pairs.next().unwrap();
+        assert_eq!(tz.as_rule(), Rule::COLUMNS);
+        assert_eq!(tz.as_str(), "aa,bb,cc_cc,dd");
+    }
+
+    #[test]
     fn parse_query_1() {
-        let query = r#"
- with
- 	cols = [is_buy, volume, price],
- 	tz = +9
+        let query = r#"with
+        cols = [is_buy, volume, price],
+ 	   tz = +9
 
  select ts, is_buy, volume, price
  from trades

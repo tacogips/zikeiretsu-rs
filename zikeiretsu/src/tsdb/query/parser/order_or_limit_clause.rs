@@ -4,10 +4,12 @@ use thiserror::Error;
 
 use super::*;
 
-pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
+pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     pair.into_inner();
-    Ok(WithClause {
-        def_columns: None,
-        def_timezone: None,
+
+    Ok(OrderOrLimitClause {
+        order_by: None,
+        limit: None,
+        offset: None,
     })
 }

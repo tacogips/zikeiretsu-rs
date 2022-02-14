@@ -1,6 +1,7 @@
 mod timezone;
 
 mod from_clause;
+mod order_or_limit_clause;
 mod select_clause;
 mod where_clause;
 mod with_clause;
@@ -13,6 +14,10 @@ use thiserror::Error;
 #[grammar = "tsdb/query/query.pest"]
 pub struct QueryGrammer {}
 
+type ColumnName = str;
+type DateString = str;
+type TimeZone = str;
+
 #[derive(Error, Debug)]
 pub enum QueryError {
     #[error("{0}")]
@@ -24,13 +29,13 @@ pub enum QueryError {
 
 pub type Result<T> = std::result::Result<T, QueryError>;
 
+#[derive(Debug)]
 pub struct ParsedQuery<'q> {
     pub with: Option<WithClause<'q>>,
-    pub select: Option<Vec<&'q str>>,
-    pub select_columns: Option<Vec<&'q str>>,
-    pub from: Option<&'q str>,
+    pub select: Option<SelectClause<'q>>,
+    pub from: Option<FromClause<'q>>,
     pub r#where: Option<WhereClause<'q>>,
-    pub order_or_limit: Option<OrderOrLImitClause<'q>>,
+    pub order_or_limit: Option<OrderOrLimitClause<'q>>,
 }
 
 impl<'q> ParsedQuery<'q> {
@@ -38,7 +43,6 @@ impl<'q> ParsedQuery<'q> {
         ParsedQuery {
             with: None,
             select: None,
-            select_columns: None,
             from: None,
             r#where: None,
             order_or_limit: None,
@@ -46,38 +50,63 @@ impl<'q> ParsedQuery<'q> {
     }
 }
 
+#[derive(Debug)]
+pub struct SelectClause<'q> {
+    pub select_columns: Option<Vec<&'q str>>,
+}
+
+#[derive(Debug)]
+pub struct FromClause<'q> {
+    pub from: Option<&'q str>,
+}
+
+#[derive(Debug)]
 pub struct WithClause<'q> {
-    pub def_columns: Option<Vec<&'q str>>,
-    pub def_timezone: Option<&'q str>,
+    pub def_columns: Option<Vec<&'q ColumnName>>,
+    pub def_timezone: Option<&'q TimeZone>,
 }
 
+#[derive(Debug)]
 pub struct WhereClause<'q> {
-    ts_filter: TsFilter<'q>,
+    datetime_filter: Option<DatetimeFilter<'q>>,
 }
 
-pub struct OrderOrLImitClause<'q> {
+#[derive(Debug)]
+pub struct OrderOrLimitClause<'q> {
     order_by: Option<Order<'q>>,
     limit: Option<u64>,
     offset: Option<u64>,
 }
 
+#[derive(Debug)]
 pub enum Order<'q> {
-    AscBy(&'q str),
-    DescBy(&'q str),
+    AscBy(&'q ColumnName),
+    DescBy(&'q ColumnName),
 }
 
-pub enum TsFilter<'q> {
-    In(TsFilterValue<'q>, TsFilterValue<'q>),
-    Gte(TsFilterValue<'q>),
-    Gt(TsFilterValue<'q>),
-    Lte(TsFilterValue<'q>),
-    Lt(TsFilterValue<'q>),
-    Equal(TsFilterValue<'q>),
+#[derive(Debug)]
+pub enum DatetimeFilter<'q> {
+    In(
+        &'q ColumnName,
+        DatetimeFilterValue<'q>,
+        DatetimeFilterValue<'q>,
+    ),
+    Gte(&'q ColumnName, DatetimeFilterValue<'q>),
+    Gt(&'q ColumnName, DatetimeFilterValue<'q>),
+    Lte(&'q ColumnName, DatetimeFilterValue<'q>),
+    Lt(&'q ColumnName, DatetimeFilterValue<'q>),
+    Equal(&'q ColumnName, DatetimeFilterValue<'q>),
 }
 
-pub enum TsFilterValue<'a> {
-    DateString(&'a str),
-    Function,
+#[derive(Debug)]
+pub enum DatetimeFilterValue<'a> {
+    DateString(&'a DateString),
+    Function(BuildinFunction),
+}
+
+#[derive(Debug)]
+pub enum BuildinFunction {
+    Today,
 }
 
 pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
@@ -88,25 +117,28 @@ pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
         match each_pair.as_rule() {
             Rule::WITH_CLAUSE => {
                 let with_clause = with_clause::parse(each_pair)?;
-
                 parsed_query.with = Some(with_clause);
             }
             Rule::SELECT_CLAUSE => {
-                unimplemented!()
+                let select_clause = select_clause::parse(each_pair)?;
+                parsed_query.select = Some(select_clause);
             }
             Rule::FROM_CLAUSE => {
-                unimplemented!()
+                let from_clause = from_clause::parse(each_pair)?;
+                parsed_query.from = Some(from_clause);
             }
             Rule::WHERE_CLAUSE => {
-                unimplemented!()
+                let where_clause = where_clause::parse(each_pair)?;
+                parsed_query.r#where = Some(where_clause);
             }
             Rule::ORDER_OR_LIMIT_CLAUSE => {
-                unimplemented!()
+                let order_or_limit_clause = order_or_limit_clause::parse(each_pair)?;
+                parsed_query.order_or_limit = Some(order_or_limit_clause);
             }
             _ => return Err(QueryError::InvalidGrammer("".to_string())),
         }
     }
-    unimplemented!()
+    Ok(parsed_query)
 }
 
 #[cfg(test)]
@@ -115,17 +147,23 @@ mod test {
     use super::*;
 
     #[test]
-    fn parse_timezone_offset_val() {
-        let pairs = QueryGrammer::parse(Rule::TIMEZONE_OFFSET_VAL, "+1");
+    fn parse_query_1() {
+        let query = r#"
+ with
+ 	cols = [is_buy, volume, price],
+ 	tz = +9
 
-        for each in pairs.unwrap() {
-            if each.as_rule() == Rule::TIMEZONE_OFFSET_VAL {
-                //TODO(tacogips) for debugging
-                //TODO(tacogips) for debugging
-                println!("==== {:?}", each.as_rule());
-            }
-        }
+ select ts, is_buy, volume, price
+ from trades
+ where ts in today()
+ offset 10 limit 200
+            "#;
+        let parsed_query = parse_query(query);
+        //TODO(tacogips) for debugging
+        println!("==== {:?}", parsed_query);
 
-        assert!(false);
+        assert!(parsed_query.is_ok());
+
+        let parsed_query = parsed_query.unwrap();
     }
 }

@@ -6,6 +6,7 @@ mod select_clause;
 mod where_clause;
 mod with_clause;
 
+use log;
 use pest::{error::Error as PestError, Parser, ParserState};
 use pest_derive::Parser;
 use thiserror::Error;
@@ -138,7 +139,17 @@ pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
                 let order_or_limit_clause = order_or_limit_clause::parse(each_pair)?;
                 parsed_query.order_or_limit = Some(order_or_limit_clause);
             }
-            _ => return Err(QueryError::InvalidGrammer("".to_string())),
+            Rule::QUERY => {}
+            _ => {
+                let msg = format!(
+                    "invalid grammer RULE:{:?} {:?}",
+                    each_pair.as_rule(),
+                    each_pair.as_str()
+                );
+                log::error!("{} ", msg);
+
+                return Err(QueryError::InvalidGrammer(msg));
+            }
         }
     }
     Ok(parsed_query)
@@ -174,16 +185,29 @@ mod test {
     }
 
     #[test]
+    fn parse_where() {
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, "where ts in today()");
+
+        assert!(pairs.is_ok());
+        let mut pairs = pairs.unwrap();
+
+        let tz = pairs.next().unwrap();
+        assert_eq!(tz.as_rule(), Rule::WHERE_CLAUSE);
+        assert_eq!(tz.as_str(), "where ts in today()");
+    }
+
+    #[test]
     fn parse_query_1() {
         let query = r#"with
-        cols = [is_buy, volume, price],
- 	   tz = +9
 
- select ts, is_buy, volume, price
- from trades
- where ts in today()
- offset 10 limit 200
-            "#;
+        cols = [is_buy, volume, price],
+
+ 	   tz = +9
+select *
+ from trades  "#;
+
+        // select ts, is_buy, volume, price
+        // --offset 10 limit 200
         let parsed_query = parse_query(query);
         //TODO(tacogips) for debugging
         println!("==== {:?}", parsed_query);

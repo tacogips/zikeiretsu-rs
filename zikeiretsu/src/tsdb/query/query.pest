@@ -1,6 +1,6 @@
 
 // === silents =================
-WHITESPACE = _{ " " | "\t" | "\n"}
+WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
 
 // === selector =================
@@ -23,6 +23,9 @@ KW_SELECT = { ^"SELECT" }
 KW_FROM   = { ^"FROM" }
 KW_WITH   = { ^"WITH" }
 KW_WHERE  = { ^"WHERE" }
+KW_ASTERISK = { "*" }
+
+KW_TIMESTAMP  = { ^"ts" }
 
 KW_AND  = { ^"AND" }
 KW_OR  = { ^"OR" }
@@ -33,9 +36,9 @@ KW_DESC = { ^"ASC" }
 KW_OFFSET = { ^"OFFSET" }
 KW_LIMIT  = { ^"LIMIT" }
 
-DATE_STR = { ( ASCII_ALPHANUMERIC | " " | ":" | ","| "/" )+ }
+DATE_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | ":" | ","| "/" )+ ~ "'"}
 FN_TODAY = { ^"TODAY()" }
-CHRONOS =   { DATE_STR | FN_TODAY }
+CHRONOS =   { FN_TODAY | DATE_STR  }
 CHRONOS_RANGE =  { "(" ~ CHRONOS ~"," ~ CHRONOS  ~ ")"}
 
 REL_IN  = { ^"IN" }
@@ -76,10 +79,10 @@ REL_OP_VAL = { FN_TODAY | DATE_STR }
 
 // === WITH CLAUS =========================================
 WITH_CLAUSE   = { KW_WITH ~ ( DEFINE_COLUMNS | DEFINE_TZ ) ~ ("," ~ (DEFINE_COLUMNS | DEFINE_TZ))* }
-SELECT_CLAUSE = { KW_SELECT ~ COLUMNS }
+SELECT_CLAUSE = { KW_SELECT ~ ( KW_ASTERISK | COLUMNS) }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME }
 
-WHERE_CLAUSE  = { KW_WHERE ~ "ts" ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE ) } // only simple condition is allowed now
+WHERE_CLAUSE  = { KW_WHERE ~ KW_TIMESTAMP ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE ) } // only simple condition is allowed now
 LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGIT } // only simple condition is allowed now
 OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGIT } // only simple condition is allowed now
 ORDER_CLAUSE = { KW_ASC | KW_DESC }
@@ -95,3 +98,9 @@ QUERY = {
 	~ ORDER_OR_LIMIT_CLAUSE*
 	~ EOI }
 
+
+//	~ FROM_CLAUSE
+//	~ WHERE_CLAUSE?
+//	~ ORDER_OR_LIMIT_CLAUSE*
+//	~ EOI }
+//

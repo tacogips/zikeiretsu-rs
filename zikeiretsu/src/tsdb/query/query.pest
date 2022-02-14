@@ -1,7 +1,9 @@
 
+// === silents =================
 WHITESPACE = _{ " " | "\t" }
 COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
 
+// === selector =================
 STAR_SELECTOR =  { "*" }
 
 TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ ASCII_DIGIT+  }
@@ -34,7 +36,7 @@ KW_LIMIT  = { ^"LIMIT" }
 DATE_STR = { ( ASCII_ALPHANUMERIC | " " | ":" | ","| "/" )+ }
 FN_TODAY = { ^"TODAY()" }
 CHRONOS =   { DATE_STR | FN_TODAY }
-CHRONOS_RANGE =  { "(" ~ CHRONOS "," ~ CHRONOS  ~ ")"}
+CHRONOS_RANGE =  { "(" ~ CHRONOS ~"," ~ CHRONOS  ~ ")"}
 
 REL_IN  = { ^"IN" }
 REL_GTE = { ">=" }
@@ -78,20 +80,18 @@ SELECT_CLAUSE = { KW_SELECT ~ COLUMNS }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME }
 
 WHERE_CLAUSE  = { "ts" ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE )  } // only simple condition is allowed now
-LIMIT_CLAUSE  = { KW_LIMIT "~" ASCII_DIGIT } // only simple condition is allowed now
-OFFSET_CLAUSE  = { KW_OFFSET "~" ASCII_DIGIT } // only simple condition is allowed now
+LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGIT } // only simple condition is allowed now
+OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGIT } // only simple condition is allowed now
 ORDER_CLAUSE = { KW_ASC | KW_DESC }
-ORDER_OR_CUT_CLAUSE = { ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE  }
+ORDER_OR_LIMIT_CLAUSE = { ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE  }
 
-
-
-
+// === Query =================
 QUERY = {
 		SOI
 	~ WITH_CLAUSE?
 	~ SELECT_CLAUSE
 	~ FROM_CLAUSE
 	~ WHERE_CLAUSE?
-	~ ORDER_OR_CUT_CLAUSE*
+	~ ORDER_OR_LIMIT_CLAUSE*
 	~ EOI }
 

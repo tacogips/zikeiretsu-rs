@@ -1,8 +1,8 @@
-mod timezone;
-
+mod columns_parser;
 mod from_clause;
 mod order_or_limit_clause;
 mod select_clause;
+mod timezone_parser;
 mod where_clause;
 mod with_clause;
 
@@ -15,9 +15,17 @@ use thiserror::Error;
 #[grammar = "tsdb/query/query.pest"]
 pub struct QueryGrammer {}
 
-type ColumnName = str;
 type DateString = str;
 type TimeZone = str;
+
+#[derive(Debug)]
+pub struct ColumnName<'q>(&'q str);
+
+#[derive(Debug)]
+pub enum Column<'q> {
+    Asterick,
+    ColumnName(ColumnName<'q>),
+}
 
 #[derive(Error, Debug)]
 pub enum QueryError {
@@ -26,6 +34,12 @@ pub enum QueryError {
 
     #[error("Invalid grammer. this might be a bug: {0}")]
     InvalidGrammer(String),
+
+    #[error("Unexpected Pair expect: {0}, actual: {1}")]
+    UnexpectedPair(String, String),
+
+    #[error("invalid column name:{0}")]
+    InvalidColumnName(String),
 }
 
 pub type Result<T> = std::result::Result<T, QueryError>;
@@ -63,7 +77,7 @@ pub struct FromClause<'q> {
 
 #[derive(Debug)]
 pub struct WithClause<'q> {
-    pub def_columns: Option<Vec<&'q ColumnName>>,
+    pub def_columns: Option<Vec<Column<'q>>>,
     pub def_timezone: Option<&'q TimeZone>,
 }
 
@@ -81,22 +95,22 @@ pub struct OrderOrLimitClause<'q> {
 
 #[derive(Debug)]
 pub enum Order<'q> {
-    AscBy(&'q ColumnName),
-    DescBy(&'q ColumnName),
+    AscBy(ColumnName<'q>),
+    DescBy(ColumnName<'q>),
 }
 
 #[derive(Debug)]
 pub enum DatetimeFilter<'q> {
     In(
-        &'q ColumnName,
+        ColumnName<'q>,
         DatetimeFilterValue<'q>,
         DatetimeFilterValue<'q>,
     ),
-    Gte(&'q ColumnName, DatetimeFilterValue<'q>),
-    Gt(&'q ColumnName, DatetimeFilterValue<'q>),
-    Lte(&'q ColumnName, DatetimeFilterValue<'q>),
-    Lt(&'q ColumnName, DatetimeFilterValue<'q>),
-    Equal(&'q ColumnName, DatetimeFilterValue<'q>),
+    Gte(ColumnName<'q>, DatetimeFilterValue<'q>),
+    Gt(ColumnName<'q>, DatetimeFilterValue<'q>),
+    Lte(ColumnName<'q>, DatetimeFilterValue<'q>),
+    Lt(ColumnName<'q>, DatetimeFilterValue<'q>),
+    Equal(ColumnName<'q>, DatetimeFilterValue<'q>),
 }
 
 #[derive(Debug)]
@@ -112,9 +126,6 @@ pub enum BuildinFunction {
 
 pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
     let pairs = QueryGrammer::parse(Rule::QUERY, query)?;
-
-    //TODO(tacogips) for debugging
-    println!("==== {:?}", "ssss");
 
     let mut parsed_query = ParsedQuery::<'q>::empty();
     for each_pair in pairs.into_iter() {
@@ -228,9 +239,6 @@ mod test {
             r#"with        cols = [is_buy, volume, price ] , tz =+9"#,
         );
 
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", pairs);
-
         assert!(pairs.is_ok());
         let mut pairs = pairs.unwrap();
 
@@ -318,8 +326,6 @@ select *
  from trades  "#;
 
         let parsed_query = parse_query(query);
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", parsed_query);
 
         assert!(parsed_query.is_ok());
 
@@ -359,8 +365,22 @@ from trades
 
         let parsed_query = parse_query(query);
 
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", parsed_query);
+        assert!(parsed_query.is_ok());
+    }
+
+    #[test]
+    fn parse_query_4() {
+        let query = r#"with
+
+        cols = [is_buy, volume, price],
+ 	   tz = +9
+select *
+from trades
+ offset 10 limit 10
+
+ "#;
+
+        let parsed_query = parse_query(query);
 
         assert!(parsed_query.is_ok());
     }

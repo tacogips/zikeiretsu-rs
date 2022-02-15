@@ -9,16 +9,30 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
         def_columns: None,
         def_timezone: None,
     };
-    //for each in pair.into_inner() {
-    //
-    //    match each.as_rule() {
-    //        Rule::DEFINE_COLUMNS => {
-    //            //let with_clause = with_clause::parse(each_pair)?;
-    //            panic!("{:?}", each)
-    //        }
-    //        _ => {}
-    //    }
-    //}
+    for each in pair.into_inner() {
+        match each.as_rule() {
+            Rule::DEFINE_COLUMNS => {
+                for each_in_defin_columns in each.into_inner() {
+                    if each_in_defin_columns.as_rule() == Rule::COLUMNS {
+                        let columns = super::columns_parser::parse(each_in_defin_columns, false)?;
+                        with_clause.def_columns = Some(columns)
+                    }
+                }
+            }
+
+            Rule::DEFINE_TZ => {
+
+                //for each_in_defin_columns in each.into_inner() {
+                //    if each_in_defin_columns.as_rule() == Rule::COLUMNS {
+                //        let columns = super::columns_parser::parse(each_in_defin_columns, false)?;
+                //        with_clause.def_columns = Some(columns)
+                //    }
+                //}
+            }
+
+            _ => {}
+        }
+    }
 
     Ok(with_clause)
 }

@@ -317,6 +317,30 @@ mod test {
     }
 
     #[test]
+    fn parse_chronos_1() {
+        let pairs = QueryGrammer::parse(Rule::DATETIME, "today()  + 2 hours");
+
+        assert!(pairs.is_ok());
+
+        let mut pairs = pairs.unwrap();
+        let from = pairs.next().unwrap();
+        assert_eq!(from.as_rule(), Rule::DATETIME);
+        assert_eq!(from.as_str(), "today()  + 2 hours");
+    }
+
+    #[test]
+    fn parse_chronos_2() {
+        let pairs = QueryGrammer::parse(Rule::DATETIME, "'2012-12-13 9:00:00+09:00' - 1hour ");
+
+        assert!(pairs.is_ok());
+
+        let mut pairs = pairs.unwrap();
+        let from = pairs.next().unwrap();
+        assert_eq!(from.as_rule(), Rule::DATETIME);
+        assert_eq!(from.as_str(), "'2012-12-13 9:00:00+09:00' - 1hour");
+    }
+
+    #[test]
     fn parse_query_1() {
         let query = r#"with
 

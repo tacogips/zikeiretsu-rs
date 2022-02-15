@@ -25,6 +25,13 @@ KW_LIMIT  = @{ ^"LIMIT" ~ !ASCII_ALPHANUMERIC }
 KW_COLS = @{ ^"COLS" ~ !ASCII_ALPHANUMERIC }
 KW_TZ  = @{ ^"TZ" ~ !ASCII_ALPHANUMERIC }
 
+KW_SECOND  	= @{ ^"SECOND" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_MINUTES  = @{ ^"MINUTE" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_HOUR  		= @{ ^"HOUR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_DAY  		= @{ ^"DAY" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_MONTH  	= @{ ^"MONTH" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_YEAR  		= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+
 COLUMN_UNAVAILABLE_KW  = { KW_TZ | KW_SELECT | KW_FROM   | KW_WITH   | KW_WHERE |KW_AND | KW_OR | KW_ASTERISK }
 
 // === selector =================
@@ -45,10 +52,17 @@ TABLE_NAME = @{ (ASCII_ALPHANUMERIC | TABLE_NAME_AVAILABLE_SYMBOL )+ }
 DEFINE_COLUMNS = { KW_COLS ~ "=" ~  "[" ~ COLUMNS ~ "]" }
 DEFINE_TZ      = { KW_TZ ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
 
-DATE_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | ":" | ","| "/" )+ ~ "'"}
+DATE_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | "-" |"+" | ":" | ","| "/" )+ ~ "'"}
 FN_TODAY = { ^"TODAY()" }
-CHRONOS =   { FN_TODAY | DATE_STR  }
-CHRONOS_RANGE =  { "(" ~ CHRONOS ~"," ~ CHRONOS  ~ ")"}
+FN_YESTERDAY = { ^"YESTERDAY()" }
+FN_TOMORROW = { ^"TOMORROW()" }
+
+DATETIME_DELTA_VALUE  = { ( "+" | "-" ) ~ ASCII_DIGIT+  }
+DATETIME_DELTA = { DATETIME_DELTA_VALUE ~ ( KW_SECOND | KW_MINUTES | KW_HOUR | KW_DAY	| KW_MONTH | KW_YEAR ) }
+DATETIME_FN  = { FN_TODAY | FN_YESTERDAY | FN_TOMORROW }
+
+DATETIME =   { ( DATETIME_FN  | DATE_STR ) ~ DATETIME_DELTA? }
+DATETIME_RANGE =  { "(" ~ DATETIME ~"," ~ DATETIME ~ ")"}
 
 REL_IN  = { ^"IN" }
 REL_GTE = { ">=" }
@@ -58,8 +72,6 @@ REL_LT  = { "<" }
 REL_EQ  = { "=" }
 
 REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
-
-REL_OP_VAL = { FN_TODAY | DATE_STR }
 
 
 // ### 1. show datapoints in today
@@ -91,8 +103,7 @@ WITH_CLAUSE   = { KW_WITH ~ ( DEFINE_TZ  | DEFINE_COLUMNS ) ~ ("," ~ (  DEFINE_T
 SELECT_CLAUSE = { KW_SELECT ~ ( KW_ASTERISK | COLUMNS ) }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME  }
 
-//WHERE_CLAUSE  = { KW_WHERE ~ KW_TIMESTAMP ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE ) } // only simple condition is allowed now
-WHERE_CLAUSE  = { KW_WHERE ~ KW_TIMESTAMP ~ REL_OP ~ ( CHRONOS | CHRONOS_RANGE )}
+WHERE_CLAUSE  = { KW_WHERE ~ KW_TIMESTAMP ~ REL_OP ~ ( DATETIME | DATETIME_RANGE )} // only simple condition is allowed now
 LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGIT+ } // only simple condition is allowed now
 OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGIT+ } // only simple condition is allowed now
 ORDER_CLAUSE = { (COLUMN_NAME ~ KW_ASC?) | (COLUMN_NAME ~ KW_DESC) }

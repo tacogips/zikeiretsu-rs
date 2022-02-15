@@ -207,7 +207,7 @@ mod test {
     fn parse_with() {
         let pairs = QueryGrammer::parse(
             Rule::WITH_CLAUSE,
-            r#"with        cols = is_buy, volume, price "#,
+            r#"with        cols = [is_buy, volume, price] "#,
         );
 
         assert!(pairs.is_ok());
@@ -215,14 +215,17 @@ mod test {
 
         let tz = pairs.next().unwrap();
         assert_eq!(tz.as_rule(), Rule::WITH_CLAUSE);
-        assert_eq!(tz.as_str(), r#"with        cols = is_buy, volume, price "#,);
+        assert_eq!(
+            tz.as_str(),
+            r#"with        cols = [is_buy, volume, price] "#,
+        );
     }
 
     #[test]
     fn parse_with_with_tz() {
         let pairs = QueryGrammer::parse(
             Rule::WITH_CLAUSE,
-            r#"with        cols = is_buy, volume, price , tz = +9"#,
+            r#"with        cols = [is_buy, volume, price ] , tz =+9"#,
         );
 
         //TODO(tacogips) for debugging
@@ -235,7 +238,28 @@ mod test {
         assert_eq!(tz.as_rule(), Rule::WITH_CLAUSE);
         assert_eq!(
             tz.as_str(),
-            r#"with        cols = is_buy, volume, price , tz =+9"#,
+            r#"with        cols = [is_buy, volume, price ] , tz =+9"#,
+        );
+    }
+
+    #[test]
+    fn parse_with_with_tz_then_columns() {
+        let pairs = QueryGrammer::parse(
+            Rule::WITH_CLAUSE,
+            r#"with  tz =+9, cols = [is_buy, volume, price ]"#,
+        );
+
+        //TODO(tacogips) for debugging
+        println!("==== {:?}", pairs);
+
+        assert!(pairs.is_ok());
+        let mut pairs = pairs.unwrap();
+
+        let tz = pairs.next().unwrap();
+        assert_eq!(tz.as_rule(), Rule::WITH_CLAUSE);
+        assert_eq!(
+            tz.as_str(),
+            r#"with  tz =+9, cols = [is_buy, volume, price ]"#,
         );
     }
 

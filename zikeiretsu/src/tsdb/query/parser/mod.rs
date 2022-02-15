@@ -188,7 +188,7 @@ mod test {
     fn parse_column_with_kw() {
         let pairs = QueryGrammer::parse(Rule::COLUMNS, "aa,bb,cc_cc,dd, tz");
 
-        assert!(pairs.is_err());
+        assert!(pairs.is_ok());
     }
 
     #[test]
@@ -288,14 +288,27 @@ mod test {
     fn parse_from_invalid() {
         let pairs = QueryGrammer::parse(Rule::FROM_CLAUSE, "from aaaa where ts in today()");
 
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", pairs);
+        assert!(pairs.is_ok());
 
-        assert!(pairs.is_err());
+        let mut pairs = pairs.unwrap();
+        let from = pairs.next().unwrap();
+        assert_eq!(from.as_rule(), Rule::FROM_CLAUSE);
+        assert_eq!(from.as_str(), "from aaaa");
     }
 
     #[test]
-    #[ignore]
+    fn parse_offset() {
+        let pairs = QueryGrammer::parse(Rule::OFFSET_CLAUSE, "offset 10");
+
+        assert!(pairs.is_ok());
+
+        let mut pairs = pairs.unwrap();
+        let from = pairs.next().unwrap();
+        assert_eq!(from.as_rule(), Rule::OFFSET_CLAUSE);
+        assert_eq!(from.as_str(), "offset 10");
+    }
+
+    #[test]
     fn parse_query_1() {
         let query = r#"with
 
@@ -304,8 +317,6 @@ mod test {
 select *
  from trades  "#;
 
-        // select ts, is_buy, volume, price
-        // --offset 10 limit 200
         let parsed_query = parse_query(query);
         //TODO(tacogips) for debugging
         println!("==== {:?}", parsed_query);
@@ -324,38 +335,33 @@ select *
 select *
 from trades
 
+ where ts in today() "#;
+
+        let parsed_query = parse_query(query);
+
+        assert!(parsed_query.is_ok());
+    }
+
+    #[test]
+    fn parse_query_3() {
+        let query = r#"with
+
+        cols = [is_buy, volume, price],
+ 	   tz = +9
+select *
+from trades
+
  where ts in today()
+ offset 10 limit 10
+ order_by  asc
+
  "#;
 
-        // select ts, is_buy, volume, price
-        // --offset 10 limit 200
         let parsed_query = parse_query(query);
+
         //TODO(tacogips) for debugging
         println!("==== {:?}", parsed_query);
 
         assert!(parsed_query.is_ok());
-
-        //TODO(tacogips) assertion
     }
-
-    //#[test]
-    //fn parse_query_1() {
-    //    let query = r#"with
-
-    //    cols = [is_buy, volume, price],
-    // tz = +9
-    //select *
-    // from trades  "#;
-    //
-    //    //    // select ts, is_buy, volume, price
-    //    //    // --offset 10 limit 200
-    //    //    let parsed_query = parse_query(query);
-    //    //    //TODO(tacogips) for debugging
-    //    //    println!("==== {:?}", parsed_query);
-    //
-    //    //    assert!(parsed_query.is_ok());
-    //
-    //    //    let parsed_query = parsed_query.unwrap();
-    //    //}
-    //}
 }

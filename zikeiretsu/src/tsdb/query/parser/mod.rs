@@ -249,9 +249,6 @@ mod test {
             r#"with  tz =+9, cols = [is_buy, volume, price ]"#,
         );
 
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", pairs);
-
         assert!(pairs.is_ok());
         let mut pairs = pairs.unwrap();
 
@@ -276,11 +273,10 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn parse_query_1() {
         let query = r#"with
 
-        cols = is_buy, volume, price
+        cols = [is_buy, volume, price],
  	   tz = +9
 select *
  from trades  "#;

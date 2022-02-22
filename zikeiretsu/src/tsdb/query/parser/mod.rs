@@ -6,6 +6,7 @@ mod timezone_parser;
 mod where_clause;
 mod with_clause;
 
+use chrono::{FixedOffset, TimeZone};
 use log;
 use pest::{error::Error as PestError, Parser, ParserState};
 use pest_derive::Parser;
@@ -16,7 +17,6 @@ use thiserror::Error;
 pub struct QueryGrammer {}
 
 type DateString = str;
-type TimeZone = str;
 
 #[derive(Debug)]
 pub struct ColumnName<'q>(&'q str);
@@ -35,11 +35,17 @@ pub enum QueryError {
     #[error("Invalid grammer. this might be a bug: {0}")]
     InvalidGrammer(String),
 
-    #[error("Unexpected Pair expect: {0}, actual: {1}")]
+    #[error("Unexpected Pair expect: {0}, actual: {1}. This might be cause of a bug")]
     UnexpectedPair(String, String),
 
     #[error("invalid column name:{0}")]
     InvalidColumnName(String),
+
+    #[error("invalid time offset:{0}. e.g. +09:00")]
+    InvalidTimeOffset(String),
+
+    #[error("time offset outofbound:{0}. ")]
+    TimeOffsetOutOfBound(i32),
 }
 
 pub type Result<T> = std::result::Result<T, QueryError>;
@@ -78,7 +84,7 @@ pub struct FromClause<'q> {
 #[derive(Debug)]
 pub struct WithClause<'q> {
     pub def_columns: Option<Vec<Column<'q>>>,
-    pub def_timezone: Option<&'q TimeZone>,
+    pub def_timezone: Option<FixedOffset>,
 }
 
 #[derive(Debug)]

@@ -32,12 +32,13 @@ KW_DAY  		= @{ ^"DAY" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 KW_MONTH  	= @{ ^"MONTH" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 KW_YEAR  		= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 
-COLUMN_UNAVAILABLE_KW  = { KW_TZ | KW_SELECT | KW_FROM   | KW_WITH   | KW_WHERE |KW_AND | KW_OR | KW_ASTERISK }
+//TODO(taocogips) detect invalid column name by query parser somehow
+//COLUMN_UNAVAILABLE_KW  = { KW_TZ | KW_SELECT | KW_FROM   | KW_WITH   | KW_WHERE | KW_AND | KW_OR | KW_ASTERISK }
 
 // === selector =================
 STAR_SELECTOR =  { "*" }
 
-TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ ASCII_DIGIT+  }
+TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ (ASCII_DIGIT | ":")+  }
 TIMEZONE_NAME = { ASCII_ALPHA{3} }
 
 COLUMN_NAME_AVAILABLE_SYMBOL = { "_" | "-"}

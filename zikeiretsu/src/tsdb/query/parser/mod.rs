@@ -1,5 +1,6 @@
 mod columns_parser;
 mod from_clause;
+mod function_parser;
 mod order_or_limit_clause;
 mod select_clause;
 mod timezone_parser;
@@ -41,6 +42,12 @@ pub enum QueryError {
     #[error("invalid column name:{0}")]
     InvalidColumnName(String),
 
+    #[error("empty columns:{0}")]
+    EmptyColumns(String),
+
+    #[error("empty table name")]
+    EmptyTableName,
+
     #[error("invalid time offset:{0}. e.g. +09:00")]
     InvalidTimeOffset(String),
 
@@ -73,7 +80,7 @@ impl<'q> ParsedQuery<'q> {
 
 #[derive(Debug)]
 pub struct SelectClause<'q> {
-    pub select_columns: Option<Vec<&'q str>>,
+    pub select_columns: Option<Vec<Column<'q>>>,
 }
 
 #[derive(Debug)]

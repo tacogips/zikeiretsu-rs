@@ -7,6 +7,7 @@ use thiserror::Error;
 use super::*;
 
 pub fn parse<'q>(pair: Pair<'q, Rule>, allow_asterisk: bool) -> Result<Vec<Column<'q>>> {
+    #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::COLUMNS {
         return Err(QueryError::UnexpectedPair(
             format!("{:?}", Rule::COLUMNS),

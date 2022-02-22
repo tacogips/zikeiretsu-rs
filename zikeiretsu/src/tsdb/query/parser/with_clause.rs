@@ -5,6 +5,14 @@ use thiserror::Error;
 use super::*;
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
+    #[cfg(debug_assertions)]
+    if pair.as_rule() != Rule::WITH_CLAUSE {
+        return Err(QueryError::UnexpectedPair(
+            format!("{:?}", Rule::WITH_CLAUSE),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
+
     let mut with_clause = WithClause {
         def_columns: None,
         def_timezone: None,

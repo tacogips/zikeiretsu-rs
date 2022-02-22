@@ -23,11 +23,19 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
         Some(b'-') => true,
         _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
     };
-    parsing_offset = &parsing_offset[1..];
+    let sec = time_sec_from_str(&offfset_str[1..])?;
+    if is_nagative {
+        Ok(sec * -1)
+    } else {
+        Ok(sec)
+    }
+}
 
+pub(crate) fn time_sec_from_str(time_str: &str) -> Result<i32> {
+    let mut parsing_offset: &[u8] = &time_str.as_bytes();
     //parse hours
     let hour_num = if parsing_offset.is_empty() {
-        return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+        return Err(QueryError::InvalidTimeOffset(time_str.to_string()));
     } else if parsing_offset.len() > 2 {
         match (parsing_offset[0], parsing_offset[1]) {
             (hour_10 @ b'0'..=b'9', hour_1 @ b'0'..=b'9') => {
@@ -39,7 +47,7 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
                 parsing_offset = &parsing_offset[1..];
                 i32::from(hour - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+            _ => return Err(QueryError::InvalidTimeOffset(time_str.to_string())),
         }
     } else {
         match parsing_offset[0] {
@@ -47,7 +55,7 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
                 parsing_offset = &parsing_offset[1..];
                 i32::from(hour - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+            _ => return Err(QueryError::InvalidTimeOffset(time_str.to_string())),
         }
     };
 
@@ -55,14 +63,14 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
     let minute_num = if let Some(&b':') = &parsing_offset.first() {
         parsing_offset = &parsing_offset[1..];
         if parsing_offset.len() < 2 {
-            return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+            return Err(QueryError::InvalidTimeOffset(time_str.to_string()));
         }
         match (parsing_offset[0], parsing_offset[1]) {
             (minute_10 @ b'0'..=b'5', minute_1 @ b'0'..=b'9') => {
                 parsing_offset = &parsing_offset[2..];
                 i32::from(minute_10 - b'0') * 10 + i32::from(minute_1 - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+            _ => return Err(QueryError::InvalidTimeOffset(time_str.to_string())),
         }
     } else {
         0
@@ -73,23 +81,23 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
         parsing_offset = &parsing_offset[1..];
 
         if parsing_offset.len() < 2 {
-            return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+            return Err(QueryError::InvalidTimeOffset(time_str.to_string()));
         }
         match (parsing_offset[0], parsing_offset[1]) {
             (secs_10 @ b'0'..=b'5', secs_1 @ b'0'..=b'9') => {
                 parsing_offset = &parsing_offset[2..];
                 i32::from(secs_10 - b'0') * 10 + i32::from(secs_1 - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+            _ => return Err(QueryError::InvalidTimeOffset(time_str.to_string())),
         }
     } else {
         0
     };
     if !parsing_offset.is_empty() {
-        return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+        return Err(QueryError::InvalidTimeOffset(time_str.to_string()));
     }
 
-    Ok((hour_num * 3600 + minute_num * 60 + sec_num) * if is_nagative { -1 } else { 1 })
+    Ok(hour_num * 3600 + minute_num * 60 + sec_num)
 }
 
 #[cfg(test)]

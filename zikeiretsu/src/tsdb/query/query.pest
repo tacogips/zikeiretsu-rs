@@ -38,7 +38,9 @@ KW_YEAR  		= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 // === selector =================
 STAR_SELECTOR =  { "*" }
 
-TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ (ASCII_DIGIT | ":")+  }
+TIME = { (ASCII_DIGIT | ":")+ }
+
+TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ TIME }
 TIMEZONE_NAME = { ASCII_ALPHA{3} }
 
 COLUMN_NAME_AVAILABLE_SYMBOL = { "_" | "-"}
@@ -58,11 +60,13 @@ FN_TODAY = { ^"TODAY()" }
 FN_YESTERDAY = { ^"YESTERDAY()" }
 FN_TOMORROW = { ^"TOMORROW()" }
 
+
+TIME_DELTA            = { ( "+" | "-" ) ~ TIME }
 DATETIME_DELTA_VALUE  = { ( "+" | "-" ) ~ ASCII_DIGIT+  }
 DATETIME_DELTA = { DATETIME_DELTA_VALUE ~ ( KW_SECOND | KW_MINUTES | KW_HOUR | KW_DAY	| KW_MONTH | KW_YEAR ) }
 DATETIME_FN  = { FN_TODAY | FN_YESTERDAY | FN_TOMORROW }
 
-DATETIME =   { ( DATETIME_FN  | DATE_STR ) ~ DATETIME_DELTA? }
+DATETIME =   { ( DATETIME_FN  | DATE_STR ) ~ ( DATETIME_DELTA | TIME_DELTA )? }
 DATETIME_RANGE =  { "(" ~ DATETIME ~"," ~ DATETIME ~ ")"}
 
 REL_IN  = { ^"IN" }

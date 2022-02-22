@@ -16,10 +16,61 @@ pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
     Ok(FixedOffset::east(offset_sec))
 }
 
-pub(crate) fn timeoffset_sec_from_str(mut offfset_str: &str) -> Result<i32> {
+pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
     let secs = 0;
-    if -86_400 < secs && secs < 86_400 {
-        return Err(TimeOffsetOutOfBound(secs));
+    let mut parsing_offset: &[u8] = &offfset_str.as_bytes();
+    let is_nagative = match parsing_offset.first() {
+        Some(&b'+') => false,
+        Some(b'-') => true,
+        _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+    };
+    parsing_offset = &parsing_offset[1..];
+
+    //parse hours
+    if parsing_offset.len() < 2 {
+        return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
     }
-    unimplemented!()
+    let hour_num = match (parsing_offset[0], parsing_offset[1]) {
+        (hour_10 @ b'0'..=b'9', hour_1 @ b'0'..=b'9') => {
+            i32::from(hour_10) * 10 + i32::from(hour_1)
+        }
+        _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+    };
+
+    if let Some(&b':') = &parsing_offset.first() {
+        parsing_offset = &parsing_offset[1..];
+    } else {
+        return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+    }
+
+    //parse minutes
+    parsing_offset = &parsing_offset[2..];
+
+    if parsing_offset.len() < 2 {
+        return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+    }
+    let minute_num = match (parsing_offset[0], parsing_offset[1]) {
+        (minute_10 @ b'0'..=b'5', minute_1 @ b'0'..=b'9') => {
+            i32::from(minute_10) * 10 + i32::from(minute_1)
+        }
+        _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+    };
+
+    let sec_num = if let Some(&b':') = &parsing_offset.first() {
+        parsing_offset = &parsing_offset[1..];
+
+        if parsing_offset.len() < 2 {
+            return Err(QueryError::InvalidTimeOffset(offfset_str.to_string()));
+        }
+        match (parsing_offset[0], parsing_offset[1]) {
+            (secs_10 @ b'0'..=b'5', secs_1 @ b'0'..=b'9') => {
+                i32::from(secs_10) * 10 + i32::from(secs_1)
+            }
+            _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+        }
+    } else {
+        0
+    };
+
+    Ok(hour_num * 3600 + minute_num * 60 + sec_num)
 }

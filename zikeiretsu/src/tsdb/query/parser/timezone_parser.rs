@@ -17,7 +17,6 @@ pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
 }
 
 pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
-    let secs = 0;
     let mut parsing_offset: &[u8] = &offfset_str.as_bytes();
     let is_nagative = match parsing_offset.first() {
         Some(&b'+') => false,
@@ -34,6 +33,11 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
             (hour_10 @ b'0'..=b'9', hour_1 @ b'0'..=b'9') => {
                 parsing_offset = &parsing_offset[2..];
                 i32::from(hour_10 - b'0') * 10 + i32::from(hour_1 - b'0')
+            }
+
+            (hour @ b'0'..=b'9', b':') => {
+                parsing_offset = &parsing_offset[1..];
+                i32::from(hour - b'0')
             }
             _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
         }
@@ -108,15 +112,49 @@ mod test {
 
     #[test]
     fn parse_timeoffset_sec_from_str_2() {
-        let result = timeoffset_sec_from_str("+1");
+        let result = timeoffset_sec_from_str("+2:00");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 1 * 3600);
+        assert_eq!(result.unwrap(), 2 * 3600);
 
-        let result = timeoffset_sec_from_str("-1");
+        let result = timeoffset_sec_from_str("+12:00");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), -1 * 3600);
+        assert_eq!(result.unwrap(), 12 * 3600);
 
-        let result = timeoffset_sec_from_str("1");
+        let result = timeoffset_sec_from_str("+2:23");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
+
+        let result = timeoffset_sec_from_str("+02:00");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600);
+
+        let result = timeoffset_sec_from_str("+02:23");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
+
+        let result = timeoffset_sec_from_str("-2:00");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), -2 * 3600);
+
+        let result = timeoffset_sec_from_str("+2:00z");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_timeoffset_sec_from_str_3() {
+        let result = timeoffset_sec_from_str("+2:00:12");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600 + 12);
+
+        let result = timeoffset_sec_from_str("+12:23:33");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 12 * 3600 + 23 * 60 + 33);
+
+        let result = timeoffset_sec_from_str("-12:23:33");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), -1 * (12 * 3600 + 23 * 60 + 33));
+
+        let result = timeoffset_sec_from_str("+12:23:33z");
         assert!(result.is_err());
     }
 }

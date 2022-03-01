@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use thiserror::Error;
 
 use super::*;
-use chrono::{format as chrono_format, DateTime, FixedOffset, TimeZone};
+use chrono::{format as chrono_format, DateTime, FixedOffset, TimeZone, Utc};
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     #[cfg(debug_assertions)]
@@ -116,27 +116,52 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
 
 static DATETIME_FORMATS: OnceCell<Vec<chrono_format::StrftimeItems<'static>>> = OnceCell::new();
 
-pub(crate) fn datetime_formats() -> &'static [chrono_format::StrftimeItems<'static>] {
-    DATETIME_FORMATS.get_or_init(|| vec![]).as_slice()
+pub fn datetime_formats() -> &'static [chrono_format::StrftimeItems<'static>] {
+    fn dt_fmt(s: &str) -> chrono_format::StrftimeItems {
+        chrono_format::StrftimeItems::new(s)
+    }
+
+    DATETIME_FORMATS
+        .get_or_init(|| {
+            vec![
+                //dt_fmt("%Y-%m-%d %H:%M:%S.%.f")
+                dt_fmt("%Y-%m-%d %H:%M:%S"),
+                dt_fmt("%Y-%m-%d %H:%M:%S.%f"),
+                dt_fmt("%Y-%m-%d %H:%M"),
+                dt_fmt("%Y-%m-%d"),
+            ]
+        })
+        .as_slice()
 }
 
 /// availabe formats
 /// 'yyyy-MM-DD hh:mm:ss.ZZZZZZ'
 /// 'yyyy-MM-DD hh:mm:ss'
 /// 'yyyy-MM-DD hh:mm'
-/// 'yyyy-MM-DD hh'
 /// 'yyyy-MM-DD'
 ///
-fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<FixedOffset>> {
-    //DateTime::<FixedOffset>::parse_from_str()
-    //    let mut parsed = chrono_format::Parsed::new();
+fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
+    if datetime_str.len() < 2 {
+        return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
+    }
+    if !datetime_str.starts_with("'") || !datetime_str.ends_with("'") {
+        return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
+    }
 
+    //strip single quotes
+    let datetime_str: &str = &datetime_str[1..][..datetime_str.len() - 2];
     for each_format in datetime_formats() {
         let mut parsed = chrono_format::Parsed::new();
+
         if let Ok(_) = chrono_format::parse(&mut parsed, datetime_str, each_format.clone()) {
-            return Ok(parsed.to_datetime()?);
+            //TODO(tacogips) for debugging
+            //println!("==== {:?}", parsed.to_datetime());
+
+            let parsed = parsed.to_datetime_with_timezone(&Utc)?;
+            return Ok(parsed);
         }
     }
+
     Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()))
 }
 
@@ -150,4 +175,25 @@ fn parse_duraion_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
 
 fn parse_clock_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
     unimplemented!()
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn parse_datetetime_test() {
+        let parse_result = parse_datetime_str("'2019-12-13 23:33:12'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13 23:33:12.023'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13 23:33'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13'");
+        assert!(parse_result.is_ok());
+    }
 }

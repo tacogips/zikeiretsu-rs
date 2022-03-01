@@ -8,7 +8,7 @@ mod timezone_parser;
 mod where_clause;
 mod with_clause;
 
-use chrono::{DateTime, FixedOffset, ParseError as ChoronoParseError, TimeZone};
+use chrono::{DateTime, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use log;
 use pest::{error::Error as PestError, Parser, ParserState};
 use pest_derive::Parser;
@@ -131,7 +131,7 @@ pub enum DatetimeFilter<'q> {
 
 #[derive(Debug)]
 pub enum DatetimeFilterValue {
-    DateString(DateTime<FixedOffset>, Option<FixedOffset>),
+    DateString(DateTime<Utc>, Option<FixedOffset>),
     Function(BuildinDatetimeFunction, Option<FixedOffset>),
 }
 impl DatetimeFilterValue {

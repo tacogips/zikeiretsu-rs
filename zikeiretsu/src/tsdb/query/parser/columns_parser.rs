@@ -37,7 +37,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>, allow_asterisk: bool) -> Result<Vec<Colum
 
 static INVALID_COLUMN_NAME: OnceCell<HashSet<&'static str>> = OnceCell::new();
 
-pub(crate) fn invalid_colum_names() -> &'static HashSet<&'static str> {
+pub fn invalid_colum_names() -> &'static HashSet<&'static str> {
     INVALID_COLUMN_NAME.get_or_init(|| {
         let mut s = HashSet::new();
         s.insert("SELECT");

@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use thiserror::Error;
 
 use super::*;
+use chrono::{FixedOffset, TimeZone};
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     #[cfg(debug_assertions)]
@@ -35,6 +36,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
             }
             Rule::DATETIME => {}
             Rule::DATETIME_RANGE => {}
+            Rule::KW_TIMESTAMP => {}
             r @ _ => {
                 return Err(QueryError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
@@ -73,9 +75,40 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue<'q
         ));
     }
 
+    let mut datetime_str: Option<&'q str> = None;
+    let mut datetime_fn: Option<BuildinDatetimeFunction> = None;
+    let mut datetime_offset: Option<FixedOffset> = None;
+
     for each in pair.into_inner() {
-        match each.as_rule() {}
+        match each.as_rule() {
+            Rule::DATETIME_FN => {
+                for date_time_fn in each.into_inner() {
+                    match date_time_fn.as_rule() {
+                        Rule::FN_TODAY => datetime_fn = Some(BuildinDatetimeFunction::Today),
+                        Rule::FN_YESTERDAY => {
+                            datetime_fn = Some(BuildinDatetimeFunction::Yesterday)
+                        }
+                        Rule::FN_TOMORROW => datetime_fn = Some(BuildinDatetimeFunction::Tomorrow),
+                        r @ _ => {
+                            return Err(QueryError::InvalidGrammer(format!(
+                                "unknown term in build in datetime  : {r:?}"
+                            )));
+                        }
+                    }
+                }
+            }
+            Rule::DATETIME_STR => {}
+
+            r @ _ => {
+                return Err(QueryError::InvalidGrammer(format!(
+                    "unknown term in datetime : {r:?}"
+                )))
+            }
+        }
     }
 
     unimplemented!()
+}
+
+fn parse_datetime_str(datetime_str: &str) -> DateTime<FixedOffset> {
 }

@@ -8,7 +8,7 @@ mod timezone_parser;
 mod where_clause;
 mod with_clause;
 
-use chrono::{DateTime, FixedOffset, TimeZone};
+use chrono::{DateTime, FixedOffset, ParseError as ChoronoParseError, TimeZone};
 use log;
 use pest::{error::Error as PestError, Parser, ParserState};
 use pest_derive::Parser;
@@ -54,6 +54,9 @@ pub enum QueryError {
 
     #[error("time offset outofbound:{0}. ")]
     TimeOffsetOutOfBound(i32),
+
+    #[error("error occured in parsing datetime :{0}. ")]
+    ChoronoParseError(#[from] ChoronoParseError),
 }
 
 pub type Result<T> = std::result::Result<T, QueryError>;

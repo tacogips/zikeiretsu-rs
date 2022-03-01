@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use thiserror::Error;
 
 use super::*;
-use chrono::{FixedOffset, TimeZone};
+use chrono::{format as chrono_format, DateTime, FixedOffset, TimeZone};
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     #[cfg(debug_assertions)]
@@ -66,6 +66,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     //Ok(columns)
 }
 
+pub fn parse_datetime_range_close<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
+    unimplemented!()
+}
+
 pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME {
@@ -77,7 +81,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
 
     let mut datetime_str: Option<&'q str> = None;
     let mut datetime_fn: Option<BuildinDatetimeFunction> = None;
-    let mut datetime_offset: Option<FixedOffset> = None;
+    let mut offset: Option<FixedOffset> = None;
 
     for each in pair.into_inner() {
         match each.as_rule() {
@@ -97,7 +101,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                     }
                 }
             }
-            Rule::DATETIME_STR => {}
+            Rule::DATETIME_DELTA => {}
 
             r @ _ => {
                 return Err(QueryError::InvalidGrammer(format!(
@@ -110,6 +114,41 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
     unimplemented!()
 }
 
-fn parse_datetime_str(datetime_str: &str) -> DateTime<FixedOffset> {
+static DATETIME_FORMATS: OnceCell<Vec<chrono_format::StrftimeItems<'static>>> = OnceCell::new();
+
+pub(crate) fn datetime_formats() -> &'static [chrono_format::StrftimeItems<'static>] {
+    DATETIME_FORMATS.get_or_init(|| vec![]).as_slice()
+}
+
+/// availabe formats
+/// 'yyyy-MM-DD hh:mm:ss.ZZZZZZ'
+/// 'yyyy-MM-DD hh:mm:ss'
+/// 'yyyy-MM-DD hh:mm'
+/// 'yyyy-MM-DD hh'
+/// 'yyyy-MM-DD'
+///
+fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<FixedOffset>> {
+    //DateTime::<FixedOffset>::parse_from_str()
+    //    let mut parsed = chrono_format::Parsed::new();
+
+    for each_format in datetime_formats() {
+        let mut parsed = chrono_format::Parsed::new();
+        if let Ok(_) = chrono_format::parse(&mut parsed, datetime_str, each_format.clone()) {
+            return Ok(parsed.to_datetime()?);
+        }
+    }
+
+    unimplemented!()
+}
+
+fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
+    unimplemented!()
+}
+
+fn parse_duraion_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
+    unimplemented!()
+}
+
+fn parse_clock_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
     unimplemented!()
 }

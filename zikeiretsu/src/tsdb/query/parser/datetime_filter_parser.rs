@@ -137,8 +137,7 @@ fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<FixedOffset>> {
             return Ok(parsed.to_datetime()?);
         }
     }
-
-    unimplemented!()
+    Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()))
 }
 
 fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {

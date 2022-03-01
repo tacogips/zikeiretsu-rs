@@ -57,6 +57,9 @@ pub enum QueryError {
 
     #[error("error occured in parsing datetime :{0}. ")]
     ChoronoParseError(#[from] ChoronoParseError),
+
+    #[error("invalid date time format:{0}")]
+    InvalidDatetimeFormat(String),
 }
 
 pub type Result<T> = std::result::Result<T, QueryError>;

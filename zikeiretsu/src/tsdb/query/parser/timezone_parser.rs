@@ -17,7 +17,7 @@ pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
 }
 
 pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
-    let mut parsing_offset: &[u8] = &offfset_str.as_bytes();
+    let parsing_offset: &[u8] = &offfset_str.as_bytes();
     let is_nagative = match parsing_offset.first() {
         Some(&b'+') => false,
         Some(b'-') => true,

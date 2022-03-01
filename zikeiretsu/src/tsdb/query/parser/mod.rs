@@ -1,4 +1,5 @@
 mod columns_parser;
+mod datetime_filter_parser;
 mod from_clause;
 mod function_parser;
 mod order_or_limit_clause;

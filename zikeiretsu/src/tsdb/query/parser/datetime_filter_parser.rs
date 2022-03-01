@@ -16,8 +16,8 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
         ));
     }
 
-    let mut filter_val1: Option<DatetimeFilterValue<'q>> = None;
-    let mut filter_val2: Option<DatetimeFilterValue<'q>> = None;
+    let mut filter_val1: Option<DatetimeFilterValue> = None;
+    let mut filter_val2: Option<DatetimeFilterValue> = None;
 
     let mut relation_op: Option<Pair<'q, Rule>> = None;
 
@@ -66,7 +66,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     //Ok(columns)
 }
 
-pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue<'q>> {
+pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME {
         return Err(QueryError::UnexpectedPair(
@@ -111,4 +111,5 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue<'q
 }
 
 fn parse_datetime_str(datetime_str: &str) -> DateTime<FixedOffset> {
+    unimplemented!()
 }

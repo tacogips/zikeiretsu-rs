@@ -115,26 +115,28 @@ pub enum Order<'q> {
 
 #[derive(Debug)]
 pub enum DatetimeFilter<'q> {
-    In(
-        ColumnName<'q>,
-        DatetimeFilterValue<'q>,
-        DatetimeFilterValue<'q>,
-    ),
-    Gte(ColumnName<'q>, DatetimeFilterValue<'q>),
-    Gt(ColumnName<'q>, DatetimeFilterValue<'q>),
-    Lte(ColumnName<'q>, DatetimeFilterValue<'q>),
-    Lt(ColumnName<'q>, DatetimeFilterValue<'q>),
-    Equal(ColumnName<'q>, DatetimeFilterValue<'q>),
+    In(ColumnName<'q>, DatetimeFilterValue, DatetimeFilterValue),
+    Gte(ColumnName<'q>, DatetimeFilterValue),
+    Gt(ColumnName<'q>, DatetimeFilterValue),
+    Lte(ColumnName<'q>, DatetimeFilterValue),
+    Lt(ColumnName<'q>, DatetimeFilterValue),
+    Equal(ColumnName<'q>, DatetimeFilterValue),
 }
 
 #[derive(Debug)]
-pub enum DatetimeFilterValue<'a> {
+pub enum DatetimeFilterValue {
     DateString(DateTime<FixedOffset>, Option<FixedOffset>),
     Function(BuildinDatetimeFunction, Option<FixedOffset>),
 }
+impl DatetimeFilterValue {
+    pub fn time_unit(&self) -> TimeUnit {
+        todo!("impl")
+    }
+}
 
 #[derive(Debug)]
-pub enum TimeOffsetUnit {
+pub enum TimeUnit {
+    NanoSecond,
     MicroSecond,
     Millisecond,
     Second,

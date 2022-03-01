@@ -157,8 +157,6 @@ fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
         let mut parsed = chrono_format::Parsed::new();
 
         if let Ok(_) = chrono_format::parse(&mut parsed, datetime_str, each_format.clone()) {
-            ////TODO(tacogips) for debugging
-            //println!("==== {:?}", parsed.to_datetime_with_timezone(&Utc));
             if *is_naive_date {
                 let naive = parsed.to_naive_date()?;
                 let naive = NaiveDateTime::new(naive, NaiveTime::from_hms(0, 0, 0));
@@ -193,14 +191,14 @@ mod test {
 
     #[test]
     fn parse_datetetime_test() {
-        //let parse_result = parse_datetime_str("'2019-12-13 23:33:12'");
-        //assert!(parse_result.is_ok());
+        let parse_result = parse_datetime_str("'2019-12-13 23:33:12'");
+        assert!(parse_result.is_ok());
 
-        //let parse_result = parse_datetime_str("'2019-12-13 23:33:12.023'");
-        //assert!(parse_result.is_ok());
+        let parse_result = parse_datetime_str("'2019-12-13 23:33:12.023'");
+        assert!(parse_result.is_ok());
 
-        //let parse_result = parse_datetime_str("'2019-12-13 23:33'");
-        //assert!(parse_result.is_ok());
+        let parse_result = parse_datetime_str("'2019-12-13 23:33'");
+        assert!(parse_result.is_ok());
 
         let parse_result = parse_datetime_str("'2019-12-13'");
         assert!(parse_result.is_ok());

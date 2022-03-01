@@ -129,13 +129,25 @@ pub enum DatetimeFilter<'q> {
 
 #[derive(Debug)]
 pub enum DatetimeFilterValue<'a> {
-    DateString(&'a DateString),
-    Function(BuildinFunction),
+    DateString(&'a DateString, Option<FixedOffset>),
+    Function(BuildinDatetimeFunction, Option<FixedOffset>),
 }
 
 #[derive(Debug)]
-pub enum BuildinFunction {
+pub enum TimeOffsetUnit {
+    SECOND,
+    MINUTES,
+    HOUR,
+    DAY,
+    MONTH,
+    YEAR,
+}
+
+#[derive(Debug)]
+pub enum BuildinDatetimeFunction {
     Today,
+    Yesterday,
+    Tomorrow,
 }
 
 pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {

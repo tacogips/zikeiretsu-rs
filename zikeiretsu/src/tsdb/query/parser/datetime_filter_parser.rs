@@ -15,6 +15,34 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
         ));
     }
 
+    let mut filter_val1: Option<DatetimeFilterValue<'q>> = None;
+    let mut filter_val2: Option<DatetimeFilterValue<'q>> = None;
+
+    let mut relation_op: Option<Pair<'q, Rule>> = None;
+
+    for each in pair.into_inner() {
+        match each.as_rule() {
+            Rule::REL_OP => {
+                let mut rel_ope = each.into_inner();
+                match rel_ope.next() {
+                    Some(rel_ope) => relation_op = Some(rel_ope),
+                    None => {
+                        return Err(QueryError::InvalidGrammer(format!(
+                            "empty relation operator in datetime filter"
+                        )))
+                    }
+                }
+            }
+            Rule::DATETIME => {}
+            Rule::DATETIME_RANGE => {}
+            r @ _ => {
+                return Err(QueryError::InvalidGrammer(format!(
+                    "unknown term in datetime filter : {r:?}"
+                )))
+            }
+        }
+    }
+
     unimplemented!()
     //let mut columns = Vec::<Column<'q>>::new();
     //for each_pair_in_columns in pair.into_inner() {
@@ -34,4 +62,20 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     //    }
     //}
     //Ok(columns)
+}
+
+pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue<'q>> {
+    #[cfg(debug_assertions)]
+    if pair.as_rule() != Rule::DATETIME {
+        return Err(QueryError::UnexpectedPair(
+            format!("{:?}", Rule::DATETIME),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
+
+    for each in pair.into_inner() {
+        match each.as_rule() {}
+    }
+
+    unimplemented!()
 }

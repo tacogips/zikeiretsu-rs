@@ -16,6 +16,7 @@ pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
     Ok(FixedOffset::east(offset_sec))
 }
 
+// [+|-]01:00 => 0 as i32
 pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
     let parsing_offset: &[u8] = &offfset_str.as_bytes();
     let is_nagative = match parsing_offset.first() {
@@ -31,6 +32,7 @@ pub(crate) fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
     }
 }
 
+// 00:00 => 0 as i32
 pub(crate) fn time_sec_from_str(time_str: &str) -> Result<i32> {
     let mut parsing_offset: &[u8] = &time_str.as_bytes();
     //parse hours

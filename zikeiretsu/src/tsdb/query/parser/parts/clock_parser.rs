@@ -1,8 +1,47 @@
 use crate::tsdb::query::parser::*;
+
+use super::is_space;
 use chrono::{FixedOffset, TimeZone};
 use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
 use thiserror::Error;
+
+pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
+    if pair.as_rule() != Rule::CLOCK_DELTA {
+        return Err(QueryError::UnexpectedPair(
+            format!("{:?}", Rule::CLOCK_DELTA),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
+    let offset_sec = clock_delta_sec_from_clock_delta_str(pair.as_str())?;
+    Ok(FixedOffset::east(offset_sec))
+}
+
+// [+|-]01:00 => 0 as i32
+fn clock_delta_sec_from_clock_delta_str(clock_delta_str: &str) -> Result<i32> {
+    let mut parsing_offset: &[u8] = &clock_delta_str.as_bytes();
+    let is_nagative = match parsing_offset.first() {
+        Some(&b'+') => false,
+        Some(b'-') => true,
+        _ => return Err(QueryError::InvalidTimeOffset(clock_delta_str.to_string())),
+    };
+
+    let mut white_space_count = 0;
+    for i in 1..parsing_offset.len() {
+        if is_space(parsing_offset[i]) {
+            break;
+        }
+        white_space_count += 1;
+    }
+
+    let sec = time_sec_from_clock_str(&clock_delta_str[white_space_count + 1..])?;
+
+    if is_nagative {
+        Ok(sec * -1)
+    } else {
+        Ok(sec)
+    }
+}
 
 // 00:00 => 0 as i32
 //

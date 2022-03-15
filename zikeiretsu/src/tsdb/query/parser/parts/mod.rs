@@ -7,3 +7,7 @@ pub use clock_parser::*;
 pub use columns_parser::*;
 pub use datetime_filter_parser::*;
 pub use timezone_parser::*;
+
+fn is_space(c: u8) -> bool {
+    c == b' ' || c == b'\t'
+}

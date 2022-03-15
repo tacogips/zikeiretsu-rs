@@ -176,7 +176,7 @@ pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
                 let order_or_limit_clause = order_or_limit_clause::parse(each_pair)?;
                 parsed_query.order_or_limit = Some(order_or_limit_clause);
             }
-            Rule::QUERY => {}
+            Rule::QUERY => { /* do nothing */ }
             _ => {
                 let msg = format!(
                     "invalid grammer RULE:{:?} {:?}",

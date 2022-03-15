@@ -1,6 +1,6 @@
 use crate::tsdb::query::parser::*;
 
-use super::{is_space, pos_neg_parser};
+use super::{ascii_digits_parser, is_space, pos_neg_parser};
 use chrono::{FixedOffset, TimeZone};
 use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
@@ -23,8 +23,6 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
         ));
     }
 
-    let mut is_nagative = false;
-
     let mut pos_neg: Option<pos_neg_parser::PosNeg> = None;
     let mut duration_num: Option<u64> = None;
     let mut duration_unit: Option<DurationUnit> = None;
@@ -32,7 +30,9 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
     for each_delta_elem in pair.into_inner() {
         match each_delta_elem.as_rule() {
             Rule::POS_NEG => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
-            Rule::ASCII_DIGITS => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
+            Rule::ASCII_DIGITS => {
+                duration_num = Some(ascii_digits_parser::parse_ascii_digits(each_delta_elem)?)
+            }
             Rule::DURATION_UNIT => duration_unit = Some(parse_duration(each_delta_elem)?),
 
             r => {

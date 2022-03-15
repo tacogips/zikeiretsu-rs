@@ -38,10 +38,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                 for date_time_range in each.into_inner() {
                     match date_time_range.as_rule() {
                         Rule::DATETIME => {
-                            filter_val1 = Some(parse_datetime(each)?);
+                            filter_val1 = Some(parse_datetime(date_time_range)?);
                         }
                         Rule::DATETIME_RANGE_CLOSE => {
-                            filter_val2 = Some(parse_datetime_range_close(each)?);
+                            filter_val2 = Some(parse_datetime_range_close(date_time_range)?);
                         }
                         _ => { /* do nothing */ }
                     }

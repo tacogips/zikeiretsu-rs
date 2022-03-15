@@ -131,6 +131,29 @@ pub enum DatetimeFilter<'q> {
     Equal(ColumnName<'q>, DatetimeFilterValue),
 }
 
+impl<'q> DatetimeFilter<'q> {
+    pub fn from(
+        column_name: ColumnName<'q>,
+        ope: &'q str,
+        datetime_1: DatetimeFilterValue,
+        datetime_2: Option<DatetimeFilterValue>,
+    ) -> Result<DatetimeFilter<'q>> {
+        match ope.to_uppercase() {
+            "IN" => match datetime_2 {
+                None => Err(QueryError::InvalidGrammer(format!(
+                    "'in' needs datetime range  "
+                ))),
+                Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
+            },
+            ">=" => Ok(DatetimeFilter::Gte(column_name, datetime_1)),
+            ">" => Ok(DatetimeFilter::Gt(column_name, datetime_1)),
+            "<=" => Ok(DatetimeFilter::Lte(column_name, datetime_1)),
+            "<" => Ok(DatetimeFilter::Lt(column_name, datetime_1)),
+            "=" => Ok(DatetimeFilter::Equal(column_name, datetime_1)),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum DatetimeDelta {
     FixedOffset(FixedOffset),

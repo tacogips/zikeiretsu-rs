@@ -138,17 +138,19 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
         }
     }
 
-    //if let Some()datetime_str{
-    //
-    //
-    //}else{
-    //};
-
-    //pub enum DatetimeFilterValue {
-    //    DateString(DateTime<Utc>, Option<FixedOffset>),
-    //    Function(BuildinDatetimeFunction, Option<FixedOffset>),
-    //}
-    unimplemented!()
+    match (datetime_str, datetime_fn) {
+        (Some(datetime_str), None) => {
+            let parse_datetime = parse_datetime_str(datetime_str)?;
+            Ok(DatetimeFilterValue::DateString(
+                parse_datetime,
+                datetime_delta,
+            ))
+        }
+        (None, Some(datetime_fn)) => Ok(DatetimeFilterValue::Function(datetime_fn, datetime_delta)),
+        (datetime_str, datetime_fn) => Err(QueryError::InvalidGrammer(format!(
+            "invalid datetime : {datetime_str:?},  {datetime_fn:?}"
+        ))),
+    }
 }
 
 static DATETIME_FORMATS: OnceCell<Vec<(chrono_format::StrftimeItems<'static>, bool)>> =

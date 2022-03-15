@@ -5,13 +5,6 @@ use thiserror::Error;
 use crate::tsdb::query::parser::*;
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
-    //    pair.into_inner();
-    //
-    //    Ok(WhereClause {
-    //        datetime_filter: None,
-    //    })
-    //}
-
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::WHERE_CLAUSE {
         return Err(QueryError::UnexpectedPair(

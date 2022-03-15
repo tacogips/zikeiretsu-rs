@@ -64,9 +64,9 @@ FN_YESTERDAY = { ^"YESTERDAY()" }
 FN_TOMORROW = { ^"TOMORROW()" }
 
 
-CLOCK_DELTA             = { ( "+" | "-" ) ~ CLOCK }
-DASTETIME_OFFSET_VALUE  = { ( "+" | "-" ) ~ ASCII_DIGIT+  }
-DURATION_DELTA     = { DASTETIME_OFFSET_VALUE ~ ( KW_MICROSECOND | KW_MILLISECOND  | KW_SECOND | KW_MINUTES | KW_HOUR | KW_DAY	| KW_MONTH | KW_YEAR ) }
+CLOCK_DELTA            = { ( "+" | "-" ) ~ CLOCK }
+DATETIME_OFFSET_VALUE  = { ( "+" | "-" ) ~ ASCII_DIGIT+  }
+DURATION_DELTA     = { DATETIME_OFFSET_VALUE ~ ( KW_MICROSECOND | KW_MILLISECOND  | KW_SECOND | KW_MINUTES | KW_HOUR | KW_DAY	| KW_MONTH | KW_YEAR ) }
 DATETIME_DELTA  = { DURATION_DELTA | CLOCK_DELTA }
 DATETIME_FN  = { FN_TODAY | FN_YESTERDAY | FN_TOMORROW }
 
@@ -105,7 +105,14 @@ REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
 //
 // select ts, volume, price
 // from trades
-// where ts in ('2012-12-13 9:00:00+09:00', '2012-12-13 9:00:00+09:00')
+// where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
+//
+// ### 3. datetiem filter as functionn
+// ```
+//
+// select ts, volume, price
+// from trades
+// where ts in (yesterday() + 9:00, today() + 2 hours )
 //
 // ```
 
@@ -114,7 +121,9 @@ WHERE_FILTER = { DATETIME_FILTER }
 DATETIME_FILTER = { KW_TIMESTAMP ~ REL_OP ~ ( DATETIME | DATETIME_RANGE )}
 
 // === WITH CLAUS =========================================
-WITH_CLAUSE   = { KW_WITH ~ ( DEFINE_TZ  | DEFINE_COLUMNS ) ~ ("," ~ (  DEFINE_TZ | DEFINE_COLUMNS ) )* }
+WITH_CLAUSE   = { KW_WITH ~ WITH_CLAUSE_DEFINES  ~ ("," ~ WITH_CLAUSE_DEFINES )* }
+WITH_CLAUSE_DEFINES = { DEFINE_TZ  | DEFINE_COLUMNS }
+
 SELECT_CLAUSE = { KW_SELECT ~ ( KW_ASTERISK | COLUMNS ) }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME  }
 

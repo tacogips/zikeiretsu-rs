@@ -103,7 +103,14 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                     }
                 }
             }
-            Rule::DATETIME_DELTA => {}
+            Rule::DATETIME_DELTA => {
+                for date_time_delta in each.into_inner() {
+                    match date_time_delta.as_rule() {
+                        Rule::DURATION_DELTA => datetime_fn = Some(BuildinDatetimeFunction::Today),
+                        Rule::CLOCK_DELTA => datetime_fn = Some(BuildinDatetimeFunction::Yesterday),
+                    }
+                }
+            }
 
             r @ _ => {
                 return Err(QueryError::InvalidGrammer(format!(
@@ -113,6 +120,16 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
         }
     }
 
+    //if let Some()datetime_str{
+    //
+    //
+    //}else{
+    //};
+
+    //pub enum DatetimeFilterValue {
+    //    DateString(DateTime<Utc>, Option<FixedOffset>),
+    //    Function(BuildinDatetimeFunction, Option<FixedOffset>),
+    //}
     unimplemented!()
 }
 

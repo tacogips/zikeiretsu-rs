@@ -1,3 +1,4 @@
+use super::clock_parser;
 use once_cell::sync::OnceCell;
 use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
@@ -83,7 +84,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
 
     let mut datetime_str: Option<&'q str> = None;
     let mut datetime_fn: Option<BuildinDatetimeFunction> = None;
-    let mut offset: Option<FixedOffset> = None;
+    let mut datetime_delta: Option<DatetimeDelta> = None;
 
     for each in pair.into_inner() {
         match each.as_rule() {
@@ -103,11 +104,19 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                     }
                 }
             }
+
             Rule::DATETIME_DELTA => {
                 for date_time_delta in each.into_inner() {
                     match date_time_delta.as_rule() {
-                        Rule::DURATION_DELTA => datetime_fn = Some(BuildinDatetimeFunction::Today),
-                        Rule::CLOCK_DELTA => datetime_fn = Some(BuildinDatetimeFunction::Yesterday),
+                        Rule::DURATION_DELTA => {
+                            datetime_delta = Some(BuildinDatetimeFunction::Today)
+                        }
+                        Rule::CLOCK_DELTA => {
+                            datetime_delta = Some(DatetimeDelta::FixedOffset(
+                                clock_parser::parse_clock_delta(date_time_delta)?,
+                            ))
+                        }
+
                         r => {
                             return Err(QueryError::InvalidGrammer(format!(
                                 "unknown term in build in datetime delta : {r:?}"
@@ -199,10 +208,6 @@ fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
 }
 
 fn parse_duraion_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
-    unimplemented!()
-}
-
-fn parse_clock_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
     unimplemented!()
 }
 

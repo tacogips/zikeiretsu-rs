@@ -128,27 +128,15 @@ pub enum DatetimeFilter<'q> {
 }
 
 #[derive(Debug)]
-pub enum DatetimeFilterValue {
-    DateString(DateTime<Utc>, Option<FixedOffset>),
-    Function(BuildinDatetimeFunction, Option<FixedOffset>),
-}
-impl DatetimeFilterValue {
-    pub fn time_unit(&self) -> TimeUnit {
-        todo!("impl")
-    }
+pub enum DatetimeDelta {
+    FixedOffset(FixedOffset),
+    MicroSec(i64),
 }
 
 #[derive(Debug)]
-pub enum TimeUnit {
-    NanoSecond,
-    MicroSecond,
-    Millisecond,
-    Second,
-    Minutes,
-    Hour,
-    Day,
-    Month,
-    Year,
+pub enum DatetimeFilterValue {
+    DateString(DateTime<Utc>, Option<DatetimeDelta>),
+    Function(BuildinDatetimeFunction, Option<DatetimeDelta>),
 }
 
 #[derive(Debug)]

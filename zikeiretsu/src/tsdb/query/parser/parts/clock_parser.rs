@@ -1,6 +1,7 @@
 use crate::tsdb::query::parser::*;
 
 use super::is_space;
+
 use chrono::{FixedOffset, TimeZone};
 use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
@@ -44,7 +45,6 @@ fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
 }
 
 // 00:00 => 0 as i32
-//
 pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
     let mut parsing_offset: &[u8] = &clock_str.as_bytes();
     //parse hours

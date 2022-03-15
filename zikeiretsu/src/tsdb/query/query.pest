@@ -3,6 +3,9 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
 COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
 
+// === primitive =================
+POS_NEG      = { "+" | "-" }
+ASCII_DIGITS = { ASCII_DIGIT+ }
 
 // === reserved keyword =================
 KW_SELECT = @{ ^"SELECT" ~ !ASCII_ALPHANUMERIC }
@@ -28,12 +31,15 @@ KW_TZ  = @{ ^"TZ" ~ !ASCII_ALPHANUMERIC }
 
 KW_MICROSECOND = @{ ^"MICRO" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 KW_MILLISECOND = @{ ^"MILLI" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
-KW_SECOND  	= @{ ^"SECOND" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
-KW_MINUTES  = @{ ^"MINUTE" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
-KW_HOUR  		= @{ ^"HOUR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
-KW_DAY  		= @{ ^"DAY" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
-KW_MONTH  	= @{ ^"MONTH" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
-KW_YEAR  		= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_SECOND  		= @{ ^"SECOND" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_MINUTES  	= @{ ^"MINUTE" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_HOUR  			= @{ ^"HOUR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_DAY  			= @{ ^"DAY" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_MONTH  		= @{ ^"MONTH" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_YEAR  			= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+
+DURATION = { KW_MICROSECOND | KW_MILLISECOND | KW_SECOND | KW_MINUTES | KW_HOUR	| KW_DAY | KW_MONTH	| KW_YEAR }
+
 
 //TODO(taocogips) detect invalid column name by query parser somehow
 //COLUMN_UNAVAILABLE_KW  = { KW_TZ | KW_SELECT | KW_FROM   | KW_WITH   | KW_WHERE | KW_AND | KW_OR | KW_ASTERISK }
@@ -43,7 +49,7 @@ STAR_SELECTOR =  { "*" }
 
 CLOCK = { (ASCII_DIGIT | ":")+ }
 
-TIMEZONE_OFFSET_VAL = @{ ( "+" | "-" ) ~ CLOCK }
+TIMEZONE_OFFSET_VAL = @{ POS_NEG ~ CLOCK }
 TIMEZONE_NAME = { ASCII_ALPHA{3} }
 
 COLUMN_NAME_AVAILABLE_SYMBOL = { "_" | "-"}
@@ -58,14 +64,14 @@ TABLE_NAME = @{ (ASCII_ALPHANUMERIC | TABLE_NAME_AVAILABLE_SYMBOL )+ }
 DEFINE_COLUMNS = { KW_COLS ~ "=" ~  "[" ~ COLUMNS ~ "]" }
 DEFINE_TZ      = { KW_TZ ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
 
-DATETIME_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | "-" |"+" | ":" )+ ~ "'"}
+DATETIME_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | "-" ) + ~ "'"}
 FN_TODAY = { ^"TODAY()" }
 FN_YESTERDAY = { ^"YESTERDAY()" }
 FN_TOMORROW = { ^"TOMORROW()" }
 
 
-CLOCK_DELTA        = { ( "+" | "-" ) ~ CLOCK }
-DURATION_DELTA     = { ( "+" | "-" ) ~ (ASCII_DIGIT+) ~ ( KW_MICROSECOND | KW_MILLISECOND  | KW_SECOND | KW_MINUTES | KW_HOUR | KW_DAY	| KW_MONTH | KW_YEAR ) }
+CLOCK_DELTA        = { POS_NEG ~ CLOCK }
+DURATION_DELTA     = { POS_NEG ~ ASCII_DIGITS ~ DURATION }
 DATETIME_DELTA  = { DURATION_DELTA | CLOCK_DELTA }
 DATETIME_FN  = { FN_TODAY | FN_YESTERDAY | FN_TOMORROW }
 
@@ -127,8 +133,8 @@ SELECT_CLAUSE = { KW_SELECT ~ ( KW_ASTERISK | COLUMNS ) }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME  }
 
 WHERE_CLAUSE  = { KW_WHERE ~ WHERE_FILTER } // only simple condition is allowed now
-LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGIT+ } // only simple condition is allowed now
-OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGIT+ } // only simple condition is allowed now
+LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
+OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allowed now
 ORDER_CLAUSE = { (COLUMN_NAME ~ KW_ASC?) | (COLUMN_NAME ~ KW_DESC) }
 ORDER_OR_LIMIT_CLAUSE = { ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE  }
 

@@ -7,6 +7,7 @@ use pest_derive::Parser;
 use std::ops::Deref;
 use thiserror::Error;
 
+#[derive(Debug)]
 pub enum PosNeg {
     Positive,
     Negative,
@@ -14,7 +15,7 @@ pub enum PosNeg {
 
 impl PosNeg {
     pub fn is_nagative(&self) -> bool {
-        self == PosNeg::Negative
+        self == &PosNeg::Negative
     }
 }
 

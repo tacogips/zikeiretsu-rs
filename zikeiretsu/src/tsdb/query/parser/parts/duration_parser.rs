@@ -9,13 +9,11 @@ use thiserror::Error;
 
 pub struct DeltaInMicroSeconds(i64);
 impl Deref for DeltaInMicroSeconds {
-    type Target;
+    type Target = i64;
     fn deref(&self) -> &Self::Target {
-        self.0
+        &self.0
     }
 }
-
-//DURATION_DELTA     = { POS_NEG ~ ASCII_DIGITS ~ DURATION  }
 
 pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeconds> {
     if pair.as_rule() != Rule::DURATION_DELTA {
@@ -28,16 +26,14 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
     let mut is_nagative = false;
 
     let mut pos_neg: Option<pos_neg_parser::PosNeg> = None;
-    let mut duration_num: Option<i64> = None;
-    let mut duration_unit: Option<i64> = None;
-
-    //DURATION_DELTA     = { POS_NEG ~ ASCII_DIGITS ~ DURATION  }
+    let mut duration_num: Option<u64> = None;
+    let mut duration_unit: Option<DurationUnit> = None;
 
     for each_delta_elem in pair.into_inner() {
         match each_delta_elem.as_rule() {
             Rule::POS_NEG => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
             Rule::ASCII_DIGITS => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
-            Rule::DURATION => duration_unit = Some(parse_duration(each_delta_elem)?),
+            Rule::DURATION_UNIT => duration_unit = Some(parse_duration(each_delta_elem)?),
 
             r => {
                 return Err(QueryError::InvalidGrammer(format!(
@@ -47,8 +43,17 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
         }
     }
 
-    //let offset_sec = clock_delta_sec_from_str(pair.as_str())?;
-    Ok(FixedOffset::east(offset_sec))
+    match (pos_neg, duration_num, duration_unit) {
+        (Some(pos_neg), Some(duration_num), Some(duration_unit)) => {
+            let sign = if pos_neg.is_nagative() { -1 } else { 1 };
+
+            let micro_sec = duration_unit.convert_in_micro_sec(duration_num as i64 * sign);
+            Ok(DeltaInMicroSeconds(micro_sec))
+        }
+        (pos_neg, duration_num, duration_unit) => Err(QueryError::InvalidGrammer(format!(
+            "invalid duration: {pos_neg:?}, {duration_num:?}, {duration_unit:?}"
+        ))),
+    }
 }
 
 #[derive(Debug)]
@@ -70,9 +75,9 @@ impl DurationUnit {
 }
 
 pub fn parse_duration<'q>(pair: Pair<'q, Rule>) -> Result<DurationUnit> {
-    if pair.as_rule() != Rule::DURATION {
+    if pair.as_rule() != Rule::DURATION_UNIT {
         return Err(QueryError::UnexpectedPair(
-            format!("{:?}", Rule::DURATION),
+            format!("{:?}", Rule::DURATION_UNIT),
             format!("{:?}", pair.as_rule()),
         ));
     }

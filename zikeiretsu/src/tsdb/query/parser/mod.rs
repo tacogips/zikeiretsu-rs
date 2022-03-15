@@ -7,6 +7,7 @@ use log;
 pub use parts::*;
 use pest::{error::Error as PestError, Parser, ParserState};
 use pest_derive::Parser;
+use std::num::ParseIntError;
 use thiserror::Error;
 
 #[derive(Parser)]
@@ -55,6 +56,9 @@ pub enum QueryError {
 
     #[error("error occured in parsing datetime :{0}. ")]
     ChoronoParseError(#[from] ChoronoParseError),
+
+    #[error("{0}")]
+    ParseIntError(#[from] ParseIntError),
 
     #[error("invalid date time format:{0}")]
     InvalidDatetimeFormat(String),

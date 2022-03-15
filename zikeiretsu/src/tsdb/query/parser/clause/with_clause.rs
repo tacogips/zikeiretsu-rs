@@ -2,7 +2,7 @@ use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::*;
+use crate::tsdb::query::parser::*;
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
     #[cfg(debug_assertions)]
@@ -22,7 +22,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
             Rule::DEFINE_COLUMNS => {
                 for each_in_define_columns in each.into_inner() {
                     if each_in_define_columns.as_rule() == Rule::COLUMNS {
-                        let columns = super::columns_parser::parse(each_in_define_columns, false)?;
+                        let columns = columns_parser::parse(each_in_define_columns, false)?;
                         with_clause.def_columns = Some(columns)
                     }
                 }
@@ -31,8 +31,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
             Rule::DEFINE_TZ => {
                 for each_in_define_tz in each.into_inner() {
                     if each_in_define_tz.as_rule() == Rule::TIMEZONE_OFFSET_VAL {
-                        let timezone =
-                            super::timezone_parser::parse_timezone_offset(each_in_define_tz)?;
+                        let timezone = timezone_parser::parse_timezone_offset(each_in_define_tz)?;
 
                         with_clause.def_timezone = Some(timezone)
                     }

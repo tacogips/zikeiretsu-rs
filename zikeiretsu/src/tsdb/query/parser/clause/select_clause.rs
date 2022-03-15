@@ -2,7 +2,7 @@ use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::*;
+use crate::tsdb::query::parser::*;
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
     #[cfg(debug_assertions)]
@@ -20,7 +20,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
     for each in pair.into_inner() {
         match each.as_rule() {
             Rule::COLUMNS => {
-                let columns = super::columns_parser::parse(each, false)?;
+                let columns = columns_parser::parse(each, false)?;
                 select_clause.select_columns = Some(columns)
             }
             Rule::KW_ASTERISK => select_clause.select_columns = Some(vec![Column::Asterick]),

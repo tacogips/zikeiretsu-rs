@@ -4,7 +4,7 @@ use pest_derive::Parser;
 use std::collections::HashSet;
 use thiserror::Error;
 
-use super::*;
+use crate::tsdb::query::parser::*;
 use chrono::{
     format as chrono_format, DateTime, FixedOffset, NaiveDateTime, NaiveTime, TimeZone, Utc,
 };

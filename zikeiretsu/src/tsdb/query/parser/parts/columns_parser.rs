@@ -4,7 +4,7 @@ use pest_derive::Parser;
 use std::collections::HashSet;
 use thiserror::Error;
 
-use super::*;
+use crate::tsdb::query::parser::*;
 
 pub fn parse<'q>(pair: Pair<'q, Rule>, allow_asterisk: bool) -> Result<Vec<Column<'q>>> {
     #[cfg(debug_assertions)]

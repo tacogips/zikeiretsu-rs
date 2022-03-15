@@ -95,7 +95,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                             datetime_fn = Some(BuildinDatetimeFunction::Yesterday)
                         }
                         Rule::FN_TOMORROW => datetime_fn = Some(BuildinDatetimeFunction::Tomorrow),
-                        r @ _ => {
+                        r => {
                             return Err(QueryError::InvalidGrammer(format!(
                                 "unknown term in build in datetime  : {r:?}"
                             )));
@@ -108,6 +108,11 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                     match date_time_delta.as_rule() {
                         Rule::DURATION_DELTA => datetime_fn = Some(BuildinDatetimeFunction::Today),
                         Rule::CLOCK_DELTA => datetime_fn = Some(BuildinDatetimeFunction::Yesterday),
+                        r => {
+                            return Err(QueryError::InvalidGrammer(format!(
+                                "unknown term in build in datetime delta : {r:?}"
+                            )));
+                        }
                     }
                 }
             }

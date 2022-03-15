@@ -5,6 +5,7 @@ use pest_derive::Parser;
 use thiserror::Error;
 
 // 00:00 => 0 as i32
+//
 pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
     let mut parsing_offset: &[u8] = &clock_str.as_bytes();
     //parse hours
@@ -89,121 +90,6 @@ mod test {
         assert_eq!(result.unwrap(), -1 * 3600);
 
         let result = timeoffset_sec_from_str("1");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn parse_timeoffset_sec_from_str_2() {
-        let result = timeoffset_sec_from_str("+2:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600);
-
-        let result = timeoffset_sec_from_str("+12:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 12 * 3600);
-
-        let result = timeoffset_sec_from_str("+2:23");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
-
-        let result = timeoffset_sec_from_str("+02:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600);
-
-        let result = timeoffset_sec_from_str("+02:23");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
-
-        let result = timeoffset_sec_from_str("-2:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), -2 * 3600);
-
-        let result = timeoffset_sec_from_str("+2:00z");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn parse_timeoffset_sec_from_str_3() {
-        let result = timeoffset_sec_from_str("+2:00:12");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600 + 12);
-
-        let result = timeoffset_sec_from_str("+12:23:33");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 12 * 3600 + 23 * 60 + 33);
-
-        let result = timeoffset_sec_from_str("-12:23:33");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), -1 * (12 * 3600 + 23 * 60 + 33));
-
-        let result = timeoffset_sec_from_str("+12:23:33z");
-        assert!(result.is_err());
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use super::*;
-    #[test]
-    fn parse_timeoffset_sec_from_str_1() {
-        let result = timeoffset_sec_from_str("+1");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 1 * 3600);
-
-        let result = timeoffset_sec_from_str("-1");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), -1 * 3600);
-
-        let result = timeoffset_sec_from_str("1");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn parse_timeoffset_sec_from_str_2() {
-        let result = timeoffset_sec_from_str("+2:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600);
-
-        let result = timeoffset_sec_from_str("+12:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 12 * 3600);
-
-        let result = timeoffset_sec_from_str("+2:23");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
-
-        let result = timeoffset_sec_from_str("+02:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600);
-
-        let result = timeoffset_sec_from_str("+02:23");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
-
-        let result = timeoffset_sec_from_str("-2:00");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), -2 * 3600);
-
-        let result = timeoffset_sec_from_str("+2:00z");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn parse_timeoffset_sec_from_str_3() {
-        let result = timeoffset_sec_from_str("+2:00:12");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 2 * 3600 + 12);
-
-        let result = timeoffset_sec_from_str("+12:23:33");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 12 * 3600 + 23 * 60 + 33);
-
-        let result = timeoffset_sec_from_str("-12:23:33");
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), -1 * (12 * 3600 + 23 * 60 + 33));
-
-        let result = timeoffset_sec_from_str("+12:23:33z");
         assert!(result.is_err());
     }
 }

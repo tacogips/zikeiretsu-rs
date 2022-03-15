@@ -1,14 +1,9 @@
 use super::{clock_parser, duration_parser};
 use once_cell::sync::OnceCell;
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use std::collections::HashSet;
-use thiserror::Error;
+use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
-use chrono::{
-    format as chrono_format, DateTime, FixedOffset, NaiveDateTime, NaiveTime, TimeZone, Utc,
-};
+use chrono::{format as chrono_format, DateTime, FixedOffset, NaiveDateTime, NaiveTime, Utc};
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     #[cfg(debug_assertions)]
@@ -21,7 +16,6 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
 
     let mut filter_val1: Option<DatetimeFilterValue> = None;
     let mut filter_val2: Option<DatetimeFilterValue> = None;
-
     let mut relation_op: Option<Pair<'q, Rule>> = None;
 
     for each in pair.into_inner() {
@@ -37,9 +31,23 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                     }
                 }
             }
-            Rule::DATETIME => {}
-            Rule::DATETIME_RANGE => {}
-            Rule::KW_TIMESTAMP => {}
+            Rule::DATETIME => {
+                filter_val1 = Some(parse_datetime(each)?);
+            }
+            Rule::DATETIME_RANGE => {
+                for date_time_range in each.into_inner() {
+                    match date_time_range.as_rule() {
+                        Rule::DATETIME => {
+                            filter_val1 = Some(parse_datetime(each)?);
+                        }
+                        Rule::DATETIME_RANGE_CLOSE => {
+                            filter_val2 = Some(parse_datetime_range_close(each)?);
+                        }
+                        _ => { /* do nothing */ }
+                    }
+                }
+            }
+            Rule::KW_TIMESTAMP => { /* do nothing*/ }
             r @ _ => {
                 return Err(QueryError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
@@ -70,6 +78,13 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
 }
 
 pub fn parse_datetime_range_close<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
+    #[cfg(debug_assertions)]
+    if pair.as_rule() != Rule::DATETIME_RANGE_CLOSE {
+        return Err(QueryError::UnexpectedPair(
+            format!("{:?}", Rule::DATETIME_RANGE_CLOSE),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
     unimplemented!()
 }
 
@@ -82,12 +97,17 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
         ));
     }
 
-    let mut datetime_str: Option<&'q str> = None;
+    let mut datetime: Option<DateTime<Utc>> = None;
     let mut datetime_fn: Option<BuildinDatetimeFunction> = None;
     let mut datetime_delta: Option<DatetimeDelta> = None;
 
     for each in pair.into_inner() {
         match each.as_rule() {
+            Rule::DATETIME_STR => {
+                let parse_datetime = parse_datetime_str(each.as_str())?;
+                datetime = Some(parse_datetime);
+            }
+
             Rule::DATETIME_FN => {
                 for date_time_fn in each.into_inner() {
                     match date_time_fn.as_rule() {
@@ -106,28 +126,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
             }
 
             Rule::DATETIME_DELTA => {
-                for date_time_delta in each.into_inner() {
-                    match date_time_delta.as_rule() {
-                        Rule::DURATION_DELTA => {
-                            // e.g. "+ 1 hour"
-                            datetime_delta = Some(DatetimeDelta::MicroSec(
-                                *duration_parser::parse_duration_delta(date_time_delta)?,
-                            ));
-                        }
-                        Rule::CLOCK_DELTA => {
-                            // e.g. "- 2:00"
-                            datetime_delta = Some(DatetimeDelta::FixedOffset(
-                                clock_parser::parse_clock_delta(date_time_delta)?,
-                            ))
-                        }
-
-                        r => {
-                            return Err(QueryError::InvalidGrammer(format!(
-                                "unknown term in build in datetime delta : {r:?}"
-                            )));
-                        }
-                    }
-                }
+                datetime_delta = Some(parse_datetime_delta(each)?);
             }
 
             r @ _ => {
@@ -138,18 +137,47 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
         }
     }
 
-    match (datetime_str, datetime_fn) {
-        (Some(datetime_str), None) => {
-            let parse_datetime = parse_datetime_str(datetime_str)?;
-            Ok(DatetimeFilterValue::DateString(
-                parse_datetime,
-                datetime_delta,
-            ))
-        }
+    match (datetime, datetime_fn) {
+        (Some(datetime), None) => Ok(DatetimeFilterValue::DateString(datetime, datetime_delta)),
         (None, Some(datetime_fn)) => Ok(DatetimeFilterValue::Function(datetime_fn, datetime_delta)),
         (datetime_str, datetime_fn) => Err(QueryError::InvalidGrammer(format!(
             "invalid datetime : {datetime_str:?},  {datetime_fn:?}"
         ))),
+    }
+}
+
+pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
+    #[cfg(debug_assertions)]
+    if pair.as_rule() != Rule::DATETIME_DELTA {
+        return Err(QueryError::UnexpectedPair(
+            format!("{:?}", Rule::DATETIME_DELTA),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
+
+    match pair.into_inner().next() {
+        None => Err(QueryError::InvalidGrammer(format!(
+            "invalid datetime delta"
+        ))),
+
+        Some(date_time_delta) => match date_time_delta.as_rule() {
+            Rule::DURATION_DELTA => {
+                // e.g. "+ 1 hour"
+                Ok(DatetimeDelta::MicroSec(
+                    *duration_parser::parse_duration_delta(date_time_delta)?,
+                ))
+            }
+            Rule::CLOCK_DELTA => {
+                // e.g. "- 2:00"
+                Ok(DatetimeDelta::FixedOffset(clock_parser::parse_clock_delta(
+                    date_time_delta,
+                )?))
+            }
+
+            r => Err(QueryError::InvalidGrammer(format!(
+                "unknown term in build in datetime delta : {r:?}"
+            ))),
+        },
     }
 }
 
@@ -207,14 +235,6 @@ fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
     }
 
     Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()))
-}
-
-fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
-    unimplemented!()
-}
-
-fn parse_duraion_delta(datetime_delta_str: &str) -> Result<FixedOffset> {
-    unimplemented!()
 }
 
 #[cfg(test)]

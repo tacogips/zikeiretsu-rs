@@ -13,22 +13,22 @@ pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
             format!("{:?}", pair.as_rule()),
         ));
     }
-    let offset_sec = clock_delta_sec_from_clock_delta_str(pair.as_str())?;
+    let offset_sec = clock_delta_sec_from_str(pair.as_str())?;
     Ok(FixedOffset::east(offset_sec))
 }
 
 // [+|-]01:00 => 0 as i32
-fn clock_delta_sec_from_clock_delta_str(clock_delta_str: &str) -> Result<i32> {
+fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
     let mut parsing_offset: &[u8] = &clock_delta_str.as_bytes();
     let is_nagative = match parsing_offset.first() {
-        Some(&b'+') => false,
+        Some(b'+') => false,
         Some(b'-') => true,
         _ => return Err(QueryError::InvalidTimeOffset(clock_delta_str.to_string())),
     };
 
     let mut white_space_count = 0;
     for i in 1..parsing_offset.len() {
-        if is_space(parsing_offset[i]) {
+        if !is_space(parsing_offset[i]) {
             break;
         }
         white_space_count += 1;
@@ -119,16 +119,46 @@ mod test {
 
     use super::*;
     #[test]
-    fn parse_timeoffset_sec_from_str_1() {
-        let result = timeoffset_sec_from_str("+1");
+    fn parse_clock_delta_sec_from_str_1() {
+        let result = clock_delta_sec_from_str("+1");
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 1 * 3600);
 
-        let result = timeoffset_sec_from_str("-1");
+        let result = clock_delta_sec_from_str("-1");
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), -1 * 3600);
 
-        let result = timeoffset_sec_from_str("1");
+        let result = clock_delta_sec_from_str("1");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_clock_delta_sec_from_str_2() {
+        let result = clock_delta_sec_from_str("+2:00");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600);
+
+        let result = clock_delta_sec_from_str("+  12:00");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 12 * 3600);
+
+        let result = clock_delta_sec_from_str("+2:23");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
+
+        let result = clock_delta_sec_from_str("+02:00");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600);
+
+        let result = clock_delta_sec_from_str("+02:23");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2 * 3600 + 23 * 60);
+
+        let result = clock_delta_sec_from_str("-        2:00");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), -2 * 3600);
+
+        let result = clock_delta_sec_from_str("+2:00z");
         assert!(result.is_err());
     }
 }

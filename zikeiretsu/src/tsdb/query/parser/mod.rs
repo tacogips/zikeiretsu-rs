@@ -47,6 +47,9 @@ pub enum QueryError {
     #[error("invalid time offset:{0}. e.g. +09:00")]
     InvalidTimeOffset(String),
 
+    #[error("invalid clock delta:{0}. e.g. + 09:00")]
+    InvalidClockDelta(String),
+
     #[error("time offset outofbound:{0}. ")]
     TimeOffsetOutOfBound(i32),
 

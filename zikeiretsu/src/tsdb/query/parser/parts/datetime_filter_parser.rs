@@ -184,7 +184,8 @@ pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
 static DATETIME_FORMATS: OnceCell<Vec<(chrono_format::StrftimeItems<'static>, bool)>> =
     OnceCell::new();
 
-pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, bool)] {
+type NaiveDateOrNot = bool;
+pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, NaiveDateOrNot)] {
     fn dt_fmt(s: &str) -> chrono_format::StrftimeItems {
         chrono_format::StrftimeItems::new(s)
     }
@@ -192,7 +193,6 @@ pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, b
     DATETIME_FORMATS
         .get_or_init(|| {
             vec![
-                //dt_fmt("%Y-%m-%d %H:%M:%S.%.f")
                 (dt_fmt("%Y-%m-%d %H:%M:%S"), false),
                 (dt_fmt("%Y-%m-%d %H:%M:%S.%f"), false),
                 (dt_fmt("%Y-%m-%d %H:%M"), false),
@@ -207,7 +207,6 @@ pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, b
 /// 'yyyy-MM-DD hh:mm:ss'
 /// 'yyyy-MM-DD hh:mm'
 /// 'yyyy-MM-DD'
-///
 fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
     if datetime_str.len() < 2 {
         return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
@@ -255,5 +254,8 @@ mod test {
 
         let parse_result = parse_datetime_str("'2019-12-13'");
         assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13");
+        assert!(parse_result.is_err());
     }
 }

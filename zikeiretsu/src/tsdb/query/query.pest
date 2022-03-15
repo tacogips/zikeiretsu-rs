@@ -40,7 +40,6 @@ KW_YEAR  			= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 
 DURATION_UNIT = { KW_MICROSECOND | KW_MILLISECOND | KW_SECOND | KW_MINUTES | KW_HOUR	| KW_DAY | KW_MONTH	| KW_YEAR }
 
-
 //TODO(taocogips) detect invalid column name by query parser somehow
 //COLUMN_UNAVAILABLE_KW  = { KW_TZ | KW_SELECT | KW_FROM   | KW_WITH   | KW_WHERE | KW_AND | KW_OR | KW_ASTERISK }
 
@@ -65,10 +64,9 @@ DEFINE_COLUMNS = { KW_COLS ~ "=" ~  "[" ~ COLUMNS ~ "]" }
 DEFINE_TZ      = { KW_TZ ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
 
 DATETIME_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | "-" ) + ~ "'"}
-FN_TODAY = { ^"TODAY()" }
+FN_TODAY     = { ^"TODAY()" }
 FN_YESTERDAY = { ^"YESTERDAY()" }
-FN_TOMORROW = { ^"TOMORROW()" }
-
+FN_TOMORROW  = { ^"TOMORROW()" }
 
 CLOCK_DELTA        = { POS_NEG ~ CLOCK }
 DURATION_DELTA     = { POS_NEG ~ ASCII_DIGITS ~ DURATION_UNIT }

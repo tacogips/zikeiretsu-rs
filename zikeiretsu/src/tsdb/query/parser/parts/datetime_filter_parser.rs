@@ -1,4 +1,4 @@
-use super::clock_parser;
+use super::{clock_parser, duration_parser};
 use once_cell::sync::OnceCell;
 use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
 use pest_derive::Parser;
@@ -109,9 +109,13 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                 for date_time_delta in each.into_inner() {
                     match date_time_delta.as_rule() {
                         Rule::DURATION_DELTA => {
-                            datetime_delta = Some(BuildinDatetimeFunction::Today)
+                            // e.g. "+ 1 hour"
+                            datetime_delta = Some(DatetimeDelta::MicroSec(
+                                *duration_parser::parse_duration_delta(date_time_delta)?,
+                            ));
                         }
                         Rule::CLOCK_DELTA => {
+                            // e.g. "- 2:00"
                             datetime_delta = Some(DatetimeDelta::FixedOffset(
                                 clock_parser::parse_clock_delta(date_time_delta)?,
                             ))

@@ -1,13 +1,8 @@
 use crate::tsdb::query::parser::*;
 
-use super::is_space;
-use chrono::{FixedOffset, TimeZone};
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use std::ops::Deref;
-use thiserror::Error;
+use pest::iterators::Pair;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PosNeg {
     Positive,
     Negative,
@@ -15,7 +10,7 @@ pub enum PosNeg {
 
 impl PosNeg {
     pub fn is_nagative(&self) -> bool {
-        self == &PosNeg::Negative
+        *self == PosNeg::Negative
     }
 }
 

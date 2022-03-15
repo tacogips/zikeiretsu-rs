@@ -37,7 +37,7 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
         match each_delta_elem.as_rule() {
             Rule::POS_NEG => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
             Rule::ASCII_DIGITS => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
-            Rule::DURATION => pos_neg = Some(pos_neg_parser::parse_pos_neg(each_delta_elem)?),
+            Rule::DURATION => duration_unit = Some(parse_duration(each_delta_elem)?),
 
             r => {
                 return Err(QueryError::InvalidGrammer(format!(

@@ -62,6 +62,9 @@ pub enum QueryError {
 
     #[error("invalid date time format:{0}")]
     InvalidDatetimeFormat(String),
+
+    #[error("invalid date time filter operator:{0}")]
+    InvalidDatetimeFilterOperator(String),
 }
 
 pub type Result<T> = std::result::Result<T, QueryError>;
@@ -138,7 +141,7 @@ impl<'q> DatetimeFilter<'q> {
         datetime_1: DatetimeFilterValue,
         datetime_2: Option<DatetimeFilterValue>,
     ) -> Result<DatetimeFilter<'q>> {
-        match ope.to_uppercase() {
+        match ope.to_uppercase().as_str() {
             "IN" => match datetime_2 {
                 None => Err(QueryError::InvalidGrammer(format!(
                     "'in' needs datetime range  "
@@ -150,6 +153,9 @@ impl<'q> DatetimeFilter<'q> {
             "<=" => Ok(DatetimeFilter::Lte(column_name, datetime_1)),
             "<" => Ok(DatetimeFilter::Lt(column_name, datetime_1)),
             "=" => Ok(DatetimeFilter::Equal(column_name, datetime_1)),
+            invalid_operator => Err(QueryError::InvalidDatetimeFilterOperator(
+                invalid_operator.to_string(),
+            )),
         }
     }
 }

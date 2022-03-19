@@ -14,16 +14,17 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
         ));
     }
 
+    let mut column_name: Option<ColumnName<'q>> = None;
     let mut filter_val1: Option<DatetimeFilterValue> = None;
     let mut filter_val2: Option<DatetimeFilterValue> = None;
-    let mut relation_op: Option<Pair<'q, Rule>> = None;
+    let mut relation_op: Option<&'q str> = None;
 
     for each in pair.into_inner() {
         match each.as_rule() {
             Rule::REL_OP => {
                 let mut rel_ope = each.into_inner();
                 match rel_ope.next() {
-                    Some(rel_ope) => relation_op = Some(rel_ope),
+                    Some(rel_ope) => relation_op = Some(rel_ope.as_str().trim()),
                     None => {
                         return Err(QueryError::InvalidGrammer(format!(
                             "empty relation operator in datetime filter"
@@ -47,7 +48,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                     }
                 }
             }
-            Rule::KW_TIMESTAMP => { /* do nothing*/ }
+            Rule::KW_TIMESTAMP => column_name = Some(ColumnName(each.as_str())),
             r @ _ => {
                 return Err(QueryError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
@@ -56,25 +57,16 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
         }
     }
 
-    unimplemented!()
-    //let mut columns = Vec::<Column<'q>>::new();
-    //for each_pair_in_columns in pair.into_inner() {
-    //    if each_pair_in_columns.as_rule() == Rule::COLUMN_NAME {
-    //        let column_str = each_pair_in_columns.as_str();
-    //        if column_str == "*" {
-    //            if allow_asterisk {
-    //                columns.push(Column::Asterick)
-    //            } else {
-    //                return Err(QueryError::InvalidColumnName(column_str.to_string()));
-    //            }
-    //        } else {
-    //            columns.push(Column::ColumnName(ColumnName(
-    //                each_pair_in_columns.as_str(),
-    //            )))
-    //        }
-    //    }
-    //}
-    //Ok(columns)
+    match (column_name, relation_op, filter_val1) {
+        (Some(column_name), Some(relation_op), Some(filter_val1)) => {
+            DatetimeFilter::from(column_name, relation_op, filter_val1, filter_val2)
+        }
+        (column_name, relation_op, filter_val1) => {
+            Err(QueryError::InvalidGrammer(format!(
+            "unknown term in datetime filter.  column:{column_name:?}, ope:{relation_op:?}, val1: {filter_val1:?}"
+        )))
+        }
+    }
 }
 
 pub fn parse_datetime_range_close<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
@@ -85,6 +77,7 @@ pub fn parse_datetime_range_close<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFi
             format!("{:?}", pair.as_rule()),
         ));
     }
+
     unimplemented!()
 }
 

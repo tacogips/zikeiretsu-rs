@@ -114,8 +114,8 @@ pub struct WhereClause<'q> {
 #[derive(Debug)]
 pub struct OrderOrLimitClause<'q> {
     order_by: Option<Order<'q>>,
-    limit: Option<u64>,
-    offset: Option<u64>,
+    limit: Option<usize>,
+    offset: Option<usize>,
 }
 
 #[derive(Debug)]

@@ -3,9 +3,7 @@ use crate::tsdb::query::parser::*;
 use super::is_space;
 
 use chrono::{FixedOffset, TimeZone};
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use thiserror::Error;
+use pest::iterators::Pair;
 
 pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::CLOCK_DELTA {

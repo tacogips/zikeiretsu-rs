@@ -109,7 +109,7 @@ REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
 // from trades
 // where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
 //
-// ### 3. datetiem filter as functionn
+// ### 3. datetime filter as functionn
 // ```
 //
 // select ts, volume, price
@@ -119,7 +119,7 @@ REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
 // ```
 
 
-WHERE_FILTER = { DATETIME_FILTER }
+FILTER = { DATETIME_FILTER }
 DATETIME_FILTER = { KW_TIMESTAMP ~ REL_OP ~ ( DATETIME | DATETIME_RANGE )}
 
 // === WITH CLAUS =========================================
@@ -129,7 +129,7 @@ WITH_CLAUSE_DEFINES = { DEFINE_TZ  | DEFINE_COLUMNS }
 SELECT_CLAUSE = { KW_SELECT ~ ( KW_ASTERISK | COLUMNS ) }
 FROM_CLAUSE   = { KW_FROM ~ TABLE_NAME  }
 
-WHERE_CLAUSE  = { KW_WHERE ~ WHERE_FILTER } // only simple condition is allowed now
+WHERE_CLAUSE  = { KW_WHERE ~ FILTER } // only simple condition is allowed now
 LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
 OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allowed now
 ORDER_CLAUSE = { (COLUMN_NAME ~ KW_ASC?) | (COLUMN_NAME ~ KW_DESC) }

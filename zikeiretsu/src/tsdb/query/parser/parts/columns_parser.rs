@@ -1,8 +1,6 @@
 use once_cell::sync::OnceCell;
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
+use pest::iterators::Pair;
 use std::collections::HashSet;
-use thiserror::Error;
 
 use crate::tsdb::query::parser::*;
 

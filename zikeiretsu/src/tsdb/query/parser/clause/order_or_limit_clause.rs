@@ -1,6 +1,4 @@
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use thiserror::Error;
+use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 

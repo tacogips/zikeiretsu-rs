@@ -1,6 +1,4 @@
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use thiserror::Error;
+use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 
@@ -19,7 +17,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
 
     for each in pair.into_inner() {
         match each.as_rule() {
-            Rule::WHERE_FILTER => {
+            Rule::FILTER => {
                 for each_filter in each.into_inner() {
                     match each_filter.as_rule() {
                         Rule::DATETIME_FILTER => {

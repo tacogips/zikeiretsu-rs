@@ -1,11 +1,6 @@
 use crate::tsdb::query::parser::*;
 
-use super::is_space;
-use chrono::{FixedOffset, TimeZone};
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use std::convert::TryFrom;
-use thiserror::Error;
+use pest::{iterators::Pair, Parser};
 
 pub fn parse_ascii_digits<'q>(pair: Pair<'q, Rule>) -> Result<u64> {
     if pair.as_rule() != Rule::ASCII_DIGITS {

@@ -3,7 +3,7 @@ use once_cell::sync::OnceCell;
 use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
-use chrono::{format as chrono_format, DateTime, FixedOffset, NaiveDateTime, NaiveTime, Utc};
+use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     #[cfg(debug_assertions)]

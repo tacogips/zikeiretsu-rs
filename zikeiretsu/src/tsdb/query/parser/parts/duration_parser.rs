@@ -1,11 +1,8 @@
 use crate::tsdb::query::parser::*;
 
-use super::{ascii_digits_parser, is_space, pos_neg_parser};
-use chrono::{FixedOffset, TimeZone};
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
+use super::{ascii_digits_parser, pos_neg_parser};
+use pest::iterators::Pair;
 use std::ops::Deref;
-use thiserror::Error;
 
 pub struct DeltaInMicroSeconds(i64);
 impl Deref for DeltaInMicroSeconds {

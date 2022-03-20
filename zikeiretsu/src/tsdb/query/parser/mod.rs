@@ -160,19 +160,28 @@ impl<'q> DatetimeFilter<'q> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DatetimeDelta {
     FixedOffset(FixedOffset),
     MicroSec(i64),
+    Composit(Box<DatetimeDelta>, Box<DatetimeDelta>),
+}
+impl DatetimeDelta {
+    pub fn to_composit_if_some(self, other: Option<Self>) -> Self {
+        match other {
+            Some(other) => Self::Composit(Box::new(other), Box::new(self)),
+            None => self,
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DatetimeFilterValue {
     DateString(DateTime<Utc>, Option<DatetimeDelta>),
     Function(BuildinDatetimeFunction, Option<DatetimeDelta>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BuildinDatetimeFunction {
     Today,
     Yesterday,

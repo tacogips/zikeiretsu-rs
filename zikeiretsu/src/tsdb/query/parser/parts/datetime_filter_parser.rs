@@ -42,7 +42,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                             filter_val1 = Some(parse_datetime(date_time_range)?);
                         }
                         Rule::DATETIME_RANGE_CLOSE => {
-                            filter_val2 = Some(parse_datetime_range_close(date_time_range)?);
+                            filter_val2 = Some(parse_datetime_range_close(
+                                date_time_range,
+                                filter_val1.as_ref(),
+                            )?);
                         }
                         _ => { /* do nothing */ }
                     }
@@ -69,7 +72,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     }
 }
 
-pub fn parse_datetime_range_close<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
+pub fn parse_datetime_range_close<'q>(
+    pair: Pair<'q, Rule>,
+    base_datetime: Option<&DatetimeFilterValue>,
+) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME_RANGE_CLOSE {
         return Err(QueryError::UnexpectedPair(
@@ -78,7 +84,52 @@ pub fn parse_datetime_range_close<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFi
         ));
     }
 
-    unimplemented!()
+    let mut datetime: Option<DatetimeFilterValue> = None;
+
+    for each in pair.into_inner() {
+        match each.as_rule() {
+            Rule::DATETIME => {
+                datetime = Some(parse_datetime(each)?);
+            }
+            Rule::DATETIME_DELTA => {
+                let datetime_delta = parse_datetime_delta(each)?;
+                if let Some(base_datetime) = base_datetime {
+                    let calced_datetime = match base_datetime {
+                        DatetimeFilterValue::DateString(dt, base_delta) => {
+                            DatetimeFilterValue::DateString(
+                                dt.clone(),
+                                Some(datetime_delta.to_composit_if_some(base_delta.clone())),
+                            )
+                        }
+                        DatetimeFilterValue::Function(func, base_delta) => {
+                            DatetimeFilterValue::Function(
+                                func.clone(),
+                                Some(datetime_delta.to_composit_if_some(base_delta.clone())),
+                            )
+                        }
+                    };
+
+                    datetime = Some(calced_datetime)
+                } else {
+                    return Err(QueryError::InvalidGrammer(format!(
+                        " datetime filter val1  is needed. "
+                    )));
+                }
+            }
+            r @ _ => {
+                return Err(QueryError::InvalidGrammer(format!(
+                    "unknown term in datetime filter : {r:?}"
+                )))
+            }
+        }
+    }
+
+    match datetime {
+        None => Err(QueryError::InvalidGrammer(format!(
+            "invalid datetime filter close. "
+        ))),
+        Some(datetime) => Ok(datetime),
+    }
 }
 
 pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {

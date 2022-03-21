@@ -151,7 +151,7 @@ mod test {
 
     #[test]
     pub fn cloud_block_list_file_path() {
-        let metrics = Metrics::new("some_metrics");
+        let metrics = Metrics::new("some_metrics").unwrap();
 
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
         let file_path = CloudBlockListFilePath::new(&metrics, &storage);
@@ -164,7 +164,7 @@ mod test {
 
     #[test]
     pub fn cloud_block_file_path() {
-        let metrics = Metrics::new("some_metrics");
+        let metrics = Metrics::new("some_metrics").unwrap();
 
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
 
@@ -181,7 +181,7 @@ mod test {
 
     #[test]
     pub fn cloud_lock_file_path() {
-        let metrics = Metrics::new("some_metrics");
+        let metrics = Metrics::new("some_metrics").unwrap();
 
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
         let file_path = CloudLockfilePath::new(&metrics, &storage);

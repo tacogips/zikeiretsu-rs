@@ -74,7 +74,9 @@ pub(crate) fn extract_metrics_from_file_name(file_name: &str) -> Result<Metrics>
     let captured = LOCAL_BLOCK_LIST_FILE_PATTERN.captures(file_name);
     if let Some(captured) = captured {
         if let Some(matched) = captured.get(1) {
-            return Ok(Metrics::new(matched.as_str()));
+            let metrics = Metrics::new(matched.as_str())
+                .map_err(|e| StorageApiError::InvalidMetricsName(e))?;
+            return Ok(metrics);
         }
     }
     Err(StorageApiError::InvalidBlockListFileName(
@@ -283,6 +285,6 @@ mod test {
         assert!(result.is_ok());
         let result = result.unwrap();
 
-        assert_eq!(Metrics::new("some-met_rics"), result);
+        assert_eq!(Metrics::new("some-met_rics").unwrap(), result);
     }
 }

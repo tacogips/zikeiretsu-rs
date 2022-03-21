@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::fmt::{Display, Formatter, Result as FormatterResult};
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug, Deserialize, Serialize)]
 pub struct Metrics(String);
 
 impl Metrics {
-    pub fn new<S: ToString>(s: S) -> Self {
-        Self(s.to_string())
+    pub fn new<S: ToString>(s: S) -> Result<Self, String> {
+        Ok(Self(s.to_string()))
     }
 }
 
@@ -16,14 +17,16 @@ impl Display for Metrics {
     }
 }
 
-impl From<&str> for Metrics {
-    fn from(s: &str) -> Self {
+impl TryFrom<&str> for Metrics {
+    type Error = String;
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
         Metrics::new(s.to_string())
     }
 }
 
-impl From<String> for Metrics {
-    fn from(s: String) -> Self {
+impl TryFrom<String> for Metrics {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
         Metrics::new(s)
     }
 }

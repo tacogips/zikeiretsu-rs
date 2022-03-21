@@ -490,7 +490,7 @@ mod test {
     fn test_wr_block_list_1() {
         let mut dest = Vec::<u8>::new();
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = {
             let ts1 =
                 BlockTimestamp::new(TimestampSec::new(1629745452), TimestampSec::new(1629745453));
@@ -560,7 +560,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -582,7 +582,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -604,7 +604,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -626,7 +626,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -647,7 +647,7 @@ mod test {
     fn test_block_timestamps_search_5() {
         let block_timestamps = block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30},{21,31});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -669,7 +669,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -691,7 +691,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -710,7 +710,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -728,7 +728,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -746,7 +746,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -764,7 +764,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -785,7 +785,7 @@ mod test {
     fn test_block_list_add_timestamps_1() {
         let updated_timestamp = TimestampNano::new(1629745452_715062000);
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let mut blocklist = BlockList::new(metrics, updated_timestamp, vec![]);
         block_timestamps!({10,20});
         {
@@ -846,7 +846,7 @@ mod test {
             { 1638275138, 1638275169 }
         );
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let mut blocklist = BlockList::new(metrics, updated_timestamp, init_timestamp);
         {
             let block_timestamp = blts!(1638275168, 1638275200);
@@ -881,7 +881,7 @@ mod test {
 
             );
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let mut blocklist = BlockList::new(metrics, updated_timestamp, init_timestamp);
         {
             let block_timestamp = blts!(1638276696, 1638276728);

@@ -90,6 +90,9 @@ pub enum StorageApiError {
 
     #[error("Local DB path required. {0}")]
     DbDirPathRequired(String),
+
+    #[error("invalid metrics name. {0}")]
+    InvalidMetricsName(String),
 }
 
 pub(crate) fn lockfile_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
@@ -146,7 +149,7 @@ mod test {
             BlockTimestamp::new(TimestampSec::new(162688734), TimestampSec::new(162688735));
         let (path_dir, path_buf) = block_timestamp_to_block_file_path(
             &PathBuf::from("root_dir"),
-            &Metrics::new("some_metrics"),
+            &Metrics::new("some_metrics").unwrap(),
             &block_timestamp,
         );
 

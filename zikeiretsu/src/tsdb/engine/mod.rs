@@ -111,7 +111,7 @@ impl Zikeiretsu {
         WritableStore::builder(metics, field_types)
     }
 
-    pub async fn readonly_store<P: AsRef<Path>, M: Into<Metrics>>(
+    pub async fn readonly_store<P: AsRef<Path>, M: TryInto<Metrics, Error = String>>(
         db_dir: P,
         metrics: M,
         field_selectors: Option<&[usize]>,
@@ -120,7 +120,9 @@ impl Zikeiretsu {
     ) -> Result<ReadonlyStore> {
         let datapoints = api::read::search_datas(
             db_dir,
-            &metrics.into(),
+            &metrics
+                .try_into()
+                .map_err(|e| StorageApiError::InvalidMetricsName(e))?,
             field_selectors,
             condition,
             &setting.cache_setting,

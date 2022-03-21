@@ -68,7 +68,7 @@ mod test {
             {1629745451_715063000, vec![200f64,36f64]}
         );
         let store = WritableStoreBuilder::default(
-            Metrics::new("default"),
+            Metrics::new("default").unwrap(),
             vec![FieldType::Float64, FieldType::Float64],
         )
         .build();
@@ -104,7 +104,7 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
         let store = WritableStoreBuilder::default(
-            Metrics::new("default"),
+            Metrics::new("default").unwrap(),
             vec![FieldType::Float64, FieldType::Float64],
         )
         .build();
@@ -280,7 +280,7 @@ mod test {
         let temp_db_dir = TempDir::new("persistence_test_1").unwrap();
 
         let field_types = vec![FieldType::Float64, FieldType::Float64];
-        let metrics: Metrics = "test_metrics".into();
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
         let store = WritableStore::builder(metrics.clone(), field_types)
@@ -437,7 +437,7 @@ mod test {
         let temp_db_dir = TempDir::new("persistence_test_2").unwrap();
 
         let field_types = vec![FieldType::Float64, FieldType::Float64];
-        let metrics: Metrics = "test_metrics".into();
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
         let store = WritableStore::builder(metrics.clone(), field_types)

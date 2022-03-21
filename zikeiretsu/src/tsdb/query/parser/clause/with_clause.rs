@@ -1,10 +1,17 @@
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
 
+#[derive(Debug, PartialEq)]
+pub enum OutputFormat {
+    Json,
+    Table,
+}
+
 #[derive(Debug)]
 pub struct WithClause<'q> {
     pub def_columns: Option<Vec<Column<'q>>>,
     pub def_timezone: Option<FixedOffset>,
+    pub def_output: Option<OutputFormat>,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
@@ -19,6 +26,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
     let mut with_clause = WithClause {
         def_columns: None,
         def_timezone: None,
+        def_output: None,
     };
     for each in pair.into_inner() {
         match each.as_rule() {
@@ -37,6 +45,16 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                         let timezone = timezone_parser::parse_timezone_offset(each_in_define_tz)?;
 
                         with_clause.def_timezone = Some(timezone)
+                    }
+                }
+            }
+
+            Rule::DEFINE_OUTPUT => {
+                for each_in_define_tz in each.into_inner() {
+                    match each_in_define_tz.as_rule() {
+                        Rule::KW_JSON => with_clause.def_output = Some(OutputFormat::Json),
+                        Rule::KW_TABLE => with_clause.def_output = Some(OutputFormat::Table),
+                        _ => { /* do nothing */ }
                     }
                 }
             }

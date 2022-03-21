@@ -303,14 +303,14 @@ mod test {
 
     #[test]
     fn parse_chronos_2() {
-        let pairs = QueryGrammer::parse(Rule::DATETIME, "'2012-12-13 9:00:00+09:00' - 1hour ");
+        let pairs = QueryGrammer::parse(Rule::DATETIME, "'2012-12-13 9:00:00' - 1hour ");
 
         assert!(pairs.is_ok());
 
         let mut pairs = pairs.unwrap();
         let from = pairs.next().unwrap();
         assert_eq!(from.as_rule(), Rule::DATETIME);
-        assert_eq!(from.as_str(), "'2012-12-13 9:00:00+09:00' - 1hour");
+        assert_eq!(from.as_str(), "'2012-12-13 9:00:00' - 1hour");
     }
 
     #[test]
@@ -356,7 +356,7 @@ from trades
 
  where ts in today()
  offset 10 limit 10
- order_by  asc
+ order by ts asc
 
  "#;
 

@@ -14,8 +14,6 @@ use thiserror::Error;
 #[grammar = "tsdb/query/query.pest"]
 pub struct QueryGrammer {}
 
-type DateString = str;
-
 #[derive(Debug, PartialEq)]
 pub struct ColumnName<'q>(&'q str);
 

@@ -124,7 +124,7 @@ REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
 FILTER = { DATETIME_FILTER }
 DATETIME_FILTER = { KW_TIMESTAMP ~ REL_OP ~ ( DATETIME_RANGE | DATETIME )}
 
-// === WITH CLAUS =========================================
+// === WITH CLAUSE =========================================
 WITH_CLAUSE   = { KW_WITH ~ WITH_CLAUSE_DEFINES  ~ ("," ~ WITH_CLAUSE_DEFINES )* }
 WITH_CLAUSE_DEFINES = { DEFINE_TZ  | DEFINE_COLUMNS }
 
@@ -137,8 +137,6 @@ OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allow
 ORDER_CLAUSE = { KW_ORDER  ~ KW_BY ~  KW_TIMESTAMP ~ (KW_DESC | KW_ASC)?  }
 ORDER_OR_LIMIT_CLAUSE = { (  ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE ) + }
 
-
-
 // === Query =================
 QUERY = {
 		SOI
@@ -148,5 +146,4 @@ QUERY = {
 	~ WHERE_CLAUSE?
 	~ ORDER_OR_LIMIT_CLAUSE*
 	~ EOI }
-
 

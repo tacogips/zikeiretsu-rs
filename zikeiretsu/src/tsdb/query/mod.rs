@@ -1,4 +1,5 @@
 mod context;
+mod eval;
 mod lexer;
 mod output;
 mod parser;

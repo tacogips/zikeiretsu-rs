@@ -1,8 +1,6 @@
 mod args;
-mod describe_metrics;
 
 mod fetch_metrics;
-mod list_metrics;
 mod operation;
 
 use ::zikeiretsu::*;

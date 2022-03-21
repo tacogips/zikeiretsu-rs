@@ -5,6 +5,63 @@ use pest::iterators::Pair;
 use crate::tsdb::query::parser::*;
 use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
 
+#[derive(Debug)]
+pub enum DatetimeFilter<'q> {
+    In(ColumnName<'q>, DatetimeFilterValue, DatetimeFilterValue),
+    Gte(ColumnName<'q>, DatetimeFilterValue),
+    Gt(ColumnName<'q>, DatetimeFilterValue),
+    Lte(ColumnName<'q>, DatetimeFilterValue),
+    Lt(ColumnName<'q>, DatetimeFilterValue),
+    Equal(ColumnName<'q>, DatetimeFilterValue),
+}
+
+impl<'q> DatetimeFilter<'q> {
+    pub fn from(
+        column_name: ColumnName<'q>,
+        ope: &'q str,
+        datetime_1: DatetimeFilterValue,
+        datetime_2: Option<DatetimeFilterValue>,
+    ) -> Result<DatetimeFilter<'q>> {
+        match ope.to_uppercase().as_str() {
+            "IN" => match datetime_2 {
+                None => Err(QueryError::InvalidGrammer(format!(
+                    "'in' needs datetime range  "
+                ))),
+                Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
+            },
+            ">=" => Ok(DatetimeFilter::Gte(column_name, datetime_1)),
+            ">" => Ok(DatetimeFilter::Gt(column_name, datetime_1)),
+            "<=" => Ok(DatetimeFilter::Lte(column_name, datetime_1)),
+            "<" => Ok(DatetimeFilter::Lt(column_name, datetime_1)),
+            "=" => Ok(DatetimeFilter::Equal(column_name, datetime_1)),
+            invalid_operator => Err(QueryError::InvalidDatetimeFilterOperator(
+                invalid_operator.to_string(),
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum DatetimeDelta {
+    FixedOffset(FixedOffset),
+    MicroSec(i64),
+    Composit(Box<DatetimeDelta>, Box<DatetimeDelta>),
+}
+impl DatetimeDelta {
+    pub fn to_composit_if_some(self, other: Option<Self>) -> Self {
+        match other {
+            Some(other) => Self::Composit(Box::new(other), Box::new(self)),
+            None => self,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum DatetimeFilterValue {
+    DateString(DateTime<Utc>, Option<DatetimeDelta>),
+    Function(BuildinDatetimeFunction, Option<DatetimeDelta>),
+}
+
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME_FILTER {

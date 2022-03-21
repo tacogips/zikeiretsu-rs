@@ -2,6 +2,12 @@ use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 
+use crate::tsdb::query::parser::parts::DatetimeFilter;
+#[derive(Debug)]
+pub struct WhereClause<'q> {
+    pub datetime_filter: Option<DatetimeFilter<'q>>,
+}
+
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::WHERE_CLAUSE {

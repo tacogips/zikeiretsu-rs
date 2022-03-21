@@ -2,6 +2,11 @@ use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 
+#[derive(Debug)]
+pub struct SelectClause<'q> {
+    pub select_columns: Option<Vec<Column<'q>>>,
+}
+
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::SELECT_CLAUSE {

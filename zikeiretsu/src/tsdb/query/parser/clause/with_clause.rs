@@ -1,8 +1,11 @@
-use pest::{error::Error as PestError, iterators::Pair, Parser, ParserState};
-use pest_derive::Parser;
-use thiserror::Error;
-
 use crate::tsdb::query::parser::*;
+use pest::iterators::Pair;
+
+#[derive(Debug)]
+pub struct WithClause<'q> {
+    pub def_columns: Option<Vec<Column<'q>>>,
+    pub def_timezone: Option<FixedOffset>,
+}
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
     #[cfg(debug_assertions)]

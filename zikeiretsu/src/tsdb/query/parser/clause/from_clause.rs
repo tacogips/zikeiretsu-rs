@@ -2,6 +2,11 @@ use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 
+#[derive(Debug)]
+pub struct FromClause<'q> {
+    pub from: Option<&'q str>,
+}
+
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<FromClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::FROM_CLAUSE {

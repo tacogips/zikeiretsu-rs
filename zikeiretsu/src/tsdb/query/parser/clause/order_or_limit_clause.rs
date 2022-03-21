@@ -2,6 +2,19 @@ use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 
+#[derive(Debug)]
+pub struct OrderOrLimitClause<'q> {
+    order_by: Option<Order<'q>>,
+    limit: Option<usize>,
+    offset: Option<usize>,
+}
+
+#[derive(Debug)]
+pub enum Order<'q> {
+    AscBy(ColumnName<'q>),
+    DescBy(ColumnName<'q>),
+}
+
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::ORDER_OR_LIMIT_CLAUSE {

@@ -7,7 +7,16 @@ pub struct Metrics(String);
 
 impl Metrics {
     pub fn new<S: ToString>(s: S) -> Result<Self, String> {
-        Ok(Self(s.to_string()))
+        let s = s.to_string();
+        Self::validate(s.as_str())?;
+        Ok(Self(s))
+    }
+
+    fn validate(s: &str) -> Result<(), String> {
+        if s.starts_with(".") {
+            return Err("metrics name can't starts with '.'".to_string());
+        }
+        Ok(())
     }
 }
 

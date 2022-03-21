@@ -1,14 +1,14 @@
 use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::metrics::Metrics;
-use crate::tsdb::query::parser::ParsedQuery;
+use crate::tsdb::query::parser::*;
 
 use crate::EngineError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum LexerError {
-    #[error("engine error :{0}")]
-    EngineError(#[from] EngineError),
+    #[error("invalid datertime range. start:{0}, end: {1}")]
+    InvalidDatetimeRange(String, String),
 }
 
 pub type Result<T> = std::result::Result<T, LexerError>;
@@ -24,6 +24,7 @@ pub struct QueryContext {
     search_condotion: DatapointSearchCondition,
     limit: Option<usize>,
     offset: Option<usize>,
+    output_format: Option<OutputFormat>,
 }
 
 pub fn interpret(parsed_query: ParsedQuery) -> Result<Query> {

@@ -385,6 +385,7 @@ mod test {
             let datapoints = api::read::search_datas(
                 temp_db_dir.path(),
                 &metrics,
+                None,
                 &condition,
                 &cache_setting,
                 None,
@@ -510,6 +511,7 @@ mod test {
             let datapoints = api::read::search_datas(
                 temp_db_dir.path(),
                 &metrics,
+                None,
                 &condition,
                 &cache_setting,
                 None,

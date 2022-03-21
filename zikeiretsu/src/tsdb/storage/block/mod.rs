@@ -165,7 +165,10 @@ impl From<&[DataPoint]> for TimestampDeltas {
     }
 }
 
-pub fn read_from_block_file<P: AsRef<Path>>(path: P) -> Result<Vec<DataPoint>> {
+pub fn read_from_block_file<P: AsRef<Path>>(
+    path: P,
+    field_selectors: Option<&[usize]>,
+) -> Result<Vec<DataPoint>> {
     let block_file =
         File::open(path.as_ref()).map_err(|e| BlockError::file_error(e, path.as_ref()))?;
     let block_data = unsafe {
@@ -173,7 +176,7 @@ pub fn read_from_block_file<P: AsRef<Path>>(path: P) -> Result<Vec<DataPoint>> {
             .map(&block_file)
             .map_err(|e| BlockError::file_error(e, path))?
     };
-    read::read_from_block(&block_data)
+    read::read_from_block_with_specific_fieds(&block_data, field_selectors)
 }
 
 pub fn write_to_block_file<P: AsRef<Path>>(path: P, datapoints: &[DataPoint]) -> Result<()> {
@@ -495,7 +498,7 @@ mod test {
         let result = write_to_block_file(target_file.as_ref(), &datapoints);
         assert!(result.is_ok());
 
-        let result = read_from_block_file(target_file.as_ref());
+        let result = read_from_block_file(target_file.as_ref(), None);
         assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(result, datapoints);

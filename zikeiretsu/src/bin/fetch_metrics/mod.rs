@@ -6,6 +6,7 @@ pub async fn execute(fetch_metrics: FetchMetricsCondition) -> Result<()> {
     let store = Zikeiretsu::readonly_store(
         &fetch_metrics.db_dir,
         fetch_metrics.metrics.as_str(),
+        None,
         &fetch_metrics.condition,
         &fetch_metrics.setting,
     )

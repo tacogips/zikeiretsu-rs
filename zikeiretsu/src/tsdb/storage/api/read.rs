@@ -104,6 +104,7 @@ pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
 pub async fn search_datas<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
+    field_selectors: Option<&[usize]>,
     condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
     cloud_setting: Option<&CloudStorageSetting>,
@@ -129,7 +130,13 @@ pub async fn search_datas<P: AsRef<Path>>(
             }
 
             let tasks = block_timestamps.iter().map(|block_timestamp| {
-                read_block(&db_dir, &metrics, &block_timestamp, cloud_setting)
+                read_block(
+                    &db_dir,
+                    &metrics,
+                    field_selectors.clone(),
+                    &block_timestamp,
+                    cloud_setting,
+                )
             });
 
             let data_points_of_blocks = join_all(tasks).await;
@@ -158,6 +165,7 @@ fn no_block_timestamps_overlapping_nor_unsorted(
 async fn read_block(
     root_dir: &Path,
     metrics: &Metrics,
+    field_selectors: Option<&[usize]>,
     block_timestamp: &block_list::BlockTimestamp,
     cloud_setting: Option<&CloudStorageSetting>,
 ) -> Result<Vec<DataPoint>> {
@@ -188,11 +196,14 @@ async fn read_block(
         }
     }
 
-    read_from_block_file(&block_file_path)
+    read_from_block_file(&block_file_path, field_selectors)
 }
 
-fn read_from_block_file(block_file_path: &PathBuf) -> Result<Vec<DataPoint>> {
-    let result = block::read_from_block_file(block_file_path)?;
+fn read_from_block_file(
+    block_file_path: &PathBuf,
+    field_selectors: Option<&[usize]>,
+) -> Result<Vec<DataPoint>> {
+    let result = block::read_from_block_file(block_file_path, field_selectors)?;
     Ok(result)
 }
 

@@ -114,12 +114,14 @@ impl Zikeiretsu {
     pub async fn readonly_store<P: AsRef<Path>, M: Into<Metrics>>(
         db_dir: P,
         metrics: M,
+        field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
         setting: &SearchSettings,
     ) -> Result<ReadonlyStore> {
         let datapoints = api::read::search_datas(
             db_dir,
             &metrics.into(),
+            field_selectors,
             condition,
             &setting.cache_setting,
             setting.cloud_setting.as_ref(),

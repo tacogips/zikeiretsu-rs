@@ -78,6 +78,9 @@ pub enum BlockError {
 
     #[error("compress error : {0}")]
     CompressError(#[from] CompressError),
+
+    #[error("invalid field selector : {0}")]
+    InvalidFieldSelector(String),
 }
 
 impl BlockError {

@@ -2,8 +2,16 @@ use super::compress::bools;
 use super::{field_type_convert, BlockError, Result, TimestampDeltas};
 use crate::tsdb::*;
 use bits_ope::*;
+use std::collections::HashSet;
 
 pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
+    read_from_block_with_specific_fieds(block_data, None)
+}
+
+pub(crate) fn read_from_block_with_specific_fieds(
+    block_data: &[u8],
+    field_selectors: Option<&[usize]>,
+) -> Result<Vec<DataPoint>> {
     // 1. number  of data
     let (number_of_data, mut block_idx): (u64, usize) =
         base_128_variants::decompress_u64(&block_data)?;
@@ -20,6 +28,29 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
         }
     };
     block_idx += 1;
+
+    // validate field number and field_selectors
+    let field_selectors_set = match field_selectors {
+        None => HashSet::new(),
+        Some(field_selectors) => {
+            let mut field_selectors_set = HashSet::new();
+            if field_selectors.len() == 0 {
+                return Err(BlockError::InvalidFieldSelector(
+                    "empty field selector".to_string(),
+                ));
+            } else {
+                for each_selector in field_selectors {
+                    if *each_selector >= number_of_field as usize {
+                        return Err(BlockError::InvalidFieldSelector(
+                            "empty field selector".to_string(),
+                        ));
+                    }
+                    field_selectors_set.insert(*each_selector);
+                }
+                field_selectors_set
+            }
+        }
+    };
 
     // 3.  field types
     let mut field_types = Vec::<FieldType>::new();
@@ -110,7 +141,15 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
 
     let mut block_field_values = Vec::<Vec<FieldValue>>::new();
 
-    for each_field_type in field_types {
+    let is_field_to_select = |idx: usize| {
+        if field_selectors_set.is_empty() {
+            true
+        } else {
+            field_selectors_set.contains(&idx)
+        }
+    };
+
+    for (field_idx, each_field_type) in field_types.iter().enumerate() {
         match each_field_type {
             FieldType::Float64 => {
                 let mut float_values = Vec::<f64>::new();
@@ -121,12 +160,14 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
                 )?;
                 block_idx += read_idx;
 
-                block_field_values.push(
-                    float_values
-                        .into_iter()
-                        .map(|v| FieldValue::Float64(v))
-                        .collect(),
-                )
+                if is_field_to_select(field_idx) {
+                    block_field_values.push(
+                        float_values
+                            .into_iter()
+                            .map(|v| FieldValue::Float64(v))
+                            .collect(),
+                    )
+                }
             }
 
             FieldType::Bool => {
@@ -138,12 +179,14 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
                 )?;
                 block_idx += read_idx;
 
-                block_field_values.push(
-                    bool_values
-                        .into_iter()
-                        .map(|v| FieldValue::Bool(v))
-                        .collect(),
-                )
+                if is_field_to_select(field_idx) {
+                    block_field_values.push(
+                        bool_values
+                            .into_iter()
+                            .map(|v| FieldValue::Bool(v))
+                            .collect(),
+                    )
+                }
             }
         }
     }

@@ -2,14 +2,14 @@ use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct OrderOrLimitClause<'q> {
     order_by: Option<Order<'q>>,
     limit: Option<usize>,
     offset: Option<usize>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Order<'q> {
     AscBy(ColumnName<'q>),
     DescBy(ColumnName<'q>),
@@ -34,10 +34,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
                 order_by = Some(parse_order(each_inner)?);
             }
             Rule::OFFSET_CLAUSE => {
-                limit = Some(parse_limit(each_inner)?);
+                offset = Some(parse_offset(each_inner)?);
             }
             Rule::LIMIT_CLAUSE => {
-                offset = Some(parse_offset(each_inner)?);
+                limit = Some(parse_limit(each_inner)?);
             }
 
             r => {
@@ -105,7 +105,7 @@ pub fn parse_offset<'q>(pair: Pair<'q, Rule>) -> Result<usize> {
     for each_inner in pair.into_inner() {
         match each_inner.as_rule() {
             Rule::ASCII_DIGITS => {
-                let offset = each_inner.as_str().parse::<usize>()?;
+                let offset = each_inner.as_str().trim().parse::<usize>()?;
                 return Ok(offset);
             }
             _ => { /* */ }
@@ -127,7 +127,7 @@ pub fn parse_limit<'q>(pair: Pair<'q, Rule>) -> Result<usize> {
     for each_inner in pair.into_inner() {
         match each_inner.as_rule() {
             Rule::ASCII_DIGITS => {
-                let offset = each_inner.as_str().parse::<usize>()?;
+                let offset = each_inner.as_str().trim().parse::<usize>()?;
                 return Ok(offset);
             }
             _ => { /* */ }
@@ -135,4 +135,56 @@ pub fn parse_limit<'q>(pair: Pair<'q, Rule>) -> Result<usize> {
     }
 
     Err(QueryError::InvalidGrammer(format!("invlalid offset")))
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+    use crate::tsdb::query::parser::parts::DatetimeDelta;
+    use pest::*;
+
+    use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
+
+    #[test]
+    fn parse_order_limit_1() {
+        let order_clause = r"order by ts asc limit 10 offset 3
+            ";
+
+        let pairs = QueryGrammer::parse(Rule::ORDER_OR_LIMIT_CLAUSE, order_clause);
+
+        assert!(pairs.is_ok());
+
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        assert_eq!(
+            parsed.unwrap(),
+            OrderOrLimitClause {
+                order_by: Some(Order::AscBy(ColumnName("ts"))),
+                limit: Some(10),
+                offset: Some(3)
+            }
+        )
+    }
+
+    #[test]
+    fn parse_order_limit_2() {
+        let order_clause = r"order by ts desc offset 3
+            ";
+
+        let pairs = QueryGrammer::parse(Rule::ORDER_OR_LIMIT_CLAUSE, order_clause);
+
+        assert!(pairs.is_ok());
+
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        assert_eq!(
+            parsed.unwrap(),
+            OrderOrLimitClause {
+                order_by: Some(Order::DescBy(ColumnName("ts"))),
+                limit: None,
+                offset: Some(3)
+            }
+        )
+    }
 }

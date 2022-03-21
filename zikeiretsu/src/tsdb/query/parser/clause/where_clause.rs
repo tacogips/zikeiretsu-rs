@@ -69,16 +69,12 @@ mod test {
             chrono_format::StrftimeItems::new("%Y-%m-%d"),
         )
         .unwrap();
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", dt);
 
         let expected_datetime = DateTime::from_utc(
             NaiveDateTime::new(dt.to_naive_date().unwrap(), NaiveTime::from_hms(0, 0, 0)),
             Utc,
         );
         let expected = DatetimeFilterValue::DateString(expected_datetime, None);
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", parsed);
 
         assert_eq!(
             parsed.unwrap(),
@@ -145,9 +141,6 @@ mod test {
         assert!(pairs.is_ok());
         let parsed = parse(pairs.unwrap().next().unwrap());
 
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", parsed);
-
         assert!(parsed.is_ok());
 
         let mut dt = chrono_format::Parsed::new();
@@ -177,6 +170,35 @@ mod test {
         let expected_to = DatetimeFilterValue::DateString(
             expected_datetime,
             Some(DatetimeDelta::MicroSec(2 * 60 * 60 * 1000_000)),
+        );
+
+        assert_eq!(
+            parsed.unwrap(),
+            WhereClause {
+                datetime_filter: Some(DatetimeFilter::In(
+                    ColumnName("ts"),
+                    expected_from,
+                    expected_to
+                )),
+            }
+        );
+    }
+
+    #[test]
+    fn parse_where_4() {
+        let where_clause = r"where  ts in (yesterday(),+ 9:00)";
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, where_clause);
+
+        assert!(pairs.is_ok());
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        assert!(parsed.is_ok());
+
+        let expected_from = DatetimeFilterValue::Function(BuildinDatetimeFunction::Yesterday, None);
+
+        let expected_to = DatetimeFilterValue::Function(
+            BuildinDatetimeFunction::Yesterday,
+            Some(DatetimeDelta::FixedOffset(FixedOffset::east(9 * 60 * 60))),
         );
 
         assert_eq!(

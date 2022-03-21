@@ -19,7 +19,7 @@ type DateString = str;
 #[derive(Debug, PartialEq)]
 pub struct ColumnName<'q>(&'q str);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Column<'q> {
     Asterick,
     ColumnName(ColumnName<'q>),

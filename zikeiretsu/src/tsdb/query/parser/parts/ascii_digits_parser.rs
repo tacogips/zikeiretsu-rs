@@ -10,6 +10,6 @@ pub fn parse_ascii_digits<'q>(pair: Pair<'q, Rule>) -> Result<u64> {
         ));
     }
 
-    let val = pair.as_str().parse::<u64>()?;
+    let val = pair.as_str().trim().parse::<u64>()?;
     Ok(val)
 }

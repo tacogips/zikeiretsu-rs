@@ -5,7 +5,7 @@ use chrono::{DateTime, FixedOffset, ParseError as ChoronoParseError, TimeZone, U
 pub use clause::*;
 use log;
 pub use parts::*;
-use pest::{error::Error as PestError, Parser, ParserState};
+use pest::{error::Error as PestError, Parser};
 use pest_derive::Parser;
 use std::num::ParseIntError;
 use thiserror::Error;
@@ -16,7 +16,7 @@ pub struct QueryGrammer {}
 
 type DateString = str;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ColumnName<'q>(&'q str);
 
 #[derive(Debug)]
@@ -90,7 +90,7 @@ impl<'q> ParsedQuery<'q> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BuildinDatetimeFunction {
     Today,
     Yesterday,

@@ -41,8 +41,17 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
     }
 
     match (pos_neg, duration_num, duration_unit) {
-        (Some(pos_neg), Some(duration_num), Some(duration_unit)) => {
-            let sign = if pos_neg.is_nagative() { -1 } else { 1 };
+        (pos_neg, Some(duration_num), Some(duration_unit)) => {
+            let sign = match pos_neg {
+                None => 1,
+                Some(pos_neg) => {
+                    if pos_neg.is_nagative() {
+                        -1
+                    } else {
+                        1
+                    }
+                }
+            };
 
             let micro_sec = duration_unit.convert_in_micro_sec(duration_num as i64 * sign);
             Ok(DeltaInMicroSeconds(micro_sec))
@@ -118,7 +127,25 @@ mod test {
     use super::*;
 
     #[test]
-    fn parse_duration_delta() {
-        //TODO()
+    fn parse_duration_delta_1() {
+        let dt_delta = r"+ 2 hours";
+
+        let pairs = QueryGrammer::parse(Rule::DURATION_DELTA, dt_delta);
+
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_duration_delta_2() {
+        let dt_delta = r"2 hours";
+        let pairs = QueryGrammer::parse(Rule::DURATION_DELTA, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_duration_delta_3() {
+        let dt_delta = r"-2 hours";
+        let pairs = QueryGrammer::parse(Rule::DURATION_DELTA, dt_delta);
+        assert!(pairs.is_ok());
     }
 }

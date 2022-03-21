@@ -5,7 +5,7 @@ use pest::iterators::Pair;
 use crate::tsdb::query::parser::*;
 use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DatetimeFilter<'q> {
     In(ColumnName<'q>, DatetimeFilterValue, DatetimeFilterValue),
     Gte(ColumnName<'q>, DatetimeFilterValue),
@@ -41,7 +41,7 @@ impl<'q> DatetimeFilter<'q> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DatetimeDelta {
     FixedOffset(FixedOffset),
     MicroSec(i64),
@@ -56,7 +56,7 @@ impl DatetimeDelta {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DatetimeFilterValue {
     DateString(DateTime<Utc>, Option<DatetimeDelta>),
     Function(BuildinDatetimeFunction, Option<DatetimeDelta>),
@@ -358,5 +358,55 @@ mod test {
 
         let parse_result = parse_datetime_str("'2019-12-13");
         assert!(parse_result.is_err());
+    }
+
+    use super::*;
+
+    #[test]
+    fn parse_datetime_delta_1() {
+        let dt_delta = r"+ 2 hours";
+
+        let pairs = QueryGrammer::parse(Rule::DATETIME_DELTA, dt_delta);
+
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_delta_2() {
+        let dt_delta = r"2 hours";
+        let pairs = QueryGrammer::parse(Rule::DATETIME_DELTA, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_delta_3() {
+        let dt_delta = r"-2 hours";
+        let pairs = QueryGrammer::parse(Rule::DATETIME_DELTA, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_range_1() {
+        let dt_delta = r"('2012-12-30', +  2 hours)";
+        let pairs = QueryGrammer::parse(Rule::DATETIME_RANGE, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_filter_1() {
+        let dt_delta = r"ts in ('2012-12-30', +  2 hours)";
+        let pairs = QueryGrammer::parse(Rule::FILTER, dt_delta);
+        assert!(pairs.is_ok());
+
+        let dt_delta = r"where ts in ('2012-12-30', +  2 hours)";
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_range_close_1() {
+        let dt_delta = r"+  2 hours";
+        let pairs = QueryGrammer::parse(Rule::DATETIME_RANGE_CLOSE, dt_delta);
+        assert!(pairs.is_ok());
     }
 }

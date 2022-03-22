@@ -87,15 +87,16 @@ impl DataFrame {
         &'a self,
         cond: &DatapointSearchCondition,
     ) -> Option<(DataFrameRef<'a>, (usize, usize))> {
-        let since_cond = cond
-            .inner_since
+        let since_eq_cond = cond
+            .inner_since_eq
             .map(|since| move |ts: &TimestampNano| ts.cmp(&since));
 
-        let until_cond = cond
-            .inner_until
+        let until_neq_cond = cond
+            .inner_until_neq
             .map(|until| move |ts: &TimestampNano| ts.cmp(&until));
 
-        match binary_search_range_with_idx_by(&self.timestamp_nanos, since_cond, until_cond) {
+        match binary_search_range_with_idx_by(&self.timestamp_nanos, since_eq_cond, until_neq_cond)
+        {
             None => None,
             Some((tss, (start_idx, finish_idx))) => {
                 let selected_series = DataFrameRef::new(
@@ -268,15 +269,7 @@ mod test {
         let result: DataFrame = result.into();
         assert_eq!(
             result,
-            dataframe!([
-                (20, 4),
-                (20, 5),
-                (20, 6),
-                (30, 7),
-                (40, 8),
-                (50, 9),
-                (50, 10),
-            ])
+            dataframe!([(20, 4), (20, 5), (20, 6), (30, 7), (40, 8),])
         );
     }
 
@@ -337,16 +330,7 @@ mod test {
         let result: DataFrame = result.into();
         assert_eq!(
             result,
-            dataframe!([
-                (9, 1),
-                (10, 2),
-                (19, 3),
-                (20, 4),
-                (20, 5),
-                (20, 6),
-                (30, 7),
-                (40, 8),
-            ])
+            dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (20, 5), (20, 6), (30, 7),])
         );
     }
 }

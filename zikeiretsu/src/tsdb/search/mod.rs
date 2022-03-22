@@ -114,14 +114,14 @@ where
 
 pub fn binary_search_range_with_idx_by<T, F1, F2>(
     datas: &[T],
-    condition_at_least: Option<F1>,
-    condition_at_most: Option<F2>,
+    condition_at_least_eq: Option<F1>,
+    condition_at_most_neq: Option<F2>,
 ) -> Option<(&[T], (usize, usize))>
 where
     F1: Fn(&T) -> Ordering,
     F2: Fn(&T) -> Ordering,
 {
-    let start_idx = if let Some(condition_at_least) = condition_at_least {
+    let start_idx = if let Some(condition_at_least) = condition_at_least_eq {
         match binary_search_by(datas, condition_at_least, BinaryRangeSearchType::AtLeastEq) {
             Some(idx) => idx,
             None => return None,
@@ -130,8 +130,8 @@ where
         0
     };
 
-    let end_idx = if let Some(condition_at_most) = condition_at_most {
-        match binary_search_by(datas, condition_at_most, BinaryRangeSearchType::AtMostEq) {
+    let end_idx = if let Some(condition_at_most) = condition_at_most_neq {
+        match binary_search_by(datas, condition_at_most, BinaryRangeSearchType::AtMostNeq) {
             Some(idx) => idx,
             None => return None,
         }

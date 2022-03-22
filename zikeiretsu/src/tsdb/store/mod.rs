@@ -140,7 +140,7 @@ mod test {
         }
 
         let condition = DatapointSearchCondition::since(TimestampNano::new(1629745451_715063000))
-            .with_until(TimestampNano::new(1629745451_715065000));
+            .with_until(TimestampNano::new(1629745451_715065001));
 
         {
             let mut s = store.lock().await;
@@ -352,7 +352,7 @@ mod test {
             let condition = PersistCondition {
                 datapoint_search_condition: DatapointSearchCondition::new(
                     Some(TimestampNano::new(1629745451_715061000)),
-                    Some(TimestampNano::new(1629745451_715066000)),
+                    Some(TimestampNano::new(1629745451_715066001)),
                 ),
                 remove_from_store_after_persisted: true,
             };
@@ -380,7 +380,7 @@ mod test {
         {
             let condition = DatapointSearchCondition::new(
                 Some(TimestampNano::new(1629745451_715062000)),
-                Some(TimestampNano::new(1629745451_715066000)),
+                Some(TimestampNano::new(1629745451_715066001)),
             );
 
             let cache_setting = api::CacheSetting::none();
@@ -418,7 +418,7 @@ mod test {
             {
                 let another_condition = DatapointSearchCondition::new(
                     Some(TimestampNano::new(1629745451_715063000)),
-                    Some(TimestampNano::new(1629745451_715065000)),
+                    Some(TimestampNano::new(1629745451_715065001)),
                 );
                 let result = store.all_dataframe().search(&another_condition).await;
                 assert!(result.is_some());

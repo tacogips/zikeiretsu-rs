@@ -47,7 +47,7 @@ mod test {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
         let result = store
-            .search(&DatapointSearchCondition::since(ts!(20)).with_until(ts!(50)))
+            .search(&DatapointSearchCondition::since(ts!(20)).with_until(ts!(51)))
             .await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -73,7 +73,7 @@ mod test {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
         let result = store
-            .search(&DatapointSearchCondition::until(ts!(40)))
+            .search(&DatapointSearchCondition::until(ts!(41)))
             .await;
         assert!(result.is_some());
         let result = result.unwrap();

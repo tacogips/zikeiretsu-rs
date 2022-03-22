@@ -43,11 +43,11 @@ impl DataPoint {
         cond: &DatapointSearchCondition,
     ) -> Option<(&'a [DataPoint], (usize, usize))> {
         let since_cond = cond
-            .inner_since
+            .inner_since_eq
             .map(|since| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&since));
 
         let until_cond = cond
-            .inner_until
+            .inner_until_neq
             .map(|until| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&until));
 
         binary_search_range_with_idx_by(&datapoints, since_cond, until_cond)
@@ -75,53 +75,56 @@ impl DataPoint {
 
 #[derive(Clone)]
 pub struct DatapointSearchCondition {
-    pub inner_since: Option<TimestampNano>,
-    pub inner_until: Option<TimestampNano>,
+    pub inner_since_eq: Option<TimestampNano>,
+    pub inner_until_neq: Option<TimestampNano>,
 }
 
 impl DatapointSearchCondition {
-    pub fn new(inner_since: Option<TimestampNano>, inner_until: Option<TimestampNano>) -> Self {
+    pub fn new(
+        inner_since_eq: Option<TimestampNano>,
+        inner_until_neq: Option<TimestampNano>,
+    ) -> Self {
         Self {
-            inner_since,
-            inner_until,
+            inner_since_eq,
+            inner_until_neq,
         }
     }
 
     pub fn all() -> Self {
         Self {
-            inner_since: None,
-            inner_until: None,
+            inner_since_eq: None,
+            inner_until_neq: None,
         }
     }
 
     pub fn as_secs(&self) -> (Option<TimestampSec>, Option<TimestampSec>) {
         (
-            self.inner_since.map(|i| i.as_timestamp_sec()),
-            self.inner_until.map(|i| i.as_timestamp_sec()),
+            self.inner_since_eq.map(|i| i.as_timestamp_sec()),
+            self.inner_until_neq.map(|i| i.as_timestamp_sec()),
         )
     }
 
     pub fn since(since: TimestampNano) -> Self {
         Self {
-            inner_since: Some(since),
-            inner_until: None,
+            inner_since_eq: Some(since),
+            inner_until_neq: None,
         }
     }
 
     pub fn until(until: TimestampNano) -> Self {
         Self {
-            inner_since: None,
-            inner_until: Some(until),
+            inner_since_eq: None,
+            inner_until_neq: Some(until),
         }
     }
 
     pub fn with_since(mut self, since: TimestampNano) -> Self {
-        self.inner_since = Some(since);
+        self.inner_since_eq = Some(since);
         self
     }
 
     pub fn with_until(mut self, until: TimestampNano) -> Self {
-        self.inner_until = Some(until);
+        self.inner_until_neq = Some(until);
         self
     }
 
@@ -140,8 +143,8 @@ impl DatapointSearchCondition {
         };
 
         Ok(DatapointSearchCondition {
-            inner_since,
-            inner_until,
+            inner_since_eq: inner_since,
+            inner_until_neq: inner_until,
         })
     }
 }

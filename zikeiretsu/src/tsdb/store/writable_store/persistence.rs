@@ -49,8 +49,10 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
             if !waiting_shutdown.is_err() {
                 log::info!("breaking the periodicaly persistence loop");
 
-                let datapoint_search_condition =
-                    DatapointSearchCondition::new(None, Some(TimestampNano::now()));
+                let datapoint_search_condition = DatapointSearchCondition::new(
+                    None,
+                    Some(TimestampNano::now() + Duration::from_millis(1)),
+                );
                 let condition = PersistCondition {
                     datapoint_search_condition,
                     remove_from_store_after_persisted,
@@ -83,7 +85,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
         }
     });
 
-    // TODO(tacogips) what's this doing?
+    // TODO(tacogips) need this??
     // persist
     let join_handle =
         task::spawn(async move { while let Some(_dt) = persistence_rx.recv().await {} });

@@ -4,7 +4,9 @@ use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
+use std::ops::Add;
 use std::ops::{Deref, Sub};
+use std::time::Duration;
 pub const SEC_IN_NANOSEC: u64 = 1_000_000_000;
 #[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TimestampNano(pub u64);
@@ -42,6 +44,14 @@ impl TimestampNano {
     pub fn as_datetime(&self) -> DateTime<Utc> {
         let ndt = NaiveDateTime::from_timestamp(self.in_seconds() as i64, self.in_subsec_nano());
         DateTime::from_utc(ndt, Utc)
+    }
+}
+
+impl Add<Duration> for TimestampNano {
+    type Output = Self;
+
+    fn add(self, other: Duration) -> Self {
+        Self::new(self.0 + other.as_nanos() as u64)
     }
 }
 

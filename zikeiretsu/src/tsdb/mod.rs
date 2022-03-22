@@ -1,4 +1,5 @@
 pub mod cloudstorage;
+pub mod dataframe;
 pub mod datapoint;
 pub mod datapoints_searcher;
 mod engine;

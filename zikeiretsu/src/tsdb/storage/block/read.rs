@@ -2,16 +2,16 @@ use super::compress::bools;
 use super::{field_type_convert, BlockError, Result, TimestampDeltas};
 use crate::tsdb::*;
 use bits_ope::*;
-use std::collections::HashSet;
+use std::collections::HashMap;
 
-pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
+pub(crate) fn read_from_block(block_data: &[u8]) -> Result<DataFrame> {
     read_from_block_with_specific_fieds(block_data, None)
 }
 
 pub(crate) fn read_from_block_with_specific_fieds(
     block_data: &[u8],
     field_selectors: Option<&[usize]>,
-) -> Result<Vec<DataPoint>> {
+) -> Result<DataFrame> {
     // 1. number  of data
     let (number_of_data, mut block_idx): (u64, usize) =
         base_128_variants::decompress_u64(&block_data)?;
@@ -30,22 +30,22 @@ pub(crate) fn read_from_block_with_specific_fieds(
     block_idx += 1;
 
     // validate field number and field_selectors
-    let field_selectors_set = match field_selectors {
-        None => HashSet::new(),
+    let field_selectors_map = match field_selectors {
+        None => HashMap::new(),
         Some(field_selectors) => {
-            let mut field_selectors_set = HashSet::new();
+            let mut field_selectors_set = HashMap::new();
             if field_selectors.len() == 0 {
                 return Err(BlockError::InvalidFieldSelector(
                     "empty field selector".to_string(),
                 ));
             } else {
-                for each_selector in field_selectors {
+                for (idx, each_selector) in field_selectors.iter().enumerate() {
                     if *each_selector >= number_of_field as usize {
                         return Err(BlockError::InvalidFieldSelector(
                             "empty field selector".to_string(),
                         ));
                     }
-                    field_selectors_set.insert(*each_selector);
+                    field_selectors_set.insert(*each_selector, idx);
                 }
                 field_selectors_set
             }
@@ -139,13 +139,18 @@ pub(crate) fn read_from_block_with_specific_fieds(
         }
     };
 
-    let mut block_field_values = Vec::<Vec<FieldValue>>::new();
+    let data_field_size = if field_selectors_map.is_empty() {
+        number_of_field as usize
+    } else {
+        field_selectors_map.len()
+    };
+    let mut block_field_values = Vec::<Vec<FieldValue>>::with_capacity(data_field_size);
 
     let is_field_to_select = |idx: usize| {
-        if field_selectors_set.is_empty() {
-            true
+        if field_selectors_map.is_empty() {
+            Some(idx)
         } else {
-            field_selectors_set.contains(&idx)
+            field_selectors_map.get(&idx).map(|v| *v)
         }
     };
 
@@ -160,13 +165,14 @@ pub(crate) fn read_from_block_with_specific_fieds(
                 )?;
                 block_idx += read_idx;
 
-                if is_field_to_select(field_idx) {
-                    block_field_values.push(
+                if let Some(data_series_idx) = is_field_to_select(field_idx) {
+                    std::mem::replace(
+                        &mut block_field_values[data_series_idx],
                         float_values
                             .into_iter()
                             .map(|v| FieldValue::Float64(v))
                             .collect(),
-                    )
+                    );
                 }
             }
 
@@ -179,32 +185,26 @@ pub(crate) fn read_from_block_with_specific_fieds(
                 )?;
                 block_idx += read_idx;
 
-                if is_field_to_select(field_idx) {
-                    block_field_values.push(
+                if let Some(data_series_idx) = is_field_to_select(field_idx) {
+                    std::mem::replace(
+                        &mut block_field_values[data_series_idx],
                         bool_values
                             .into_iter()
                             .map(|v| FieldValue::Bool(v))
                             .collect(),
-                    )
+                    );
                 }
             }
         }
     }
 
-    let mut datapoints = Vec::<DataPoint>::new();
-    for data_idx in 0..number_of_datapoints {
-        let mut field_values = Vec::<FieldValue>::new();
-        for field_idx in 0..number_of_field as usize {
-            let block_values = unsafe { block_field_values.get_unchecked(field_idx) };
-            let block_field_value = unsafe { block_values.get_unchecked(data_idx) };
-            field_values.push(block_field_value.clone());
-        }
-
-        let datapoint = DataPoint {
-            timestamp_nano: unsafe { timestamps.get_unchecked(data_idx) }.clone(),
-            field_values,
-        };
-        datapoints.push(datapoint);
-    }
-    Ok(datapoints)
+    //timestamp_nanos: Vec<TimestampNano>, data_serieses: Vec<DataSeries>) -> Self {
+    let mut dataframe = DataFrame::new(
+        timestamps,
+        block_field_values
+            .into_iter()
+            .map(|field_values| DataSeries::new(field_values))
+            .collect(),
+    );
+    Ok(dataframe)
 }

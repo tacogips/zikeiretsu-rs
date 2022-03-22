@@ -33,6 +33,17 @@ impl DataFrame {
         }
     }
 
+    pub fn merge(&self, other: &mut DataFrame) -> Result<()> {
+        self.timestamp_nanos.append(&mut other.timestamp_nanos);
+        for (idx, data_series) in self.data_serieses.iter_mut().enumerate() {
+            match other.get_series_mut(idx) {
+                Some(other_series) => data_series.merge(other_series),
+                None => return Err(DataframeError::DataSeriesIndexOutOfBound(idx, 0)),
+            }
+        }
+        Ok(())
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -43,6 +54,10 @@ impl DataFrame {
 
     pub fn get_series(&self, field_idx: usize) -> Option<&DataSeries> {
         self.data_serieses.get(field_idx)
+    }
+
+    pub fn get_series_mut(&self, field_idx: usize) -> Option<&mut DataSeries> {
+        self.data_serieses.get_mut(field_idx)
     }
 
     pub async fn search<'a>(&'a self, cond: &DatapointSearchCondition) -> Option<DataFrameRef<'a>> {
@@ -152,6 +167,10 @@ pub struct DataSeries {
 impl DataSeries {
     pub fn new(values: Vec<FieldValue>) -> Self {
         Self { values }
+    }
+
+    pub fn merge(&mut self, other: &mut DataSeries) {
+        self.values.append(&mut other.values);
     }
 
     pub fn get(&self, index: usize) -> Option<&FieldValue> {

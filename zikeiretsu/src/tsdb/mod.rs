@@ -14,6 +14,7 @@ pub mod timestamp_nano;
 pub mod timestamp_sec;
 
 pub use cloudstorage::*;
+pub use dataframe::*;
 pub use datapoint::*;
 pub use datapoints_searcher::*;
 pub use engine::*;

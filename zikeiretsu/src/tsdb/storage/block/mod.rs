@@ -168,7 +168,7 @@ impl From<&[DataPoint]> for TimestampDeltas {
 pub fn read_from_block_file<P: AsRef<Path>>(
     path: P,
     field_selectors: Option<&[usize]>,
-) -> Result<Vec<DataPoint>> {
+) -> Result<DataFrame> {
     let block_file =
         File::open(path.as_ref()).map_err(|e| BlockError::file_error(e, path.as_ref()))?;
     let block_data = unsafe {

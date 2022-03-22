@@ -6,7 +6,7 @@ use crate::tsdb::{
     cloudstorage::*,
     storage::{block, block_list, cache},
 };
-use crate::tsdb::{datapoint::*, metrics::Metrics};
+use crate::tsdb::{dataframe::*, datapoint::*, metrics::Metrics};
 use futures::future::join_all;
 use lazy_static::lazy_static;
 use lockfile::Lockfile;
@@ -110,7 +110,7 @@ pub async fn search_datas<P: AsRef<Path>>(
     condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
     cloud_setting: Option<&CloudStorageSetting>,
-) -> Result<Vec<DataPoint>> {
+) -> Result<DataFrame> {
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
@@ -142,7 +142,7 @@ pub async fn search_datas<P: AsRef<Path>>(
             });
 
             let data_points_of_blocks = join_all(tasks).await;
-            let data_points_of_blocks: Result<Vec<Vec<_>>> =
+            let data_points_of_blocks: Result<Vec<DataFrame>> =
                 data_points_of_blocks.into_iter().collect();
 
             let data_points_of_blocks: Vec<_> =
@@ -170,7 +170,7 @@ async fn read_block(
     field_selectors: Option<&[usize]>,
     block_timestamp: &block_list::BlockTimestamp,
     cloud_setting: Option<&CloudStorageSetting>,
-) -> Result<Vec<DataPoint>> {
+) -> Result<DataFrame> {
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
@@ -204,7 +204,7 @@ async fn read_block(
 fn read_from_block_file(
     block_file_path: &PathBuf,
     field_selectors: Option<&[usize]>,
-) -> Result<Vec<DataPoint>> {
+) -> Result<DataFrame> {
     let result = block::read_from_block_file(block_file_path, field_selectors)?;
     Ok(result)
 }

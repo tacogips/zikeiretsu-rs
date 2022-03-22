@@ -33,7 +33,7 @@ impl DataFrame {
         }
     }
 
-    pub fn merge(&self, other: &mut DataFrame) -> Result<()> {
+    pub fn merge(&mut self, other: &mut DataFrame) -> Result<()> {
         self.timestamp_nanos.append(&mut other.timestamp_nanos);
         for (idx, data_series) in self.data_serieses.iter_mut().enumerate() {
             match other.get_series_mut(idx) {
@@ -56,7 +56,7 @@ impl DataFrame {
         self.data_serieses.get(field_idx)
     }
 
-    pub fn get_series_mut(&self, field_idx: usize) -> Option<&mut DataSeries> {
+    pub fn get_series_mut(&mut self, field_idx: usize) -> Option<&mut DataSeries> {
         self.data_serieses.get_mut(field_idx)
     }
 

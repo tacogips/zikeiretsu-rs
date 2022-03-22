@@ -51,7 +51,7 @@ where
 
     if let Some(latest_choice_idx) = latest_hit_idx {
         if condition_order == BinaryRangeSearchType::AtLeastEq && latest_choice_idx > 0 {
-            if let Some(new_idx) = linear_search_same_timestamp(
+            if let Some(new_idx) = linear_search_last_index_which_match_rule(
                 datas,
                 latest_choice_idx - 1,
                 |data| match cond(data) {
@@ -65,7 +65,7 @@ where
         } else if condition_order == BinaryRangeSearchType::AtMostEq
             && latest_choice_idx < datas.len()
         {
-            if let Some(new_idx) = linear_search_same_timestamp(
+            if let Some(new_idx) = linear_search_last_index_which_match_rule(
                 datas,
                 latest_choice_idx + 1,
                 |data| match cond(data) {
@@ -76,17 +76,22 @@ where
             ) {
                 latest_hit_idx.replace(new_idx);
             }
-        } else if condition_order == BinaryRangeSearchType::AtMostNeq && latest_choice_idx > 0 {
-            if let Some(new_idx) = linear_search_same_timestamp(
+        } else if condition_order == BinaryRangeSearchType::AtMostNeq {
+            match linear_search_first_index_which_match_rule(
                 datas,
-                latest_choice_idx - 1,
+                latest_choice_idx,
                 |data| match cond(data) {
                     Ordering::Less => true,
                     _ => false,
                 },
                 LinearSearchDirection::Desc,
             ) {
-                latest_hit_idx.replace(new_idx);
+                Some(new_idx) => {
+                    latest_hit_idx.replace(new_idx);
+                }
+                None => {
+                    latest_hit_idx = None;
+                }
             }
         }
     }
@@ -138,12 +143,13 @@ where
 }
 
 #[derive(Eq, PartialEq)]
-pub(crate) enum LinearSearchDirection {
+pub enum LinearSearchDirection {
     Asc,
     Desc,
 }
 
-pub(crate) fn linear_search_same_timestamp<F, T>(
+///search and return the index of element which match to condition.
+pub fn linear_search_last_index_which_match_rule<F, T>(
     datas: &[T],
     start_idx: usize,
     cond: F,
@@ -172,6 +178,34 @@ where
         }
     }
     latest_found_idx
+}
+
+pub fn linear_search_first_index_which_match_rule<F, T>(
+    datas: &[T],
+    start_idx: usize,
+    cond: F,
+    search_direction: LinearSearchDirection,
+) -> Option<usize>
+where
+    F: Fn(&T) -> bool,
+{
+    if start_idx >= datas.len() {
+        return None;
+    }
+
+    let indices: Vec<usize> = if search_direction == LinearSearchDirection::Asc {
+        (start_idx..datas.len()).collect()
+    } else {
+        (0..(start_idx + 1)).rev().collect()
+    };
+
+    for idx in indices {
+        let curr_val = unsafe { datas.get_unchecked(idx) };
+        if cond(curr_val) {
+            return Some(idx);
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -310,11 +344,51 @@ mod test {
     }
 
     #[test]
+    fn binsearch_test_10() {
+        let data_points: Vec<DataPoint> = empty_data_points!(10, 12, 12, 13, 13, 13, 21, 40);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&10),
+            BinaryRangeSearchType::AtMostNeq,
+        );
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn binsearch_test_11() {
+        let data_points: Vec<DataPoint> = empty_data_points!(10, 11, 12, 12, 13, 13, 13, 21, 40);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&11),
+            BinaryRangeSearchType::AtMostNeq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn binsearch_test_12() {
+        let data_points: Vec<DataPoint> = empty_data_points!(10, 11, 12, 12, 13, 13, 13, 21, 40);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&41),
+            BinaryRangeSearchType::AtMostNeq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, data_points.len() - 1);
+    }
+
+    #[test]
     fn linear_search_same_timestamp_1() {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30);
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 2,
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(20),
@@ -327,7 +401,7 @@ mod test {
         }
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 2,
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(20),
@@ -345,7 +419,7 @@ mod test {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30);
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 2,
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(19),
@@ -355,7 +429,7 @@ mod test {
         }
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 2,
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(19),
@@ -370,7 +444,7 @@ mod test {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30, 30);
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 datapoints.len() - 1,
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
@@ -381,7 +455,7 @@ mod test {
         }
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 datapoints.len() - 1,
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
@@ -392,7 +466,7 @@ mod test {
         }
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
                 &datapoints,
                 datapoints.len(),
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
@@ -402,7 +476,64 @@ mod test {
         }
 
         {
-            let result = linear_search_same_timestamp(
+            let result = linear_search_last_index_which_match_rule(
+                &datapoints,
+                datapoints.len(),
+                |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
+                LinearSearchDirection::Desc,
+            );
+            assert!(result.is_none());
+        }
+    }
+
+    #[test]
+    fn linear_search_first_index_which_match_rule_timestamp_1() {
+        let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30, 30);
+
+        {
+            let result = linear_search_first_index_which_match_rule(
+                &datapoints,
+                datapoints.len() - 1,
+                |datapoint| datapoint.timestamp_nano.cmp(&TimestampNano::new(30)) == Ordering::Less,
+                LinearSearchDirection::Desc,
+            );
+            assert!(result.is_some());
+            assert_eq!(result.unwrap(), 3);
+        }
+
+        {
+            let result = linear_search_first_index_which_match_rule(
+                &datapoints,
+                datapoints.len() - 1,
+                |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
+                LinearSearchDirection::Desc,
+            );
+            assert!(result.is_some());
+            assert_eq!(result.unwrap(), datapoints.len() - 1);
+        }
+
+        {
+            let result = linear_search_first_index_which_match_rule(
+                &datapoints,
+                datapoints.len(),
+                |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
+                LinearSearchDirection::Asc,
+            );
+            assert!(result.is_none());
+        }
+
+        {
+            let result = linear_search_first_index_which_match_rule(
+                &datapoints,
+                0,
+                |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),
+                LinearSearchDirection::Desc,
+            );
+            assert!(result.is_none());
+        }
+
+        {
+            let result = linear_search_first_index_which_match_rule(
                 &datapoints,
                 datapoints.len(),
                 |datapoint| datapoint.timestamp_nano == TimestampNano::new(30),

@@ -2,8 +2,9 @@ use std::cmp::Ordering;
 
 #[derive(Eq, PartialEq)]
 pub enum BinaryRangeSearchType {
-    AtLeast,
-    AtMost,
+    AtLeastEq,
+    AtMostEq,
+    AtMostNeq,
 }
 
 /// - search at most 3 from [4,6,10] => None
@@ -30,12 +31,12 @@ where
 
         if cmp == Ordering::Less {
             left = curr_idx + 1;
-            if condition_order == BinaryRangeSearchType::AtMost {
+            if condition_order == BinaryRangeSearchType::AtMostEq {
                 latest_hit_idx.replace(curr_idx);
             }
         } else if cmp == Ordering::Greater {
             right = curr_idx;
-            if condition_order == BinaryRangeSearchType::AtLeast {
+            if condition_order == BinaryRangeSearchType::AtLeastEq {
                 latest_hit_idx.replace(curr_idx);
             }
         } else {
@@ -45,7 +46,7 @@ where
     }
 
     if let Some(latest_choice_idx) = latest_hit_idx {
-        if condition_order == BinaryRangeSearchType::AtLeast && latest_choice_idx > 0 {
+        if condition_order == BinaryRangeSearchType::AtLeastEq && latest_choice_idx > 0 {
             if let Some(new_idx) = linear_search_same_timestamp(
                 datas,
                 latest_choice_idx - 1,
@@ -57,7 +58,7 @@ where
             ) {
                 latest_hit_idx.replace(new_idx);
             }
-        } else if condition_order == BinaryRangeSearchType::AtMost
+        } else if condition_order == BinaryRangeSearchType::AtMostEq
             && latest_choice_idx < datas.len()
         {
             if let Some(new_idx) = linear_search_same_timestamp(
@@ -100,7 +101,7 @@ where
     F2: Fn(&T) -> Ordering,
 {
     let start_idx = if let Some(condition_at_least) = condition_at_least {
-        match binary_search_by(datas, condition_at_least, BinaryRangeSearchType::AtLeast) {
+        match binary_search_by(datas, condition_at_least, BinaryRangeSearchType::AtLeastEq) {
             Some(idx) => idx,
             None => return None,
         }
@@ -109,7 +110,7 @@ where
     };
 
     let end_idx = if let Some(condition_at_most) = condition_at_most {
-        match binary_search_by(datas, condition_at_most, BinaryRangeSearchType::AtMost) {
+        match binary_search_by(datas, condition_at_most, BinaryRangeSearchType::AtMostEq) {
             Some(idx) => idx,
             None => return None,
         }
@@ -177,7 +178,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&20),
-            BinaryRangeSearchType::AtLeast,
+            BinaryRangeSearchType::AtLeastEq,
         );
         assert!(result.is_some());
         let result = result.unwrap();
@@ -191,7 +192,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&20),
-            BinaryRangeSearchType::AtMost,
+            BinaryRangeSearchType::AtMostEq,
         );
         assert!(result.is_some());
         let result = result.unwrap();
@@ -205,7 +206,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&20),
-            BinaryRangeSearchType::AtLeast,
+            BinaryRangeSearchType::AtLeastEq,
         );
         assert!(result.is_some());
         let result = result.unwrap();
@@ -219,7 +220,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&20),
-            BinaryRangeSearchType::AtMost,
+            BinaryRangeSearchType::AtMostEq,
         );
         assert!(result.is_some());
         let result = result.unwrap();
@@ -233,7 +234,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&1),
-            BinaryRangeSearchType::AtMost,
+            BinaryRangeSearchType::AtMostEq,
         );
         assert!(result.is_none());
     }
@@ -245,7 +246,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&41),
-            BinaryRangeSearchType::AtLeast,
+            BinaryRangeSearchType::AtLeastEq,
         );
         assert!(result.is_none());
     }
@@ -257,7 +258,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&13),
-            BinaryRangeSearchType::AtLeast,
+            BinaryRangeSearchType::AtLeastEq,
         );
         assert!(result.is_some());
         let result = result.unwrap();
@@ -271,7 +272,7 @@ mod test {
         let result = binary_search_by(
             &data_points,
             |datapoint| datapoint.timestamp_nano.cmp(&13),
-            BinaryRangeSearchType::AtMost,
+            BinaryRangeSearchType::AtMostEq,
         );
         assert!(result.is_some());
         let result = result.unwrap();

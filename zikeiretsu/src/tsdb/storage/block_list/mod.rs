@@ -181,20 +181,20 @@ impl BlockList {
 
     pub fn search(
         &self,
-        since: Option<&TimestampSec>,
-        until: Option<&TimestampSec>,
+        since_eq: Option<&TimestampSec>,
+        until_not_equal: Option<&TimestampSec>,
     ) -> Result<Option<&[BlockTimestamp]>> {
         //TODO(tacogis)  maybe redundunt
         self.check_block_timestamp_is_sorted()?;
 
         let block_timestamps = self.block_timestamps.as_slice();
 
-        match (since, until) {
+        match (since_eq, until_not_equal) {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&since),
-                    BinaryRangeSearchType::AtLeast,
+                    BinaryRangeSearchType::AtLeastEq,
                 );
 
                 match lower_idx {
@@ -203,7 +203,7 @@ impl BlockList {
                         let upper_idx = binary_search_by(
                             block_timestamps,
                             |block_timestamp| block_timestamp.since_sec.cmp(&until),
-                            BinaryRangeSearchType::AtMost,
+                            BinaryRangeSearchType::AtMostEq,
                         );
 
                         match upper_idx {
@@ -220,7 +220,7 @@ impl BlockList {
                 let lower_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&since),
-                    BinaryRangeSearchType::AtLeast,
+                    BinaryRangeSearchType::AtLeastEq,
                 );
 
                 match lower_idx {
@@ -233,7 +233,7 @@ impl BlockList {
                 let upper_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&until),
-                    BinaryRangeSearchType::AtMost,
+                    BinaryRangeSearchType::AtMostEq,
                 );
 
                 match upper_idx {
@@ -305,7 +305,7 @@ impl BlockTimestamp {
         let insert_idx = match binary_search_by(
             block_timestamps.as_slice(),
             |block_timestamp| block_timestamp.since_sec.cmp(&new_block.since_sec),
-            BinaryRangeSearchType::AtMost,
+            BinaryRangeSearchType::AtMostEq,
         ) {
             Some(idx) => idx + 1,
             None => block_timestamps.len(),

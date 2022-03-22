@@ -193,7 +193,7 @@ where
                         match binary_search_by(
                             &self.sorted_datapoints,
                             |datapoint| datapoint.timestamp_nano.cmp(&head.timestamp_nano),
-                            BinaryRangeSearchType::AtMost,
+                            BinaryRangeSearchType::AtMostEq,
                         ) {
                             Some(idx) => {
                                 self.sorted_datapoints.insert(idx, head);

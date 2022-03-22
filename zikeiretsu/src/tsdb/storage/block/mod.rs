@@ -302,7 +302,7 @@ mod test {
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
         assert_eq!(read_data.len(), 1);
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -321,7 +321,7 @@ mod test {
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
         assert_eq!(read_data.len(), 1);
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -339,7 +339,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -357,7 +357,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -376,7 +376,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -395,7 +395,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -413,7 +413,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -431,7 +431,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -483,7 +483,7 @@ mod test {
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -502,6 +502,6 @@ mod test {
         assert!(result.is_ok());
         let read_data = result.unwrap();
 
-        assert_eq!(read_data.into_data_points().unwrap(), datapoints);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 }

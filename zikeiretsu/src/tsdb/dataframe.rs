@@ -66,7 +66,7 @@ impl DataFrame {
             .map(|(datapoints, _indices)| datapoints)
     }
 
-    pub fn into_data_points(self) -> Result<Vec<DataPoint>> {
+    pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
         let mut result = Vec::<DataPoint>::new();
         for (idx, ts) in self.timestamp_nanos.into_iter().enumerate() {
             let mut field_values = Vec::<FieldValue>::new();
@@ -162,7 +162,7 @@ impl<'a> DataFrameRef<'a> {
         self.timestamp_nanos.len()
     }
 
-    pub fn into_data_points(self) -> Result<Vec<DataPoint>> {
+    pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
         let mut result = Vec::<DataPoint>::new();
         for (idx, ts) in self.timestamp_nanos.into_iter().enumerate() {
             let mut field_values = Vec::<FieldValue>::new();

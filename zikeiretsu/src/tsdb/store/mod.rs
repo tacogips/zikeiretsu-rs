@@ -404,7 +404,7 @@ mod test {
                 let result = store.all_dataframe().search(&condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap().into_data_points().unwrap(),
+                    result.unwrap().into_datapoints().unwrap(),
                     float_data_points!(
                         {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},
@@ -423,7 +423,7 @@ mod test {
                 let result = store.all_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap().into_data_points().unwrap(),
+                    result.unwrap().into_datapoints().unwrap(),
                     float_data_points!(
                         {1629745451_715063000, vec![200f64,36f64]},
                         {1629745451_715064000, vec![200f64,37f64]},
@@ -542,7 +542,7 @@ mod test {
                 assert_eq!(result.unwrap().len(), expected.len());
                 for (i, each) in result
                     .unwrap()
-                    .into_data_points()
+                    .into_datapoints()
                     .unwrap()
                     .into_iter()
                     .enumerate()
@@ -559,7 +559,7 @@ mod test {
                 let result = store.all_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap().into_data_points().unwrap(),
+                    result.unwrap().into_datapoints().unwrap(),
                     float_data_points!(
                         {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},

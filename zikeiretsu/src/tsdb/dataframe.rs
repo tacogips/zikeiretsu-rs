@@ -157,6 +157,23 @@ impl<'a> DataFrameRef<'a> {
             data_serieses,
         }
     }
+
+    pub fn into_data_points(self) -> Result<Vec<DataPoint>> {
+        let mut result = Vec::<DataPoint>::new();
+        for (idx, ts) in self.timestamp_nanos.into_iter().enumerate() {
+            let mut field_values = Vec::<FieldValue>::new();
+            for (ds_idx, each_dataseries) in self.data_serieses.iter().enumerate() {
+                match each_dataseries.get(idx) {
+                    Some(data_series_value) => field_values.push(data_series_value.clone()),
+                    None => return Err(DataframeError::DataSeriesIndexOutOfBound(ds_idx, idx)),
+                }
+            }
+
+            result.push(DataPoint::new(*ts, field_values))
+        }
+
+        Ok(result)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -192,6 +209,10 @@ pub struct DataSeriesRef<'a> {
 impl<'a> DataSeriesRef<'a> {
     pub fn new(values: &'a [FieldValue]) -> Self {
         Self { values }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&FieldValue> {
+        self.values.get(index)
     }
 }
 

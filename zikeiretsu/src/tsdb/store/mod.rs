@@ -399,10 +399,9 @@ mod test {
             let datapoints = datapoints.unwrap();
 
             let store = ReadonlyStore::new(datapoints, false).unwrap();
-            let searcher = store.searcher();
 
             {
-                let result = searcher.search(&condition).await;
+                let result = store.all_dataframe().search(&condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap(),

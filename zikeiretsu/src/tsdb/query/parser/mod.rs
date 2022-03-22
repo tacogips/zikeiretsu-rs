@@ -293,18 +293,6 @@ mod test {
     }
 
     #[test]
-    fn parse_offset() {
-        let pairs = QueryGrammer::parse(Rule::OFFSET_CLAUSE, "offset 10");
-
-        assert!(pairs.is_ok());
-
-        let mut pairs = pairs.unwrap();
-        let from = pairs.next().unwrap();
-        assert_eq!(from.as_rule(), Rule::OFFSET_CLAUSE);
-        assert_eq!(from.as_str(), "offset 10");
-    }
-
-    #[test]
     fn parse_chronos_1() {
         let pairs = QueryGrammer::parse(Rule::DATETIME, "today()  + 2 hours");
 
@@ -370,7 +358,6 @@ select *
 from trades
 
  where ts in today()
- offset 10 limit 10
  order by ts asc
 
  "#;
@@ -388,7 +375,6 @@ from trades
  	   tz = +9
 select *
 from trades
- offset 10 limit 10
 
  "#;
 

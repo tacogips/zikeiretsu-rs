@@ -5,8 +5,6 @@ use crate::tsdb::query::parser::*;
 #[derive(Debug, PartialEq)]
 pub struct OrderOrLimitClause<'q> {
     order_by: Option<Order<'q>>,
-    limit: Option<usize>,
-    offset: Option<usize>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -25,19 +23,11 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     }
 
     let mut order_by: Option<Order<'q>> = None;
-    let mut limit: Option<usize> = None;
-    let mut offset: Option<usize> = None;
 
     for each_inner in pair.into_inner() {
         match each_inner.as_rule() {
             Rule::ORDER_CLAUSE => {
                 order_by = Some(parse_order(each_inner)?);
-            }
-            Rule::OFFSET_CLAUSE => {
-                offset = Some(parse_offset(each_inner)?);
-            }
-            Rule::LIMIT_CLAUSE => {
-                limit = Some(parse_limit(each_inner)?);
             }
 
             r => {
@@ -49,11 +39,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     }
 
     //TODO(tacogips) imple
-    Ok(OrderOrLimitClause {
-        order_by,
-        limit,
-        offset,
-    })
+    Ok(OrderOrLimitClause { order_by })
 }
 
 pub fn parse_order<'q>(pair: Pair<'q, Rule>) -> Result<Order<'q>> {
@@ -92,59 +78,11 @@ pub fn parse_order<'q>(pair: Pair<'q, Rule>) -> Result<Order<'q>> {
     }
 }
 
-pub fn parse_offset<'q>(pair: Pair<'q, Rule>) -> Result<usize> {
-    #[cfg(debug_assertions)]
-    if pair.as_rule() != Rule::OFFSET_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
-            format!("{:?}", Rule::OFFSET_CLAUSE),
-            format!("{:?}", pair.as_rule()),
-        ));
-    }
-
-    // cutting the corner for now
-    for each_inner in pair.into_inner() {
-        match each_inner.as_rule() {
-            Rule::ASCII_DIGITS => {
-                let offset = each_inner.as_str().trim().parse::<usize>()?;
-                return Ok(offset);
-            }
-            _ => { /* */ }
-        }
-    }
-
-    Err(QueryError::InvalidGrammer(format!("invlalid offset")))
-}
-pub fn parse_limit<'q>(pair: Pair<'q, Rule>) -> Result<usize> {
-    #[cfg(debug_assertions)]
-    if pair.as_rule() != Rule::LIMIT_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
-            format!("{:?}", Rule::LIMIT_CLAUSE),
-            format!("{:?}", pair.as_rule()),
-        ));
-    }
-
-    // cutting the corner for now
-    for each_inner in pair.into_inner() {
-        match each_inner.as_rule() {
-            Rule::ASCII_DIGITS => {
-                let offset = each_inner.as_str().trim().parse::<usize>()?;
-                return Ok(offset);
-            }
-            _ => { /* */ }
-        }
-    }
-
-    Err(QueryError::InvalidGrammer(format!("invlalid offset")))
-}
-
 #[cfg(test)]
 mod test {
 
     use super::*;
-    use crate::tsdb::query::parser::parts::DatetimeDelta;
     use pest::*;
-
-    use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
 
     #[test]
     fn parse_order_limit_1() {
@@ -161,8 +99,6 @@ mod test {
             parsed.unwrap(),
             OrderOrLimitClause {
                 order_by: Some(Order::AscBy(ColumnName("ts"))),
-                limit: Some(10),
-                offset: Some(3)
             }
         )
     }
@@ -182,8 +118,6 @@ mod test {
             parsed.unwrap(),
             OrderOrLimitClause {
                 order_by: Some(Order::DescBy(ColumnName("ts"))),
-                limit: None,
-                offset: Some(3)
             }
         )
     }

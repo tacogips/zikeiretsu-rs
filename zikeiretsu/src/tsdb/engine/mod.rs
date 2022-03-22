@@ -117,8 +117,8 @@ impl Zikeiretsu {
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
         setting: &SearchSettings,
-    ) -> Result<ReadonlyStore> {
-        let datapoints = api::read::search_datas(
+    ) -> Result<Option<ReadonlyStore>> {
+        let dataframe = api::read::search_dataframe(
             db_dir,
             &metrics
                 .try_into()
@@ -129,8 +129,12 @@ impl Zikeiretsu {
             setting.cloud_setting.as_ref(),
         )
         .await?;
-
-        let store = ReadonlyStore::new(datapoints, false)?;
-        Ok(store)
+        match dataframe {
+            None => Ok(None),
+            Some(dataframe) => {
+                let store = ReadonlyStore::new(dataframe, false)?;
+                Ok(Some(store))
+            }
+        }
     }
 }

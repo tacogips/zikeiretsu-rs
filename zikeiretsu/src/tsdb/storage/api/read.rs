@@ -103,14 +103,14 @@ pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
     file_names
 }
 
-pub async fn search_datas<P: AsRef<Path>>(
+pub async fn search_dataframe<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
     condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
     cloud_setting: Option<&CloudStorageSetting>,
-) -> Result<DataFrame> {
+) -> Result<Option<DataFrame>> {
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
@@ -125,7 +125,7 @@ pub async fn search_datas<P: AsRef<Path>>(
     let block_timestamps = block_list.search(since_sec_ref, until_sec_ref)?;
 
     let result = match block_timestamps {
-        None => Ok(vec![]),
+        None => Ok(None),
         Some(block_timestamps) => {
             if !no_block_timestamps_overlapping_nor_unsorted(block_timestamps) {
                 return Err(StorageApiError::UnsupportedStorageStatus("timestamps of datapoints overlapping or unsorted. `zikeiretsu` not supported datas like this yet...".to_string()));
@@ -141,14 +141,16 @@ pub async fn search_datas<P: AsRef<Path>>(
                 )
             });
 
-            let data_points_of_blocks = join_all(tasks).await;
-            let data_points_of_blocks: Result<Vec<DataFrame>> =
-                data_points_of_blocks.into_iter().collect();
+            let dataframes_of_blocks = join_all(tasks).await;
+            let dataframes_of_blocks: Result<Vec<DataFrame>> =
+                dataframes_of_blocks.into_iter().collect();
 
-            let data_points_of_blocks: Vec<_> =
-                data_points_of_blocks?.into_iter().flatten().collect();
+            let merged_dataframe = dataframes_of_blocks?.into_iter().reduce(|acc, mut each| {
+                acc.merge(&mut each);
+                acc
+            });
 
-            Ok(data_points_of_blocks)
+            Ok(merged_dataframe)
         }
     };
 

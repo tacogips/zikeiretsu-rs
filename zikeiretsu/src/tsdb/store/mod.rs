@@ -18,6 +18,9 @@ pub enum StoreError {
     #[error("unsorted datapoints. {0}")]
     UnsortedDatapoints(String),
 
+    #[error("unsorted dataframe. {0}")]
+    UnsortedDataFrame(String),
+
     #[error("data field types mismatched. expected fields {0}, acutual:{1}")]
     DataFieldTypesMismatched(String, String),
 

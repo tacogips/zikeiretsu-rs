@@ -148,7 +148,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
             let merged_dataframe = dataframes_of_blocks?
                 .into_iter()
                 .reduce(|mut acc, mut each| {
-                    acc.merge(&mut each);
+                    acc.merge(&mut each).unwrap();
                     acc
                 });
 

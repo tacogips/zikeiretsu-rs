@@ -51,7 +51,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
 
                 let datapoint_search_condition = DatapointSearchCondition::new(
                     None,
-                    Some(TimestampNano::now() + Duration::from_millis(1)),
+                    Some(TimestampNano::now() + Duration::from_nanos(1)),
                 );
                 let condition = PersistCondition {
                     datapoint_search_condition,
@@ -69,8 +69,10 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 log::error!("periodicaly persistence failed:{e}");
             }
 
-            let datapoint_search_condition =
-                DatapointSearchCondition::new(None, Some(TimestampNano::now()));
+            let datapoint_search_condition = DatapointSearchCondition::new(
+                None,
+                Some(TimestampNano::now() + Duration::from_nanos(1)),
+            );
             let condition = PersistCondition {
                 datapoint_search_condition,
                 remove_from_store_after_persisted,

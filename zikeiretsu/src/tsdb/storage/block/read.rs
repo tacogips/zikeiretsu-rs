@@ -145,6 +145,9 @@ pub(crate) fn read_from_block_with_specific_fieds(
         field_selectors_map.len()
     };
     let mut block_field_values = Vec::<Vec<FieldValue>>::with_capacity(data_field_size);
+    for _ in 0..data_field_size {
+        block_field_values.push(vec![]);
+    }
 
     let is_field_to_select = |idx: usize| {
         if field_selectors_map.is_empty() {
@@ -166,7 +169,7 @@ pub(crate) fn read_from_block_with_specific_fieds(
                 block_idx += read_idx;
 
                 if let Some(data_series_idx) = is_field_to_select(field_idx) {
-                    std::mem::replace(
+                    let _ = std::mem::replace(
                         &mut block_field_values[data_series_idx],
                         float_values
                             .into_iter()
@@ -186,7 +189,7 @@ pub(crate) fn read_from_block_with_specific_fieds(
                 block_idx += read_idx;
 
                 if let Some(data_series_idx) = is_field_to_select(field_idx) {
-                    std::mem::replace(
+                    let _ = std::mem::replace(
                         &mut block_field_values[data_series_idx],
                         bool_values
                             .into_iter()
@@ -198,8 +201,7 @@ pub(crate) fn read_from_block_with_specific_fieds(
         }
     }
 
-    //timestamp_nanos: Vec<TimestampNano>, data_serieses: Vec<DataSeries>) -> Self {
-    let mut dataframe = DataFrame::new(
+    let dataframe = DataFrame::new(
         timestamps,
         block_field_values
             .into_iter()

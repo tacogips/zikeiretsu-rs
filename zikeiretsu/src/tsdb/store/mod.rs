@@ -385,7 +385,7 @@ mod test {
 
             let cache_setting = api::CacheSetting::none();
 
-            let datapoints = api::read::search_datas(
+            let datapoints = api::read::search_dataframe(
                 temp_db_dir.path(),
                 &metrics,
                 None,
@@ -396,9 +396,9 @@ mod test {
             .await;
 
             assert!(datapoints.is_ok());
-            let datapoints = datapoints.unwrap();
+            let dataframe = datapoints.unwrap().unwrap();
 
-            let store = ReadonlyStore::new(datapoints, false).unwrap();
+            let store = ReadonlyStore::new(dataframe, false).unwrap();
 
             {
                 let result = store.all_dataframe().search(&condition).await;
@@ -539,7 +539,7 @@ mod test {
                 let result = store.all_dataframe().search(&condition).await;
                 assert!(result.is_some());
 
-                assert_eq!(result.unwrap().len(), expected.len());
+                assert_eq!(result.clone().unwrap().len(), expected.len());
                 for (i, each) in result
                     .unwrap()
                     .into_datapoints()

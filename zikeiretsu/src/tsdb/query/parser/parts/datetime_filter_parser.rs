@@ -3,7 +3,8 @@ use once_cell::sync::OnceCell;
 use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
-use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
+use crate::tsdb::timestamp_nano::*;
+use chrono::{format as chrono_format, DateTime, Duration, NaiveDateTime, NaiveTime, Utc};
 
 #[derive(Debug, PartialEq)]
 pub enum DatetimeFilter<'q> {
@@ -54,12 +55,56 @@ impl DatetimeDelta {
             None => self,
         }
     }
+
+    pub fn as_micro_second(&self) -> i64 {
+        match self {
+            DatetimeDelta::FixedOffset(fixed_offset) => {
+                fixed_offset.local_minus_utc() as i64 * 1000_000i64
+            }
+            DatetimeDelta::MicroSec(delta) => *delta,
+            DatetimeDelta::Composit(delta_1, delta_2) => {
+                delta_1.as_micro_second() + delta_2.as_micro_second()
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DatetimeFilterValue {
     DateString(DateTime<Utc>, Option<DatetimeDelta>),
     Function(BuildinDatetimeFunction, Option<DatetimeDelta>),
+}
+
+impl DatetimeFilterValue {
+    pub fn to_timestamp_nano(&self, offset: &FixedOffset) -> TimestampNano {
+        match self {
+            Self::DateString(datetime, delta) => {
+                let mut naive_datetime = datetime.naive_utc();
+                let delta_micro_seconds = Duration::microseconds(
+                    delta
+                        .as_ref()
+                        .map(|delta| delta.as_micro_second())
+                        .unwrap_or(0),
+                );
+                naive_datetime = naive_datetime + delta_micro_seconds;
+
+                let datetime = offset.from_local_datetime(&naive_datetime).unwrap();
+                TimestampNano::new(datetime.timestamp_nanos() as u64)
+            }
+
+            Self::Function(build_func, delta) => match build_func {
+                BuildinDatetimeFunction::Today => {
+                    unimplemented!()
+                }
+                BuildinDatetimeFunction::Yesterday => {
+                    unimplemented!()
+                }
+                BuildinDatetimeFunction::Tomorrow => {
+                    unimplemented!()
+                }
+            },
+        }
+    }
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {

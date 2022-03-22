@@ -59,7 +59,7 @@ impl DataFrame {
                     self.data_serieses
                         .iter()
                         .map(|series| {
-                            DataSeriesRef::new(&series.values.as_slice()[start_idx..finish_idx])
+                            DataSeriesRef::new(&series.values.as_slice()[start_idx..finish_idx + 1])
                         })
                         .collect(),
                 );
@@ -82,6 +82,15 @@ impl DataFrame {
 
             Ok(())
         }
+    }
+}
+
+impl From<DataFrameRef<'_>> for DataFrame {
+    fn from(df: DataFrameRef<'_>) -> DataFrame {
+        DataFrame::new(
+            df.timestamp_nanos.to_vec(),
+            df.data_serieses.into_iter().map(|e| e.into()).collect(),
+        )
     }
 }
 
@@ -114,6 +123,12 @@ impl DataSeries {
     }
 }
 
+impl From<DataSeriesRef<'_>> for DataSeries {
+    fn from(ds: DataSeriesRef<'_>) -> DataSeries {
+        DataSeries::new(ds.values.into_iter().map(|e| e.clone()).collect())
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct DataSeriesRef<'a> {
     pub values: &'a [FieldValue],
@@ -122,5 +137,136 @@ pub struct DataSeriesRef<'a> {
 impl<'a> DataSeriesRef<'a> {
     pub fn new(values: &'a [FieldValue]) -> Self {
         Self { values }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    macro_rules! dataframe {
+        ($ts:expr) => {{
+            let mut timestamp_nanos = Vec::<TimestampNano>::new();
+            let mut values = Vec::<FieldValue>::new();
+            for (ts, val) in $ts {
+                timestamp_nanos.push(TimestampNano::new(ts));
+                values.push(FieldValue::Float64(val as f64));
+            }
+
+            DataFrame::new(timestamp_nanos, vec![DataSeries::new(values)])
+        }};
+    }
+
+    macro_rules! ts {
+        ($v:expr) => {
+            TimestampNano::new($v)
+        };
+    }
+
+    #[tokio::test]
+    async fn dataframe_binsearch_test_1() {
+        let df = dataframe!([
+            (9, 1),
+            (10, 2),
+            (19, 3),
+            (20, 4),
+            (20, 5),
+            (20, 6),
+            (30, 7),
+            (40, 8),
+            (50, 9),
+            (50, 10),
+            (51, 11)
+        ]);
+        let result = df
+            .search(&DatapointSearchCondition::since(ts!(20)).with_until(ts!(50)))
+            .await;
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        let result: DataFrame = result.into();
+        assert_eq!(
+            result,
+            dataframe!([
+                (20, 4),
+                (20, 5),
+                (20, 6),
+                (30, 7),
+                (40, 8),
+                (50, 9),
+                (50, 10),
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn dataframe_binsearch_test_2() {
+        let df = dataframe!([
+            (9, 1),
+            (10, 2),
+            (19, 3),
+            (20, 4),
+            (20, 5),
+            (20, 6),
+            (30, 7),
+            (40, 8),
+            (50, 9),
+            (50, 10),
+            (51, 11)
+        ]);
+        let result = df.search(&DatapointSearchCondition::since(ts!(20))).await;
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        let result: DataFrame = result.into();
+        assert_eq!(
+            result,
+            dataframe!([
+                (20, 4),
+                (20, 5),
+                (20, 6),
+                (30, 7),
+                (40, 8),
+                (50, 9),
+                (50, 10),
+                (51, 11)
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn dataframe_binsearch_test_3() {
+        let df = dataframe!([
+            (9, 1),
+            (10, 2),
+            (19, 3),
+            (20, 4),
+            (20, 5),
+            (20, 6),
+            (30, 7),
+            (40, 8),
+            (50, 9),
+            (50, 10),
+            (51, 11)
+        ]);
+        let result = df.search(&DatapointSearchCondition::until(ts!(40))).await;
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        let result: DataFrame = result.into();
+        assert_eq!(
+            result,
+            dataframe!([
+                (9, 1),
+                (10, 2),
+                (19, 3),
+                (20, 4),
+                (20, 5),
+                (20, 6),
+                (30, 7),
+                (40, 8),
+            ])
+        );
     }
 }

@@ -1,12 +1,24 @@
 use super::field::*;
 use super::timestamp_nano::*;
-use super::timestamp_sec::*;
-use super::DatapointSearchCondition;
+use super::{datapoint::DataPoint, DatapointSearchCondition};
 use std::cmp::Ordering;
 use std::convert::TryFrom;
 
 use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
+use thiserror::*;
+
+type Result<T> = std::result::Result<T, DataframeError>;
+
+#[derive(Error, Debug)]
+pub enum DataframeError {
+    #[error(" data series index out of bound data seriese index:{0}, data index:{1}")]
+    DataSeriesIndexOutOfBound(usize, usize),
+
+    #[error("unsorted dataframe. {0}")]
+    UnsortedDataframe(String),
+}
+
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataFrame {
     pub timestamp_nanos: Vec<TimestampNano>,
@@ -39,6 +51,23 @@ impl DataFrame {
             .map(|(datapoints, _indices)| datapoints)
     }
 
+    pub fn into_data_points(self) -> Result<Vec<DataPoint>> {
+        let mut result = Vec::<DataPoint>::new();
+        for (idx, ts) in self.timestamp_nanos.into_iter().enumerate() {
+            let mut field_values = Vec::<FieldValue>::new();
+            for (ds_idx, each_dataseries) in self.data_serieses.iter().enumerate() {
+                match each_dataseries.get(idx) {
+                    Some(data_series_value) => field_values.push(data_series_value.clone()),
+                    None => return Err(DataframeError::DataSeriesIndexOutOfBound(ds_idx, idx)),
+                }
+            }
+
+            result.push(DataPoint::new(ts, field_values))
+        }
+
+        Ok(result)
+    }
+
     pub async fn search_with_indices<'a>(
         &'a self,
         cond: &DatapointSearchCondition,
@@ -68,14 +97,17 @@ impl DataFrame {
         }
     }
 
-    pub(crate) fn check_dataframe_is_sorted(dataframe: &DataFrame) -> Result<(), String> {
+    pub(crate) fn check_dataframe_is_sorted(dataframe: &DataFrame) -> Result<()> {
         if dataframe.is_empty() {
             Ok(())
         } else {
             let mut prev = unsafe { dataframe.timestamp_nanos.get_unchecked(0) };
             for each in dataframe.timestamp_nanos[1..].iter() {
                 if each.cmp(&prev) == Ordering::Less {
-                    return Err(format!("{:?}, {:?}", each, prev));
+                    return Err(DataframeError::UnsortedDataframe(format!(
+                        "{:?}, {:?}",
+                        each, prev
+                    )));
                 }
                 prev = each
             }
@@ -120,6 +152,10 @@ pub struct DataSeries {
 impl DataSeries {
     pub fn new(values: Vec<FieldValue>) -> Self {
         Self { values }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&FieldValue> {
+        self.values.get(index)
     }
 }
 

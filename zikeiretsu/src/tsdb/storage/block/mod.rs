@@ -490,9 +490,9 @@ mod test {
     fn test_block_file_1() {
         let target_file = tempfile::NamedTempFile::new().unwrap();
         let datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715062000, vec![200f64,36f64]},
-            {1629746451_715062000, vec![200f64,36f64]}
+            {1629745451_715062000, vec![100f64, 12f64]},
+            {1629745451_715062000, vec![200f64, 36f64]},
+            {1629746451_715062000, vec![200f64, 36f64]}
         );
 
         let result = write_to_block_file(target_file.as_ref(), &datapoints);

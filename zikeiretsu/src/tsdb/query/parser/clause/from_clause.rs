@@ -4,7 +4,7 @@ use crate::tsdb::query::parser::*;
 
 #[derive(Debug)]
 pub struct FromClause<'q> {
-    pub from: Option<&'q str>,
+    pub from: &'q str,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<FromClause<'q>> {
@@ -16,19 +16,20 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<FromClause<'q>> {
         ));
     }
 
-    let mut from_clause = FromClause { from: None };
-
+    let mut from: Option<&'q str> = None;
     for each in pair.into_inner() {
         match each.as_rule() {
-            Rule::TABLE_NAME => from_clause.from = Some(each.as_str()),
+            Rule::TABLE_NAME => from = Some(each.as_str()),
             _ => {}
         }
     }
 
     // if it might be a bug if the result could not pass validation below.
-    if from_clause.from.is_none() {
-        return Err(QueryError::EmptyColumns("select clause".to_string()));
-    };
-
-    Ok(from_clause)
+    match from {
+        None => Err(QueryError::EmptyColumns("select clause".to_string())),
+        Some(from) => {
+            let from_clause = FromClause { from };
+            Ok(from_clause)
+        }
+    }
 }

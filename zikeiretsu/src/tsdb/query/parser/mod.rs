@@ -7,6 +7,7 @@ use log;
 pub use parts::*;
 use pest::{error::Error as PestError, Parser};
 use pest_derive::Parser;
+use std::fmt;
 use std::num::ParseIntError;
 use thiserror::Error;
 
@@ -16,11 +17,24 @@ pub struct QueryGrammer {}
 
 #[derive(Debug, PartialEq)]
 pub struct ColumnName<'q>(&'q str);
+impl<'q> ColumnName<'q> {
+    pub fn as_str(&self) -> &'q str {
+        self.0
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Column<'q> {
     Asterick,
     ColumnName(ColumnName<'q>),
+}
+impl<'q> fmt::Display for Column<'q> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Asterick => write!(f, "*"),
+            Self::ColumnName(column_name) => write!(f, "{}", column_name.as_str()),
+        }
+    }
 }
 
 #[derive(Error, Debug)]

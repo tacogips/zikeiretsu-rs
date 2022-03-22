@@ -4,7 +4,7 @@ use crate::tsdb::query::parser::*;
 
 #[derive(Debug, PartialEq)]
 pub struct SelectClause<'q> {
-    pub select_columns: Option<Vec<Column<'q>>>,
+    pub select_columns: Vec<Column<'q>>,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
@@ -16,31 +16,24 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
         ));
     }
 
-    let mut select_clause = SelectClause {
-        select_columns: None,
-    };
-
+    let mut select_columns: Option<Vec<Column<'q>>> = None;
     for each in pair.into_inner() {
         match each.as_rule() {
             Rule::COLUMNS => {
                 let columns = columns_parser::parse(each, false)?;
-                select_clause.select_columns = Some(columns)
+                select_columns = Some(columns)
             }
-            Rule::KW_ASTERISK => select_clause.select_columns = Some(vec![Column::Asterick]),
+            Rule::KW_ASTERISK => select_columns = Some(vec![Column::Asterick]),
             _ => {}
         }
     }
 
     // if it might be a bug if the result could not pass validation below.
-    match select_clause.select_columns {
-        Some(cols) if cols.is_empty() => {
-            return Err(QueryError::EmptyColumns("select clause".to_string()))
-        }
-        None => return Err(QueryError::EmptyColumns("select clause".to_string())),
-        _ => { /* pass */ }
-    };
-
-    Ok(select_clause)
+    match select_columns {
+        Some(cols) if cols.is_empty() => Err(QueryError::EmptyColumns("select clause".to_string())),
+        None => Err(QueryError::EmptyColumns("select clause".to_string())),
+        Some(select_columns) => Ok(SelectClause { select_columns }),
+    }
 }
 
 #[cfg(test)]
@@ -60,10 +53,10 @@ mod test {
         let parsed = parse(pairs.unwrap().next().unwrap());
         assert_eq!(
             SelectClause {
-                select_columns: Some(vec![
+                select_columns: vec![
                     Column::ColumnName(ColumnName("ts")),
                     Column::ColumnName(ColumnName("some"))
-                ])
+                ]
             },
             parsed.unwrap()
         )

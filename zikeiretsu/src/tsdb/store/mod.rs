@@ -404,7 +404,7 @@ mod test {
                 let result = store.all_dataframe().search(&condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap(),
+                    result.unwrap().into_data_points().unwrap(),
                     float_data_points!(
                         {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},
@@ -420,10 +420,10 @@ mod test {
                     Some(TimestampNano::new(1629745451_715063000)),
                     Some(TimestampNano::new(1629745451_715065000)),
                 );
-                let result = searcher.search(&another_condition).await;
+                let result = store.all_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap(),
+                    result.unwrap().into_data_points().unwrap(),
                     float_data_points!(
                         {1629745451_715063000, vec![200f64,36f64]},
                         {1629745451_715064000, vec![200f64,37f64]},
@@ -510,7 +510,7 @@ mod test {
 
             let cache_setting = api::CacheSetting::none();
 
-            let datapoints = api::read::search_datas(
+            let datapoints = api::read::search_dataframe(
                 temp_db_dir.path(),
                 &metrics,
                 None,
@@ -521,10 +521,9 @@ mod test {
             .await;
 
             assert!(datapoints.is_ok());
-            let datapoints = datapoints.unwrap();
+            let dataframe = datapoints.unwrap().unwrap();
 
-            let store = ReadonlyStore::new(datapoints, false).unwrap();
-            let searcher = store.searcher();
+            let store = ReadonlyStore::new(dataframe, false).unwrap();
 
             {
                 let expected = float_data_points!(
@@ -537,12 +536,18 @@ mod test {
                     {1639745451_715062000, vec![1200f64,37f64]}
                 );
 
-                let result = searcher.search(&condition).await;
+                let result = store.all_dataframe().search(&condition).await;
                 assert!(result.is_some());
 
                 assert_eq!(result.unwrap().len(), expected.len());
-                for (i, each) in result.unwrap().into_iter().enumerate() {
-                    assert_eq!(each, expected.get(i).unwrap());
+                for (i, each) in result
+                    .unwrap()
+                    .into_data_points()
+                    .unwrap()
+                    .into_iter()
+                    .enumerate()
+                {
+                    assert_eq!(&each, expected.get(i).unwrap());
                 }
             }
 
@@ -551,10 +556,10 @@ mod test {
                     None,
                     Some(TimestampNano::new(1639745451_715061001)),
                 );
-                let result = searcher.search(&another_condition).await;
+                let result = store.all_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap(),
+                    result.unwrap().into_data_points().unwrap(),
                     float_data_points!(
                         {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},

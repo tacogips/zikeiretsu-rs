@@ -7,10 +7,12 @@ pub enum BinaryRangeSearchType {
     AtMostNeq,
 }
 
-/// - search at most 3 from [4,6,10] => None
-/// - search at most 5 from [4,6,10] => 4
-/// - search at least 3 from [4,6,10] => 4
-/// - search at least 5 from [4,6,10] => 10
+/// - search at most eq 3 from [4,6,10] => None
+/// - search at most eq 5 from [4,6,10] => 4
+/// - search at most neq 4 from [4,5,6,10] => None
+/// - search at most neq 6 from [4,5,6,10] => 5
+/// - search at least eq 3 from [4,6,10] => 4
+/// - search at least eq 5 from [4,6,10] => 10
 ///
 pub fn binary_search_by<T, F>(
     datas: &[T],
@@ -31,7 +33,9 @@ where
 
         if cmp == Ordering::Less {
             left = curr_idx + 1;
-            if condition_order == BinaryRangeSearchType::AtMostEq {
+            if condition_order == BinaryRangeSearchType::AtMostEq
+                || condition_order == BinaryRangeSearchType::AtMostNeq
+            {
                 latest_hit_idx.replace(curr_idx);
             }
         } else if cmp == Ordering::Greater {
@@ -69,6 +73,18 @@ where
                     _ => false,
                 },
                 LinearSearchDirection::Asc,
+            ) {
+                latest_hit_idx.replace(new_idx);
+            }
+        } else if condition_order == BinaryRangeSearchType::AtMostNeq && latest_choice_idx > 0 {
+            if let Some(new_idx) = linear_search_same_timestamp(
+                datas,
+                latest_choice_idx - 1,
+                |data| match cond(data) {
+                    Ordering::Less => true,
+                    _ => false,
+                },
+                LinearSearchDirection::Desc,
             ) {
                 latest_hit_idx.replace(new_idx);
             }
@@ -277,6 +293,20 @@ mod test {
         assert!(result.is_some());
         let result = result.unwrap();
         assert_eq!(result, 5);
+    }
+
+    #[test]
+    fn binsearch_test_9() {
+        let data_points: Vec<DataPoint> = empty_data_points!(10, 12, 12, 13, 13, 13, 21, 40);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&13),
+            BinaryRangeSearchType::AtMostNeq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 2);
     }
 
     #[test]

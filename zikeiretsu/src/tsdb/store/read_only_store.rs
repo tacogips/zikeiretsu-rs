@@ -1,25 +1,6 @@
 use super::*;
 
-use crate::tsdb::{dataframe::*, datapoint::*, datapoints_searcher::*};
-
-pub struct RefReadonlyStore<'datapoint> {
-    datapoints: &'datapoint [DataPoint],
-}
-
-impl<'datapoint> RefReadonlyStore<'datapoint> {
-    pub fn new(datapoints: &'datapoint [DataPoint], validate: bool) -> Result<Self> {
-        if validate {
-            if let Err(e) = DataPoint::check_datapoints_is_sorted(&datapoints) {
-                return Err(StoreError::UnsortedDatapoints(e));
-            }
-        }
-        Ok(Self { datapoints })
-    }
-
-    pub async fn datapoints_searcher<'a>(&'a self) -> DatapointSearcher<'a> {
-        DatapointSearcher::new(&self.datapoints)
-    }
-}
+use crate::tsdb::dataframe::*;
 
 pub struct ReadonlyStore {
     dataframe: DataFrame,

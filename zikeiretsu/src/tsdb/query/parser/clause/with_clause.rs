@@ -49,7 +49,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                 }
             }
 
-            Rule::DEFINE_OUTPUT => {
+            Rule::DEFINE_FORMAT => {
                 for each_in_define_tz in each.into_inner() {
                     match each_in_define_tz.as_rule() {
                         Rule::KW_JSON => with_clause.def_output = Some(OutputFormat::Json),

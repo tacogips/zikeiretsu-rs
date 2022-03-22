@@ -5,7 +5,7 @@ use crate::tsdb::query::parser::*;
 use crate::tsdb::query::parser::parts::DatetimeFilter;
 #[derive(Debug, PartialEq)]
 pub struct WhereClause<'q> {
-    pub datetime_filter: Option<DatetimeFilter<'q>>,
+    pub datetime_filter: DatetimeFilter<'q>,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
@@ -17,18 +17,16 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
         ));
     }
 
-    let mut where_clause = WhereClause {
-        datetime_filter: None,
-    };
-
+    let mut datetime_filter: Option<DatetimeFilter<'q>> = None;
     for each in pair.into_inner() {
         match each.as_rule() {
             Rule::FILTER => {
                 for each_filter in each.into_inner() {
                     match each_filter.as_rule() {
                         Rule::DATETIME_FILTER => {
-                            let datetime_filter = datetime_filter_parser::parse(each_filter)?;
-                            where_clause.datetime_filter = Some(datetime_filter);
+                            let parsed_datetime_filter =
+                                datetime_filter_parser::parse(each_filter)?;
+                            datetime_filter = Some(parsed_datetime_filter);
                         }
                         _ => {}
                     }
@@ -38,7 +36,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
         }
     }
 
-    Ok(where_clause)
+    match datetime_filter {
+        None => Err(QueryError::NoDatetimeFilter),
+        Some(datetime_filter) => Ok(WhereClause { datetime_filter }),
+    }
 }
 
 #[cfg(test)]
@@ -79,7 +80,7 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: Some(DatetimeFilter::Gte(ColumnName("ts"), expected)),
+                datetime_filter: DatetimeFilter::Gte(ColumnName("ts"), expected),
             }
         );
     }
@@ -124,11 +125,7 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: Some(DatetimeFilter::In(
-                    ColumnName("ts"),
-                    expected_from,
-                    expected_to
-                )),
+                datetime_filter: DatetimeFilter::In(ColumnName("ts"), expected_from, expected_to),
             }
         );
     }
@@ -175,11 +172,7 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: Some(DatetimeFilter::In(
-                    ColumnName("ts"),
-                    expected_from,
-                    expected_to
-                )),
+                datetime_filter: DatetimeFilter::In(ColumnName("ts"), expected_from, expected_to),
             }
         );
     }
@@ -204,11 +197,7 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: Some(DatetimeFilter::In(
-                    ColumnName("ts"),
-                    expected_from,
-                    expected_to
-                )),
+                datetime_filter: DatetimeFilter::In(ColumnName("ts"), expected_from, expected_to),
             }
         );
     }

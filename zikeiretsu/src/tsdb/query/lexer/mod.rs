@@ -39,11 +39,9 @@ pub enum Query {
 pub struct QueryContext {
     pub metrics: Metrics,
     pub field_selectors: Option<Vec<usize>>,
-    pub search_condotion: DatapointSearchCondition,
-    pub limit: Option<usize>,
-    pub offset: Option<usize>,
-    pub output_format: Option<OutputFormat>,
-    pub timezone: Option<FixedOffset>,
+    pub search_condition: DatapointSearchCondition,
+    pub output_format: OutputFormat,
+    pub timezone: FixedOffset,
 }
 
 pub enum BuildinMetrics {
@@ -63,7 +61,10 @@ fn interpret_search_condition<'q>(
     timezone: &FixedOffset,
     where_clause: Option<&WhereClause<'q>>,
 ) -> Result<DatapointSearchCondition> {
-    unimplemented!()
+    match where_clause {
+        None => Ok(DatapointSearchCondition::all()),
+        Some(where_clause) => {}
+    }
 }
 
 fn interpret_field_selector<'q>(
@@ -162,8 +163,14 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
     }
 
     // select columns
-    let field_selector = interpret_field_selector(column_index_map, parsed_query.select.as_ref())?;
+    let field_selectors = interpret_field_selector(column_index_map, parsed_query.select.as_ref())?;
     let search_condition = interpret_search_condition(&timezone, parsed_query.r#where.as_ref())?;
 
-    unimplemented!()
+    let query_context = QueryContext {
+        metrics,
+        field_selectors,
+        search_condition,
+        output_format,
+        timezone,
+    };
 }

@@ -54,6 +54,9 @@ pub enum QueryError {
     #[error("empty columns:{0}")]
     EmptyColumns(String),
 
+    #[error("no datetime filter in where clause")]
+    NoDatetimeFilter,
+
     #[error("empty table name")]
     EmptyTableName,
 

@@ -130,11 +130,21 @@ mod test {
 
     use super::*;
     use chrono::DateTime;
+
     #[test]
     fn to_date_time() {
         let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
         let tsn: TimestampNano = dt.clone().into();
         let cdt = tsn.as_datetime();
+        assert_eq!(cdt, dt);
+    }
+
+    #[test]
+    fn to_date_time_with_tz() {
+        let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
+        let tsn: TimestampNano = dt.clone().into();
+        let tz = FixedOffset::east(9 * 3600);
+        let cdt = tsn.as_datetime_with_tz(&tz);
         assert_eq!(cdt, dt);
     }
 }

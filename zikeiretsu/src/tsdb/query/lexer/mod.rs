@@ -64,46 +64,53 @@ fn interpret_search_condition<'q>(
 ) -> Result<DatapointSearchCondition> {
     match where_clause {
         None => Ok(DatapointSearchCondition::all()),
-        Some(where_clause) => match &where_clause.datetime_filter {
-            DatetimeFilter::In(_, from, to) => Ok(DatapointSearchCondition::new(
-                Some(from.to_timestamp_nano(&timezone)),
-                Some(to.to_timestamp_nano(&timezone)),
-            )),
-            DatetimeFilter::Gte(_, from) => Ok(DatapointSearchCondition::new(
-                Some(from.to_timestamp_nano(&timezone)),
-                None,
-            )),
-            DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(
-                Some(from.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
-                None,
-            )),
-            DatetimeFilter::Lte(_, to) => Ok(DatapointSearchCondition::new(
-                None,
-                Some(to.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
-            )),
-            DatetimeFilter::Lt(_, to) => Ok(DatapointSearchCondition::new(
-                None,
-                Some(to.to_timestamp_nano(&timezone)),
-            )),
-            DatetimeFilter::Equal(_, datetime_value) => {
-                let from_dt_nano = datetime_value.to_timestamp_nano(&timezone);
-                let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
-                let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
-                    DatetimeAccuracy::NanoSecond => Duration::nanoseconds(1),
-                    DatetimeAccuracy::MicroSecond => Duration::microseconds(1),
-                    DatetimeAccuracy::MilliSecond => Duration::milliseconds(1),
-                    DatetimeAccuracy::Second => Duration::seconds(1),
-                    DatetimeAccuracy::Minute => Duration::minutes(1),
-                    DatetimeAccuracy::Hour => Duration::hours(1),
-                    DatetimeAccuracy::Day => Duration::days(1),
-                };
+        Some(where_clause) => datetime_filter_to_condition(timezone, &where_clause.datetime_filter),
+    }
+}
 
-                Ok(DatapointSearchCondition::new(
-                    Some(from_dt_nano),
-                    Some((from_dt + until_date_offset).into()),
-                ))
-            }
-        },
+fn datetime_filter_to_condition<'q>(
+    timezone: &FixedOffset,
+    datetime_filter: &DatetimeFilter<'q>,
+) -> Result<DatapointSearchCondition> {
+    match &datetime_filter {
+        DatetimeFilter::In(_, from, to) => Ok(DatapointSearchCondition::new(
+            Some(from.to_timestamp_nano(&timezone)),
+            Some(to.to_timestamp_nano(&timezone)),
+        )),
+        DatetimeFilter::Gte(_, from) => Ok(DatapointSearchCondition::new(
+            Some(from.to_timestamp_nano(&timezone)),
+            None,
+        )),
+        DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(
+            Some(from.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+            None,
+        )),
+        DatetimeFilter::Lte(_, to) => Ok(DatapointSearchCondition::new(
+            None,
+            Some(to.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+        )),
+        DatetimeFilter::Lt(_, to) => Ok(DatapointSearchCondition::new(
+            None,
+            Some(to.to_timestamp_nano(&timezone)),
+        )),
+        DatetimeFilter::Equal(_, datetime_value) => {
+            let from_dt_nano = datetime_value.to_timestamp_nano(&timezone);
+            let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
+            let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
+                DatetimeAccuracy::NanoSecond => Duration::nanoseconds(1),
+                DatetimeAccuracy::MicroSecond => Duration::microseconds(1),
+                DatetimeAccuracy::MilliSecond => Duration::milliseconds(1),
+                DatetimeAccuracy::Second => Duration::seconds(1),
+                DatetimeAccuracy::Minute => Duration::minutes(1),
+                DatetimeAccuracy::Hour => Duration::hours(1),
+                DatetimeAccuracy::Day => Duration::days(1),
+            };
+
+            Ok(DatapointSearchCondition::new(
+                Some(from_dt_nano),
+                Some((from_dt + until_date_offset).into()),
+            ))
+        }
     }
 }
 

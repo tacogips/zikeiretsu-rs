@@ -70,7 +70,7 @@ impl DataFrame {
             .map(|(dataframes, _indices)| dataframes)
     }
 
-    pub async fn retain<'a>(mut self, cond: &DatapointSearchCondition) -> Result<()> {
+    pub async fn retain<'a>(&mut self, cond: &DatapointSearchCondition) -> Result<()> {
         match self.search_with_indices(cond).await {
             None => {
                 self.timestamp_nanos.clear();
@@ -295,7 +295,7 @@ mod test {
 
     #[tokio::test]
     async fn dataframe_binsearch_test_1() {
-        let df = dataframe!([
+        let mut df = dataframe!([
             (9, 1),
             (10, 2),
             (19, 3),
@@ -318,11 +318,17 @@ mod test {
             result,
             dataframe!([(20, 4), (20, 5), (20, 6), (30, 7), (40, 8),])
         );
+
+        assert!(df.retain(&condition).await.is_ok());
+        assert_eq!(
+            df,
+            dataframe!([(20, 4), (20, 5), (20, 6), (30, 7), (40, 8),])
+        );
     }
 
     #[tokio::test]
     async fn dataframe_binsearch_test_2() {
-        let df = dataframe!([
+        let mut df = dataframe!([
             (9, 1),
             (10, 2),
             (19, 3),
@@ -355,11 +361,26 @@ mod test {
                 (51, 11)
             ])
         );
+
+        assert!(df.retain(&condition).await.is_ok());
+        assert_eq!(
+            df,
+            dataframe!([
+                (20, 4),
+                (20, 5),
+                (20, 6),
+                (30, 7),
+                (40, 8),
+                (50, 9),
+                (50, 10),
+                (51, 11)
+            ])
+        );
     }
 
     #[tokio::test]
     async fn dataframe_binsearch_test_3() {
-        let df = dataframe!([
+        let mut df = dataframe!([
             (9, 1),
             (10, 2),
             (19, 3),
@@ -381,6 +402,12 @@ mod test {
         let result: DataFrame = result.into();
         assert_eq!(
             result,
+            dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (20, 5), (20, 6), (30, 7),])
+        );
+
+        assert!(df.retain(&condition).await.is_ok());
+        assert_eq!(
+            df,
             dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (20, 5), (20, 6), (30, 7),])
         );
     }

@@ -46,9 +46,8 @@ mod test {
     async fn binsearch_test_1() {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
-        let result = store
-            .search(&DatapointSearchCondition::since(ts!(20)).with_until(ts!(51)))
-            .await;
+        let condition = DatapointSearchCondition::since(ts!(20)).with_until(ts!(51));
+        let result = store.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
 
@@ -59,9 +58,9 @@ mod test {
     async fn binsearch_test_2() {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
-        let result = store
-            .search(&DatapointSearchCondition::since(ts!(20)))
-            .await;
+
+        let condition = DatapointSearchCondition::since(ts!(20));
+        let result = store.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
 
@@ -72,9 +71,9 @@ mod test {
     async fn binsearch_test_3() {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
-        let result = store
-            .search(&DatapointSearchCondition::until(ts!(41)))
-            .await;
+
+        let condition = DatapointSearchCondition::until(ts!(41));
+        let result = store.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
 

@@ -308,9 +308,8 @@ mod test {
             (50, 10),
             (51, 11)
         ]);
-        let result = df
-            .search(&DatapointSearchCondition::since(ts!(20)).with_until(ts!(50)))
-            .await;
+        let condition = DatapointSearchCondition::since(ts!(20)).with_until(ts!(50));
+        let result = df.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
 
@@ -336,7 +335,9 @@ mod test {
             (50, 10),
             (51, 11)
         ]);
-        let result = df.search(&DatapointSearchCondition::since(ts!(20))).await;
+
+        let condition = DatapointSearchCondition::since(ts!(20));
+        let result = df.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
 
@@ -371,7 +372,9 @@ mod test {
             (50, 10),
             (51, 11)
         ]);
-        let result = df.search(&DatapointSearchCondition::until(ts!(40))).await;
+
+        let condition = DatapointSearchCondition::until(ts!(40));
+        let result = df.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
 

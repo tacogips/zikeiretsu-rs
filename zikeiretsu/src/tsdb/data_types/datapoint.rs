@@ -1,6 +1,5 @@
 use super::field::*;
-use super::timestamp_nano::*;
-use super::timestamp_sec::*;
+use crate::tsdb::datetime::*;
 use std::cmp::Ordering;
 use std::convert::TryFrom;
 

@@ -33,6 +33,32 @@ pub fn remove_range<T>(datapoints: &mut Vec<T>, range: (usize, usize)) {
     //}
 }
 
+/// [0,1,2,3,4].trim(1,2) -> [1]
+/// [0,1,2,3,4].trim(1,3) -> [1,2]
+pub fn trim_values<V>(
+    values: &mut Vec<V>,
+    retain_start_index: usize,
+    cut_off_surfix_start_idx: usize,
+) {
+    //TODO(tacogips) impl
+    unimplemented!()
+
+    //let suffix_cut_range = if retain_start_index == 0 {
+    //    None
+    //} else {
+    //    Some((0, retain_start_index))
+    //};
+
+    //let suffix_cut_start_idx = if retain_end_index < self.values.len() - 1 {
+    //    let prefix_trimmed_num = (retain_start_index + 1);
+    //    let len_after_prefix_trimmed = self.values.len() - prefix_trimmed_num;
+    //    retain_end_index  -  prefix_trimmed_num
+    //    Some(0)
+    //} else {
+    //    None
+    //};
+}
+
 #[cfg(test)]
 mod test {
 

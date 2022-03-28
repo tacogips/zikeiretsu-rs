@@ -1,6 +1,7 @@
 use super::field::*;
-use super::timestamp_nano::*;
 use super::{datapoint::DataPoint, DatapointSearchCondition};
+use crate::tsdb::datetime::*;
+use crate::tsdb::util::trim_values;
 use std::cmp::Ordering;
 use std::convert::TryFrom;
 
@@ -69,10 +70,16 @@ impl DataFrame {
             .map(|(dataframes, _indices)| dataframes)
     }
 
-    pub async fn search<'a>(self, cond: &DatapointSearchCondition) -> Option<DataFrame> {
-        self.search_with_indices(cond)
-            .await
-            .map(|(_dataframe_ref, _indices)| datapoints)
+    pub async fn search<'a>(mut self, cond: &DatapointSearchCondition) -> Option<DataFrame> {
+        self.search_with_indices(cond).await.map(|(_, indices)| {
+            let (start, end) = indices;
+
+            trim_values(&mut self.timestamp_nanos, start, end + 1);
+
+            for each_series in self.data_serieses.iter_mut() {
+                each_series.cut(start, end + 1)
+            }
+        })
     }
 
     pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
@@ -219,8 +226,8 @@ impl DataSeries {
         self.values.get(index)
     }
 
-    fn cut(mut self, start_index: usize, end_index: usize) {
-        self.values.remove
+    pub fn cut(&mut self, retain_start_index: usize, cut_off_surfix_start_idx: usize) {
+        trim_values(self.values, retain_start_index, cut_off_surfix_start_idx)
     }
 }
 

@@ -7,8 +7,9 @@ pub enum VecOpeError {
     OutOfRange(usize),
 }
 
-pub fn remove_range<T>(datapoints: &mut Vec<T>, range: (usize, usize)) {
+pub fn remove_range<T>(datapoints: &mut Vec<T>, range: (usize, usize)) -> Result<()> {
     datapoints.drain(range.0..range.1 + 1);
+    Ok(())
     // TODO same code as below causes memory leak somehow..
     //let orig_len = datapoints.len();
     //let (start, end) = range;
@@ -47,25 +48,38 @@ pub fn remove_range<T>(datapoints: &mut Vec<T>, range: (usize, usize)) {
 pub fn trim_values<V>(
     values: &mut Vec<V>,
     retain_start_index: usize,
-    cut_off_surfix_start_idx: usize,
+    cut_off_suffix_start_idx: usize,
 ) -> Result<()> {
-    //TODO(tacogips) impl
-    unimplemented!()
+    let prefix_remove_range = if retain_start_index == 0 {
+        None
+    } else {
+        Some((0 as usize, retain_start_index))
+    };
 
-    //let suffix_cut_range = if retain_start_index == 0 {
-    //    None
-    //} else {
-    //    Some((0, retain_start_index))
-    //};
+    let suffix_remove_range = if cut_off_suffix_start_idx >= values.len() - 1 {
+        None
+    } else {
+        if retain_start_index != 0 {
+            let prefix_trimmed_num = retain_start_index + 1;
+            let len_after_prefix_trimmed = values.len() - prefix_trimmed_num;
+            Some((
+                cut_off_suffix_start_idx - prefix_trimmed_num,
+                len_after_prefix_trimmed,
+            ))
+        } else {
+            Some((cut_off_suffix_start_idx, values.len() - 1))
+        }
+    };
 
-    //let suffix_cut_start_idx = if retain_end_index < self.values.len() - 1 {
-    //    let prefix_trimmed_num = (retain_start_index + 1);
-    //    let len_after_prefix_trimmed = self.values.len() - prefix_trimmed_num;
-    //    retain_end_index  -  prefix_trimmed_num
-    //    Some(0)
-    //} else {
-    //    None
-    //};
+    if let Some((start, end)) = prefix_remove_range {
+        remove_range(values, (start, end))?;
+    }
+
+    if let Some((start, end)) = suffix_remove_range {
+        remove_range(values, (start, end))?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

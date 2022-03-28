@@ -237,12 +237,12 @@ impl DataSeries {
     pub fn retain(
         &mut self,
         retain_start_index: usize,
-        cut_off_surfix_start_idx: usize,
+        cut_off_suffix_start_idx: usize,
     ) -> Result<()> {
         trim_values(
             &mut self.values,
             retain_start_index,
-            cut_off_surfix_start_idx,
+            cut_off_suffix_start_idx,
         );
         Ok(())
     }

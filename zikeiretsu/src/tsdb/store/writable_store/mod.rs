@@ -229,7 +229,7 @@ where
             .search_with_indices(datapoint_search_condition)
             .await
         {
-            remove_range(datapoints, indices);
+            remove_range(datapoints, indices)?;
         }
 
         Ok(())
@@ -309,8 +309,9 @@ where
     }
 }
 
-fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
-    util::remove_range(datapoints, range)
+fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) -> Result<()> {
+    util::remove_range(datapoints, range)?;
+    Ok(())
 }
 
 #[cfg(test)]

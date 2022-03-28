@@ -1,6 +1,7 @@
 pub mod read_only_store;
 pub mod writable_store;
 
+use crate::tsdb::util;
 use crate::tsdb::{search::*, storage::api as storage_api};
 use chrono::{DateTime, Utc};
 pub use read_only_store::*;
@@ -38,6 +39,9 @@ pub enum StoreError {
 
     #[error("datetime channel Sender Error. {0}")]
     JoinError(#[from] task::JoinError),
+
+    #[error("Vec ope Error. {0}")]
+    VecOpeError(#[from] util::VecOpeError),
 }
 
 type Result<T> = std::result::Result<T, StoreError>;

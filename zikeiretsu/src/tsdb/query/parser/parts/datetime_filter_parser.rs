@@ -328,31 +328,8 @@ pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
     }
 }
 
-static DATETIME_FORMATS: OnceCell<Vec<(chrono_format::StrftimeItems<'static>, bool)>> =
-    OnceCell::new();
-
-type NaiveDateOrNot = bool;
-pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, NaiveDateOrNot)] {
-    fn dt_fmt(s: &str) -> chrono_format::StrftimeItems {
-        chrono_format::StrftimeItems::new(s)
-    }
-
-    DATETIME_FORMATS
-        .get_or_init(|| {
-            vec![
-                (dt_fmt("%Y-%m-%d %H:%M:%S"), false),
-                (dt_fmt("%Y-%m-%d %H:%M:%S.%f"), false),
-                (dt_fmt("%Y-%m-%d %H:%M"), false),
-                (dt_fmt("%Y-%m-%d"), true),
-            ]
-        })
-        .as_slice()
-}
-
 #[cfg(test)]
 mod test {
-
-    use super::*;
 
     use super::*;
 

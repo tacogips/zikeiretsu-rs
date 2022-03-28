@@ -1,7 +1,19 @@
 use chrono::{
-    format as chrono_format, Date, DateTime, Duration, NaiveDateTime, NaiveTime, TimeZone,
-    Timelike, Utc,
+    format as chrono_format, Date, DateTime, Duration, NaiveDateTime, NaiveTime,
+    ParseError as ChronoParseError, TimeZone, Timelike, Utc,
 };
+use once_cell::sync::OnceCell;
+use thiserror::Error;
+
+type Result<T> = std::result::Result<T, DatetimeUtilError>;
+#[derive(Error, Debug)]
+pub enum DatetimeUtilError {
+    #[error("invalid date time format:{0}")]
+    InvalidDatetimeFormat(String),
+
+    #[error("error occured in parsing datetime :{0}. ")]
+    ChronoParseError(#[from] ChronoParseError),
+}
 
 pub fn today<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
     Utc::today().with_timezone(&tz)
@@ -29,7 +41,7 @@ impl DatetimeAccuracy {
     pub fn from_datetime<Tz: TimeZone>(dt: DateTime<Tz>) -> Self {
         let nano_sec = dt.nanosecond();
         if nano_sec == 0 {
-            match ((dt.hour(), dt.minute(), dt.second())) {
+            match (dt.hour(), dt.minute(), dt.second()) {
                 (0, 0, 0) => DatetimeAccuracy::Day,
                 (_, 0, 0) => DatetimeAccuracy::Hour,
                 (_, _, 0) => DatetimeAccuracy::Minute,
@@ -58,6 +70,27 @@ impl DatetimeAccuracy {
     //}
 }
 
+static DATETIME_FORMATS: OnceCell<Vec<(chrono_format::StrftimeItems<'static>, bool)>> =
+    OnceCell::new();
+
+type NaiveDateOrNot = bool;
+pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, NaiveDateOrNot)] {
+    fn dt_fmt(s: &str) -> chrono_format::StrftimeItems {
+        chrono_format::StrftimeItems::new(s)
+    }
+
+    DATETIME_FORMATS
+        .get_or_init(|| {
+            vec![
+                (dt_fmt("%Y-%m-%d %H:%M:%S"), false),
+                (dt_fmt("%Y-%m-%d %H:%M:%S.%f"), false),
+                (dt_fmt("%Y-%m-%d %H:%M"), false),
+                (dt_fmt("%Y-%m-%d"), true),
+            ]
+        })
+        .as_slice()
+}
+
 /// availabe formats
 /// 'yyyy-MM-DD hh:mm:ss.ZZZZZZ'
 /// 'yyyy-MM-DD hh:mm:ss'
@@ -65,10 +98,14 @@ impl DatetimeAccuracy {
 /// 'yyyy-MM-DD'
 pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
     if datetime_str.len() < 2 {
-        return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
+        return Err(DatetimeUtilError::InvalidDatetimeFormat(
+            datetime_str.to_string(),
+        ));
     }
     if !datetime_str.starts_with("'") || !datetime_str.ends_with("'") {
-        return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
+        return Err(DatetimeUtilError::InvalidDatetimeFormat(
+            datetime_str.to_string(),
+        ));
     }
 
     //strip single quotes
@@ -89,7 +126,9 @@ pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
         }
     }
 
-    Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()))
+    Err(DatetimeUtilError::InvalidDatetimeFormat(
+        datetime_str.to_string(),
+    ))
 }
 
 #[cfg(test)]

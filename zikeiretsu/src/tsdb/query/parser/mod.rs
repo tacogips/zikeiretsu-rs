@@ -1,7 +1,8 @@
 mod clause;
 mod parts;
 
-use chrono::{DateTime, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
+use crate::tsdb::DatetimeUtilError;
+use chrono::{FixedOffset, TimeZone};
 pub use clause::*;
 use log;
 pub use parts::*;
@@ -69,14 +70,11 @@ pub enum QueryError {
     #[error("time offset outofbound:{0}. ")]
     TimeOffsetOutOfBound(i32),
 
-    #[error("error occured in parsing datetime :{0}. ")]
-    ChoronoParseError(#[from] ChoronoParseError),
-
     #[error("{0}")]
     ParseIntError(#[from] ParseIntError),
 
-    #[error("invalid date time format:{0}")]
-    InvalidDatetimeFormat(String),
+    #[error(" date time error:{0}")]
+    DatetimeUtilError(#[from] DatetimeUtilError),
 
     #[error("invalid date time filter operator:{0}")]
     InvalidDatetimeFilterOperator(String),

@@ -52,10 +52,7 @@ pub fn trim_values<V>(
     values: &mut Vec<V>,
     retain_start_index: usize,
     cut_off_suffix_start_idx: usize,
-) -> Result<()>
-where
-    V: std::fmt::Debug,
-{
+) -> Result<()> {
     if retain_start_index > cut_off_suffix_start_idx {
         return Err(VecOpeError::InvalidRange(
             retain_start_index,
@@ -67,42 +64,18 @@ where
         return Err(VecOpeError::OutOfRange(retain_start_index));
     }
 
-    let prefix_remove_range = if retain_start_index == 0 {
+    let prefix_remove_until_index = if retain_start_index == 0 {
         None
     } else {
-        Some((0 as usize, retain_start_index - 1))
+        Some(retain_start_index - 1)
     };
 
-    let suffix_remove_range = if cut_off_suffix_start_idx >= values.len() {
-        None
-    } else {
-        if retain_start_index != 0 {
-            let prefix_trimmed_num = retain_start_index;
-            let len_after_prefix_trimmed = values.len() - prefix_trimmed_num;
-
-            println!(
-                "====== {} {} {}",
-                prefix_trimmed_num, cut_off_suffix_start_idx, len_after_prefix_trimmed
-            );
-            Some((
-                cut_off_suffix_start_idx - prefix_trimmed_num,
-                len_after_prefix_trimmed - 1,
-            ))
-        } else {
-            Some((cut_off_suffix_start_idx, values.len() - 1))
-        }
-    };
-
-    if let Some((start, end)) = prefix_remove_range {
-        remove_range(values, (start, end))?;
+    let remaining_size = cut_off_suffix_start_idx - retain_start_index;
+    if let Some(end) = prefix_remove_until_index {
+        remove_range(values, (0, end))?;
     }
 
-    println!("==== {:?} ", values);
-
-    if let Some((start, end)) = suffix_remove_range {
-        remove_range(values, (start, end))?;
-    }
-
+    values.truncate(remaining_size);
     Ok(())
 }
 

@@ -73,8 +73,8 @@ impl DataFrame {
     pub async fn retain<'a>(mut self, cond: &DatapointSearchCondition) -> Result<()> {
         match self.search_with_indices(cond).await {
             None => {
-                self.timestamp_nanos = vec![];
-                self.data_serieses = vec![];
+                self.timestamp_nanos.clear();
+                self.data_serieses.clear();
                 Ok(())
             }
             Some((_, indices)) => {

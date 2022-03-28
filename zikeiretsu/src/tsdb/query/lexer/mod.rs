@@ -231,6 +231,7 @@ mod test {
     fn jst() -> FixedOffset {
         FixedOffset::east(9 * 3600)
     }
+
     #[test]
     fn lexer_datetime_eq_1() {
         let dt = parse_datetime_str("'2021-09-27'").unwrap();
@@ -243,29 +244,11 @@ mod test {
             DatapointSearchCondition::new(Some(dt.into()), Some((dt + Duration::days(1)).into()),),
             filter_cond
         );
+    }
 
-        //pub enum DatetimeFilter<'q> {
-        //    In(ColumnName<'q>, DatetimeFilterValue, DatetimeFilterValue),
-        //    Gte(ColumnName<'q>, DatetimeFilterValue),
-        //    Gt(ColumnName<'q>, DatetimeFilterValue),
-        //    Lte(ColumnName<'q>, DatetimeFilterValue),
-        //    Lt(ColumnName<'q>, DatetimeFilterValue),
-        //    Equal(ColumnName<'q>, DatetimeFilterValue),
-        //}
-
-        //DatetimeFilter::from()
-        //pub fn from(
-        //    column_name: ColumnName<'q>,
-        //    ope: &'q str,
-        //    datetime_1: DatetimeFilterValue,
-        //    datetime_2: Option<DatetimeFilterValue>,
-        //) -> Result<DatetimeFilter<'q>> {
-
-        //    datetime_filter_to_condition()
-        //fn datetime_filter_to_condition<'q>(
-        //    timezone: &FixedOffset,
-        //    datetime_filter: &DatetimeFilter<'q>,
-        //) -> Result<DatapointSearchCondition> {
-        //
+    #[test]
+    fn lexer_datetime_eq_2() {
+        //TODO add test
+        assert!(false)
     }
 }

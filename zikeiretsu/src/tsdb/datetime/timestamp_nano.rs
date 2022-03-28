@@ -45,6 +45,10 @@ impl TimestampNano {
         let ndt = NaiveDateTime::from_timestamp(self.in_seconds() as i64, self.in_subsec_nano());
         DateTime::from_utc(ndt, Utc)
     }
+
+    pub fn as_datetime_with_tz<Tz: TimeZone>(&self, tz: &Tz) -> DateTime<Tz> {
+        self.as_datetime().with_timezone(tz)
+    }
 }
 
 impl Add<Duration> for TimestampNano {

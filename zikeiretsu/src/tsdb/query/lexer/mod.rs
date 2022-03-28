@@ -2,7 +2,7 @@ use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::query::parser::*;
 
-use chrono::{DateTime, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
+use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use std::collections::HashMap;
 
 use crate::EngineError;
@@ -64,21 +64,34 @@ fn interpret_search_condition<'q>(
     match where_clause {
         None => Ok(DatapointSearchCondition::all()),
         Some(where_clause) => match &where_clause.datetime_filter {
-            DatetimeFilter::In(_, filter_value, DatetimeFilterValue) => unimplemented!(),
-            DatetimeFilter::Gte(_, filter_value) => {
-                unimplemented!()
-            }
-            DatetimeFilter::Gt(_, filter_value) => {
-                unimplemented!()
-            }
-            DatetimeFilter::Lte(_, filter_value) => {
-                unimplemented!()
-            }
-            DatetimeFilter::Lt(_, filter_value) => {
-                unimplemented!()
-            }
-            DatetimeFilter::Equal(_, filter_value) => {
-                unimplemented!()
+            DatetimeFilter::In(_, from, to) => Ok(DatapointSearchCondition::new(
+                Some(from.to_timestamp_nano(&timezone)),
+                Some(to.to_timestamp_nano(&timezone)),
+            )),
+            DatetimeFilter::Gte(_, from) => Ok(DatapointSearchCondition::new(
+                Some(from.to_timestamp_nano(&timezone)),
+                None,
+            )),
+            DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(
+                Some(from.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+                None,
+            )),
+            DatetimeFilter::Lte(_, to) => Ok(DatapointSearchCondition::new(
+                None,
+                Some(to.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+            )),
+            DatetimeFilter::Lt(_, to) => Ok(DatapointSearchCondition::new(
+                None,
+                Some(to.to_timestamp_nano(&timezone)),
+            )),
+            DatetimeFilter::Equal(_, datetime_value) => {
+                let from = datetime_value
+                    .to_timestamp_nano(&timezone)
+                    .as_datetime_with_tz(&timezone);
+                Ok(DatapointSearchCondition::new(
+                    Some(datetime_value),
+                    Some(to.to_timestamp_nano(&timezone)),
+                ))
             }
         },
     }

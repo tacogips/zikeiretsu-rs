@@ -89,6 +89,7 @@ fn interpret_search_condition<'q>(
                 let from_dt_nano = datetime_value.to_timestamp_nano(&timezone);
                 let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
                 let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
+                    DatetimeAccuracy::NanoSecond => Duration::nanoseconds(1),
                     DatetimeAccuracy::MicroSecond => Duration::microseconds(1),
                     DatetimeAccuracy::MilliSecond => Duration::milliseconds(1),
                     DatetimeAccuracy::Second => Duration::seconds(1),

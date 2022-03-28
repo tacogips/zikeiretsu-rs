@@ -13,6 +13,7 @@ pub fn tomorrow<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
 }
 
 pub enum DatetimeAccuracy {
+    NanoSecond,
     MicroSecond,
     MilliSecond,
     Second,
@@ -32,8 +33,13 @@ impl DatetimeAccuracy {
                 _ => DatetimeAccuracy::Second,
             }
         } else {
-            // nano_sec.trailing_zeros()
-            unimplemented!()
+            if nano_sec % 1_000 != 0 {
+                DatetimeAccuracy::MicroSecond
+            } else if nano_sec % 1_000_000 != 0 {
+                DatetimeAccuracy::MilliSecond
+            } else {
+                DatetimeAccuracy::NanoSecond
+            }
         }
     }
 

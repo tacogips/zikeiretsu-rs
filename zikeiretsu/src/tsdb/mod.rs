@@ -11,6 +11,7 @@ pub mod repl;
 pub mod search;
 pub mod storage;
 pub mod store;
+pub mod util;
 
 pub use cloudstorage::*;
 pub use dataframe::*;

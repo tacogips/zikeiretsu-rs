@@ -60,10 +60,19 @@ impl DataFrame {
         self.data_serieses.get_mut(field_idx)
     }
 
-    pub async fn search<'a>(&'a self, cond: &DatapointSearchCondition) -> Option<DataFrameRef<'a>> {
+    pub async fn search_ref<'a>(
+        &'a self,
+        cond: &DatapointSearchCondition,
+    ) -> Option<DataFrameRef<'a>> {
         self.search_with_indices(cond)
             .await
-            .map(|(datapoints, _indices)| datapoints)
+            .map(|(dataframes, _indices)| dataframes)
+    }
+
+    pub async fn search<'a>(self, cond: &DatapointSearchCondition) -> Option<DataFrame> {
+        self.search_with_indices(cond)
+            .await
+            .map(|(_dataframe_ref, _indices)| datapoints)
     }
 
     pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
@@ -83,6 +92,17 @@ impl DataFrame {
         Ok(result)
     }
 
+    //    TODO
+    //    async fn cut(&mut self,start_idx:usize,end_idex:usize){
+    //
+    //                    self.data_serieses
+    //                        .iter_mut()
+    //                        .map(|series| {
+    //                            DataSeriesRef::new(&series.values.as_slice()[start_idx..finish_idx + 1])
+    //                        })
+    //                        .collect(),
+    //    )
+    //
     pub async fn search_with_indices<'a>(
         &'a self,
         cond: &DatapointSearchCondition,
@@ -197,6 +217,10 @@ impl DataSeries {
 
     pub fn get(&self, index: usize) -> Option<&FieldValue> {
         self.values.get(index)
+    }
+
+    fn cut(mut self, start_index: usize, end_index: usize) {
+        self.values.remove
     }
 }
 

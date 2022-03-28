@@ -61,19 +61,27 @@ fn interpret_search_condition<'q>(
     timezone: &FixedOffset,
     where_clause: Option<&WhereClause<'q>>,
 ) -> Result<DatapointSearchCondition> {
-    //TODO(tacogips) impl
-    unimplemented!()
-    //match where_clause {
-    //    None => Ok(DatapointSearchCondition::all()),
-    //    Some(where_clause) => match where_clause.datetime_filter {
-    //        DatetimeFilter::In(_, filter_value, DatetimeFilterValue) => {}
-    //        DatetimeFilter::Gte(_, filter_value) => {}
-    //        DatetimeFilter::Gt(_, filter_value) => {}
-    //        DatetimeFilter::Lte(_, filter_value) => {}
-    //        DatetimeFilter::Lt(_, filter_value) => {}
-    //        DatetimeFilter::Equal(_, filter_value) => {}
-    //    },
-    //}
+    match where_clause {
+        None => Ok(DatapointSearchCondition::all()),
+        Some(where_clause) => match where_clause.datetime_filter {
+            DatetimeFilter::In(_, filter_value, DatetimeFilterValue) => DatapointSearchCondition,
+            DatetimeFilter::Gte(_, filter_value) => {
+                unimplemented!()
+            }
+            DatetimeFilter::Gt(_, filter_value) => {
+                unimplemented!()
+            }
+            DatetimeFilter::Lte(_, filter_value) => {
+                unimplemented!()
+            }
+            DatetimeFilter::Lt(_, filter_value) => {
+                unimplemented!()
+            }
+            DatetimeFilter::Equal(_, filter_value) => {
+                unimplemented!()
+            }
+        },
+    }
 }
 
 fn interpret_field_selector<'q>(

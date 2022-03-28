@@ -6,6 +6,8 @@ use super::*;
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
 };
+
+use crate::tsdb::util;
 use chrono::Duration;
 pub use persistence::*;
 pub use sorter::*;
@@ -307,39 +309,8 @@ where
     }
 }
 
-pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
-    datapoints.drain(range.0..range.1 + 1);
-    // same code as below causes memory leak somehow..
-    //let orig_len = datapoints.len();
-    //let (start, end) = range;
-    //assert!(
-    //    start <= end,
-    //    "invalid purge index start:{} > end:{}",
-    //    start,
-    //    end
-    //);
-
-    //assert!(
-    //    end < orig_len,
-    //    "invalid purge end index  end:{}, len:{}",
-    //    end,
-    //    orig_len
-    //);
-
-    //let purge_len = end - start + 1;
-
-    //let remaining_len = orig_len - purge_len;
-    //let shift_elem_len = orig_len - end - 1;
-    //unsafe {
-    //    let purge_start_ptr = datapoints.as_mut_ptr().add(start);
-    //    ptr::copy(
-    //        purge_start_ptr.offset(purge_len as isize),
-    //        purge_start_ptr,
-    //        shift_elem_len,
-    //    );
-
-    //    datapoints.set_len(remaining_len);
-    //}
+fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
+    util::remove_range(datapoints, range)
 }
 
 #[cfg(test)]

@@ -2,11 +2,10 @@ use super::{storage_api, DatapointSorter, WritableStore};
 use crate::tsdb::datapoint::*;
 use crate::tsdb::store::writable_store::Result;
 use crate::tsdb::timestamp_nano::TimestampNano;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use log;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
 use tokio::{task, time};
 
@@ -42,6 +41,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
 ) -> PeriodicallyPeristenceShutdown {
     let (persistence_tx, mut persistence_rx) = mpsc::channel::<DateTime<Utc>>(1);
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<chrono::DateTime<chrono::Utc>>(1);
+    let interval_duration = interval_duration.to_std().unwrap();
     task::spawn(async move {
         loop {
             let waiting_shutdown =
@@ -51,7 +51,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
 
                 let datapoint_search_condition = DatapointSearchCondition::new(
                     None,
-                    Some(TimestampNano::now() + Duration::from_nanos(1)),
+                    Some(TimestampNano::now() + Duration::nanoseconds(1)),
                 );
                 let condition = PersistCondition {
                     datapoint_search_condition,
@@ -71,7 +71,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
 
             let datapoint_search_condition = DatapointSearchCondition::new(
                 None,
-                Some(TimestampNano::now() + Duration::from_nanos(1)),
+                Some(TimestampNano::now() + Duration::nanoseconds(1)),
             );
             let condition = PersistCondition {
                 datapoint_search_condition,

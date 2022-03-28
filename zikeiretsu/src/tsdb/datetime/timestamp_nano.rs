@@ -1,12 +1,12 @@
 use super::timestamp_sec::TimestampSec;
 
 use chrono::prelude::*;
+use chrono::Duration;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
 use std::ops::Add;
 use std::ops::{Deref, Sub};
-use std::time::Duration;
 pub const SEC_IN_NANOSEC: u64 = 1_000_000_000;
 #[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TimestampNano(pub u64);
@@ -51,7 +51,7 @@ impl Add<Duration> for TimestampNano {
     type Output = Self;
 
     fn add(self, other: Duration) -> Self {
-        Self::new(self.0 + other.as_nanos() as u64)
+        Self::new(self.0 + other.num_nanoseconds().unwrap_or(0) as u64)
     }
 }
 
@@ -59,6 +59,13 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for TimestampNano {
     fn from(dt: DateTime<Tz>) -> Self {
         let v = dt.timestamp() as u64 * SEC_IN_NANOSEC + dt.timestamp_subsec_nanos() as u64;
         TimestampNano(v)
+    }
+}
+
+impl<Tz: TimeZone> From<Date<Tz>> for TimestampNano {
+    fn from(dt: Date<Tz>) -> Self {
+        let dt = dt.and_hms(0, 0, 0);
+        dt.into()
     }
 }
 

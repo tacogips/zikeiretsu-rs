@@ -2,8 +2,8 @@ use super::{clock_parser, duration_parser};
 use once_cell::sync::OnceCell;
 use pest::iterators::Pair;
 
+use crate::tsdb::datetime::{today, tomorrow, yesterday, TimestampNano};
 use crate::tsdb::query::parser::*;
-use crate::tsdb::timestamp_nano::*;
 use chrono::{format as chrono_format, DateTime, Duration, NaiveDateTime, NaiveTime, Utc};
 
 #[derive(Debug, PartialEq)]
@@ -92,17 +92,14 @@ impl DatetimeFilterValue {
                 TimestampNano::new(datetime.timestamp_nanos() as u64)
             }
 
-            Self::Function(build_func, delta) => match build_func {
-                BuildinDatetimeFunction::Today => {
-                    unimplemented!()
-                }
-                BuildinDatetimeFunction::Yesterday => {
-                    unimplemented!()
-                }
-                BuildinDatetimeFunction::Tomorrow => {
-                    unimplemented!()
-                }
-            },
+            Self::Function(build_func, delta) => {
+                let micro_sec_delta = delta.map(|delta| delta.as_micro_second()).unwrap_or(0);
+                let timestamp_nano = match build_func {
+                    BuildinDatetimeFunction::Today => today(*offset).into(),
+                    BuildinDatetimeFunction::Yesterday => yesterday(*offset).into(),
+                    BuildinDatetimeFunction::Tomorrow => tomorrow(*offset).into(),
+                };
+            }
         }
     }
 }

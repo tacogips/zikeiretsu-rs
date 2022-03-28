@@ -61,6 +61,7 @@ fn interpret_search_condition<'q>(
     timezone: &FixedOffset,
     where_clause: Option<&WhereClause<'q>>,
 ) -> Result<DatapointSearchCondition> {
+    //TODO(tacogips) impl
     unimplemented!()
     //match where_clause {
     //    None => Ok(DatapointSearchCondition::all()),

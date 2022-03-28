@@ -2,15 +2,15 @@ mod persistence;
 mod sorter;
 
 use super::*;
+
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
 };
-
+use chrono::Duration;
 pub use persistence::*;
 pub use sorter::*;
 use std::marker::Send;
 pub use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
 
 pub struct WritableStoreBuilder<S: DatapointSorter + 'static> {

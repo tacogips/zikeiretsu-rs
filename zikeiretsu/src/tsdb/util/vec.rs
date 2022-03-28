@@ -292,4 +292,13 @@ mod test {
 
         assert!(trim_values(&mut data, 6, 6).is_err());
     }
+
+    #[tokio::test]
+    async fn trim_value_7() {
+        let mut data = vec![1, 2, 3, 4, 5, 6];
+
+        trim_values(&mut data, 0, 6).unwrap();
+
+        assert_eq!(vec![1, 2, 3, 4, 5, 6], data);
+    }
 }

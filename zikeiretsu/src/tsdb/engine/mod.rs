@@ -111,13 +111,16 @@ impl Zikeiretsu {
         WritableStore::builder(metics, field_types)
     }
 
-    pub async fn readonly_store<P: AsRef<Path>, M: TryInto<Metrics, Error = String>>(
+    pub async fn readonly_store<P: AsRef<Path>, M>(
         db_dir: P,
         metrics: M,
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
         setting: &SearchSettings,
-    ) -> Result<Option<ReadonlyStore>> {
+    ) -> Result<Option<ReadonlyStore>>
+    where
+        M: TryInto<Metrics, Error = String>,
+    {
         let dataframe = api::read::search_dataframe(
             db_dir,
             &metrics

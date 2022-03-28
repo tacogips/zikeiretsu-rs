@@ -152,7 +152,11 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     acc
                 });
 
-            Ok(merged_dataframe)
+            if let Some(df) = merged_dataframe {
+                Ok(Some(df.retain(condition).await?))
+            } else {
+                Ok(None)
+            }
         }
     };
 

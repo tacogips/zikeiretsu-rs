@@ -1,4 +1,5 @@
 use crate::tsdb::datapoint::DatapointSearchCondition;
+use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::query::parser::*;
 
@@ -85,12 +86,20 @@ fn interpret_search_condition<'q>(
                 Some(to.to_timestamp_nano(&timezone)),
             )),
             DatetimeFilter::Equal(_, datetime_value) => {
-                let from = datetime_value
-                    .to_timestamp_nano(&timezone)
-                    .as_datetime_with_tz(&timezone);
+                let from_dt_nano = datetime_value.to_timestamp_nano(&timezone);
+                let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
+                let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
+                    DatetimeAccuracy::MicroSecond => Duration::microseconds(1),
+                    DatetimeAccuracy::MilliSecond => Duration::milliseconds(1),
+                    DatetimeAccuracy::Second => Duration::seconds(1),
+                    DatetimeAccuracy::Minute => Duration::minutes(1),
+                    DatetimeAccuracy::Hour => Duration::hours(1),
+                    DatetimeAccuracy::Day => Duration::days(1),
+                };
+
                 Ok(DatapointSearchCondition::new(
-                    Some(datetime_value),
-                    Some(to.to_timestamp_nano(&timezone)),
+                    Some(from_dt_nano),
+                    Some((from_dt + until_date_offset).into()),
                 ))
             }
         },

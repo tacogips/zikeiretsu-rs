@@ -1,7 +1,7 @@
 use super::timestamp_sec::TimestampSec;
 
 use chrono::prelude::*;
-use chrono::Duration;
+use chrono::{Duration, TimeZone};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;

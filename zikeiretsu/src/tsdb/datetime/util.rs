@@ -32,7 +32,8 @@ impl DatetimeAccuracy {
                 _ => DatetimeAccuracy::Second,
             }
         } else {
-            nano_sec.trailing_zeros()
+            // nano_sec.trailing_zeros()
+            unimplemented!()
         }
     }
 

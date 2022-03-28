@@ -3,6 +3,7 @@ mod eval;
 mod lexer;
 mod output;
 mod parser;
+mod query;
 
 use crate::EngineError;
 pub use context::*;

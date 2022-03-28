@@ -222,3 +222,30 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
     };
     Ok(Query::Metrics(query_context))
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::tsdb::datetime::*;
+    #[test]
+    fn lexer_datetime_1() {
+        let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
+        parse_datetime_str();
+        DatetimeFilterValue::DateString(dt, None);
+
+        //DatetimeFilter::from()
+        //pub fn from(
+        //    column_name: ColumnName<'q>,
+        //    ope: &'q str,
+        //    datetime_1: DatetimeFilterValue,
+        //    datetime_2: Option<DatetimeFilterValue>,
+        //) -> Result<DatetimeFilter<'q>> {
+
+        //    datetime_filter_to_condition()
+        //fn datetime_filter_to_condition<'q>(
+        //    timezone: &FixedOffset,
+        //    datetime_filter: &DatetimeFilter<'q>,
+        //) -> Result<DatapointSearchCondition> {
+        //
+    }
+}

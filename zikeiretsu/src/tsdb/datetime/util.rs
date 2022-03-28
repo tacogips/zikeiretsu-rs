@@ -1,4 +1,7 @@
-use chrono::{Date, DateTime, Duration, TimeZone, Timelike, Utc};
+use chrono::{
+    format as chrono_format, Date, DateTime, Duration, NaiveDateTime, NaiveTime, TimeZone,
+    Timelike, Utc,
+};
 
 pub fn today<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
     Utc::today().with_timezone(&tz)
@@ -53,4 +56,62 @@ impl DatetimeAccuracy {
     //    naive_local_datetime.hour();
     //    unimplemented!()
     //}
+}
+
+/// availabe formats
+/// 'yyyy-MM-DD hh:mm:ss.ZZZZZZ'
+/// 'yyyy-MM-DD hh:mm:ss'
+/// 'yyyy-MM-DD hh:mm'
+/// 'yyyy-MM-DD'
+pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
+    if datetime_str.len() < 2 {
+        return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
+    }
+    if !datetime_str.starts_with("'") || !datetime_str.ends_with("'") {
+        return Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()));
+    }
+
+    //strip single quotes
+    let datetime_str: &str = &datetime_str[1..][..datetime_str.len() - 2];
+    for (each_format, is_naive_date) in datetime_formats() {
+        let mut parsed = chrono_format::Parsed::new();
+
+        if let Ok(_) = chrono_format::parse(&mut parsed, datetime_str, each_format.clone()) {
+            if *is_naive_date {
+                let naive = parsed.to_naive_date()?;
+                let naive = NaiveDateTime::new(naive, NaiveTime::from_hms(0, 0, 0));
+                return Ok(DateTime::from_utc(naive, Utc));
+            } else {
+                let parsed = parsed.to_datetime_with_timezone(&Utc)?;
+
+                return Ok(parsed);
+            }
+        }
+    }
+
+    Err(QueryError::InvalidDatetimeFormat(datetime_str.to_string()))
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn parse_datetetime_test() {
+        let parse_result = parse_datetime_str("'2019-12-13 23:33:12'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13 23:33:12.023'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13 23:33'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2019-12-13");
+        assert!(parse_result.is_err());
+    }
 }

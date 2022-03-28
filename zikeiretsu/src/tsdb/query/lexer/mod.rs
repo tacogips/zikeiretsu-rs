@@ -63,8 +63,8 @@ fn interpret_search_condition<'q>(
 ) -> Result<DatapointSearchCondition> {
     match where_clause {
         None => Ok(DatapointSearchCondition::all()),
-        Some(where_clause) => match where_clause.datetime_filter {
-            DatetimeFilter::In(_, filter_value, DatetimeFilterValue) => DatapointSearchCondition,
+        Some(where_clause) => match &where_clause.datetime_filter {
+            DatetimeFilter::In(_, filter_value, DatetimeFilterValue) => unimplemented!(),
             DatetimeFilter::Gte(_, filter_value) => {
                 unimplemented!()
             }

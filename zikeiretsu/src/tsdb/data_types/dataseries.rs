@@ -12,7 +12,7 @@ impl DataSeries {
     }
 
     pub fn len(&self) -> usize {
-        self.value.len()
+        self.values.len()
     }
 
     pub fn merge(&mut self, other: &mut DataSeries) {

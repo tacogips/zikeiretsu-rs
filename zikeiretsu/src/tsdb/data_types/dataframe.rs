@@ -1,9 +1,9 @@
 use super::field::*;
 use super::{datapoint::DataPoint, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
-use crate::tsdb::util::trim_values;
+use crate::tsdb::util::{trim_values, VecOpeError};
+
 use std::cmp::Ordering;
-use std::convert::TryFrom;
 
 use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,9 @@ pub enum DataframeError {
 
     #[error("unsorted dataframe. {0}")]
     UnsortedDataframe(String),
+
+    #[error("vec ope error. {0}")]
+    VecOpeError(#[from] VecOpeError),
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -61,25 +64,30 @@ impl DataFrame {
         self.data_serieses.get_mut(field_idx)
     }
 
-    pub async fn search_ref<'a>(
-        &'a self,
-        cond: &DatapointSearchCondition,
-    ) -> Option<DataFrameRef<'a>> {
+    pub async fn search<'a>(&'a self, cond: &DatapointSearchCondition) -> Option<DataFrameRef<'a>> {
         self.search_with_indices(cond)
             .await
             .map(|(dataframes, _indices)| dataframes)
     }
 
-    pub async fn search<'a>(mut self, cond: &DatapointSearchCondition) -> Option<DataFrame> {
-        self.search_with_indices(cond).await.map(|(_, indices)| {
-            let (start, end) = indices;
-
-            trim_values(&mut self.timestamp_nanos, start, end + 1);
-
-            for each_series in self.data_serieses.iter_mut() {
-                each_series.cut(start, end + 1)
+    pub async fn retain<'a>(mut self, cond: &DatapointSearchCondition) -> Result<()> {
+        match self.search_with_indices(cond).await {
+            None => {
+                self.timestamp_nanos = vec![];
+                self.data_serieses = vec![];
+                Ok(())
             }
-        })
+            Some((_, indices)) => {
+                let (start, end) = indices;
+
+                trim_values(&mut self.timestamp_nanos, start, end + 1)?;
+
+                for each_series in self.data_serieses.iter_mut() {
+                    each_series.retain(start, end + 1)?;
+                }
+                Ok(())
+            }
+        }
     }
 
     pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
@@ -226,8 +234,17 @@ impl DataSeries {
         self.values.get(index)
     }
 
-    pub fn cut(&mut self, retain_start_index: usize, cut_off_surfix_start_idx: usize) {
-        trim_values(self.values, retain_start_index, cut_off_surfix_start_idx)
+    pub fn retain(
+        &mut self,
+        retain_start_index: usize,
+        cut_off_surfix_start_idx: usize,
+    ) -> Result<()> {
+        trim_values(
+            &mut self.values,
+            retain_start_index,
+            cut_off_surfix_start_idx,
+        );
+        Ok(())
     }
 }
 

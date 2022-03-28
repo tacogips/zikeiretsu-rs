@@ -316,6 +316,7 @@ fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
 #[cfg(test)]
 mod test {
 
+    use super::*;
     use crate::tsdb::*;
     macro_rules! float_data_points {
         ($({$timestamp:expr,$values:expr}),*) => {

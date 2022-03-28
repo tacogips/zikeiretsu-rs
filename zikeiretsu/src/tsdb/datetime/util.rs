@@ -5,5 +5,5 @@ pub fn today<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
 }
 
 pub fn yesterday<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
-    Utc::today().with_timezone(&tz) - Duration::day(1)
+    Utc::today().with_timezone(&tz) - Duration::days(1)
 }

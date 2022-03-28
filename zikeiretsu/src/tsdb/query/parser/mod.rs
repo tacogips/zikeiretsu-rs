@@ -17,7 +17,7 @@ use thiserror::Error;
 pub struct QueryGrammer {}
 
 #[derive(Debug, PartialEq)]
-pub struct ColumnName<'q>(&'q str);
+pub struct ColumnName<'q>(pub &'q str);
 impl<'q> ColumnName<'q> {
     pub fn as_str(&self) -> &'q str {
         self.0

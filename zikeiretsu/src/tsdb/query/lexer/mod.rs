@@ -227,11 +227,31 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
 mod test {
     use super::*;
     use crate::tsdb::datetime::*;
+
+    fn jst() -> FixedOffset {
+        FixedOffset::east(9 * 3600)
+    }
     #[test]
-    fn lexer_datetime_1() {
-        let dt = DateTime::parse_from_rfc3339("2021-09-27T09:45:01.1749178Z").unwrap();
-        parse_datetime_str();
-        DatetimeFilterValue::DateString(dt, None);
+    fn lexer_datetime_eq_1() {
+        let dt = parse_datetime_str("'2021-09-27'").unwrap();
+        let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
+        let col = "ts";
+        let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
+        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+
+        assert_eq!(
+            DatapointSearchCondition::new(Some(dt.into()), Some((dt + Duration::days(1)).into()),),
+            filter_cond
+        );
+
+        //pub enum DatetimeFilter<'q> {
+        //    In(ColumnName<'q>, DatetimeFilterValue, DatetimeFilterValue),
+        //    Gte(ColumnName<'q>, DatetimeFilterValue),
+        //    Gt(ColumnName<'q>, DatetimeFilterValue),
+        //    Lte(ColumnName<'q>, DatetimeFilterValue),
+        //    Lt(ColumnName<'q>, DatetimeFilterValue),
+        //    Equal(ColumnName<'q>, DatetimeFilterValue),
+        //}
 
         //DatetimeFilter::from()
         //pub fn from(

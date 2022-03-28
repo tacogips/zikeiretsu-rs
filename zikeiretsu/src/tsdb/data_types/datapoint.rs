@@ -72,7 +72,7 @@ impl DataPoint {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DatapointSearchCondition {
     pub inner_since_eq: Option<TimestampNano>,
     pub inner_until_neq: Option<TimestampNano>,

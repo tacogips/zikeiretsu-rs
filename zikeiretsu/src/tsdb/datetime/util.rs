@@ -91,7 +91,7 @@ pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, N
         .as_slice()
 }
 
-/// availabe formats
+/// avilable formats (the surronding single quotes are needed)
 /// 'yyyy-MM-DD hh:mm:ss.ZZZZZZ'
 /// 'yyyy-MM-DD hh:mm:ss'
 /// 'yyyy-MM-DD hh:mm'

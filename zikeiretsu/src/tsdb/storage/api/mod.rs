@@ -6,7 +6,7 @@ use crate::tsdb::cloudstorage::*;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::{block, block_list, persisted_error};
 use crate::tsdb::timestamp_nano::TimestampNano;
-use crate::tsdb::util::VecOpeError;
+use crate::tsdb::DataframeError;
 pub use cloud_setting::*;
 
 use std::path::{Path, PathBuf};
@@ -95,8 +95,8 @@ pub enum StorageApiError {
     #[error("invalid metrics name. {0}")]
     InvalidMetricsName(String),
 
-    #[error("vec ope error. {0}")]
-    VecOpeError(#[from] VecOpeError),
+    #[error("data frame error. {0}")]
+    DataframeError(#[from] DataframeError),
 }
 
 pub(crate) fn lockfile_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {

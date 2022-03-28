@@ -93,12 +93,16 @@ impl DatetimeFilterValue {
             }
 
             Self::Function(build_func, delta) => {
-                let micro_sec_delta = delta.map(|delta| delta.as_micro_second()).unwrap_or(0);
-                let timestamp_nano = match build_func {
+                let micro_sec_delta = delta
+                    .as_ref()
+                    .map(|delta| delta.as_micro_second())
+                    .unwrap_or(0);
+                let timestamp_nano: TimestampNano = match build_func {
                     BuildinDatetimeFunction::Today => today(*offset).into(),
                     BuildinDatetimeFunction::Yesterday => yesterday(*offset).into(),
                     BuildinDatetimeFunction::Tomorrow => tomorrow(*offset).into(),
                 };
+                timestamp_nano + Duration::microseconds(micro_sec_delta)
             }
         }
     }

@@ -1,4 +1,5 @@
 mod from;
+mod select;
 mod r#where;
 mod with;
 
@@ -49,57 +50,6 @@ pub struct QueryContext {
     pub timezone: FixedOffset,
 }
 
-fn interpret_field_selector<'q>(
-    column_index_map: Option<&HashMap<&'q str, usize>>,
-    select: Option<&SelectClause<'q>>,
-) -> Result<Option<Vec<usize>>> {
-    // select columns
-    match select {
-        None => return Err(LexerError::NoSelect),
-        Some(select) => {
-            if select
-                .select_columns
-                .iter()
-                .find(|each| *each == &Column::Asterick)
-                .is_some()
-            {
-                Ok(None)
-            } else {
-                let mut field_selectors = Vec::<usize>::new();
-                match column_index_map {
-                    None => {
-                        return Err(LexerError::NoColumnDef(format!(
-                            "columns :{}",
-                            select
-                                .select_columns
-                                .iter()
-                                .map(|e| e.to_string())
-                                .collect::<Vec<String>>()
-                                .join(",")
-                        )))
-                    }
-                    Some(column_index_map) => {
-                        for column in select.select_columns.iter() {
-                            if let Column::ColumnName(column_name) = column {
-                                match column_index_map.get(column_name.as_str()) {
-                                    Some(column_idx) => field_selectors.push(*column_idx),
-                                    None => {
-                                        return Err(LexerError::NoColumnDef(format!(
-                                            "{}",
-                                            column_name.as_str()
-                                        )))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                Ok(Some(field_selectors))
-            }
-        }
-    }
-}
-
 pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => match buildin_metrics {
@@ -111,8 +61,10 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
     let with = with::interpret_with(parsed_query.with)?;
 
     // select columns
-    let field_selectors =
-        interpret_field_selector(with.column_index_map.as_ref(), parsed_query.select.as_ref())?;
+    let field_selectors = select::interpret_field_selector(
+        with.column_index_map.as_ref(),
+        parsed_query.select.as_ref(),
+    )?;
     let search_condition =
         r#where::interpret_search_condition(&with.timezone, parsed_query.r#where.as_ref())?;
 

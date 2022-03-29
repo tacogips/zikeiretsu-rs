@@ -50,7 +50,7 @@ pub enum BuildinMetrics {
 }
 
 impl BuildinMetrics {
-    fn search(metrics: &str) -> Option<Self> {
+    fn from(metrics: &str) -> Option<Self> {
         match metrics {
             ".metrics" => Some(Self::ListMetrics),
             _ => None,
@@ -115,7 +115,7 @@ fn datetime_filter_to_condition<'q>(
 }
 
 fn interpret_field_selector<'q>(
-    column_index_map: Option<HashMap<&'q str, usize>>,
+    column_index_map: Option<&HashMap<&'q str, usize>>,
     select: Option<&SelectClause<'q>>,
 ) -> Result<Option<Vec<usize>>> {
     // select columns
@@ -165,26 +165,33 @@ fn interpret_field_selector<'q>(
     }
 }
 
-pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
-    let metrics = match parsed_query.from {
-        None => return Err(LexerError::NoFrom),
-        Some(from) => match BuildinMetrics::search(&from.from) {
-            Some(build_in_query) => match build_in_query {
-                BuildinMetrics::ListMetrics => return Ok(Query::ListMetrics),
-            },
-            None => Metrics::new(from.from.to_string())
-                .map_err(|err_msg| LexerError::InvalidMetrics(err_msg))?,
-        },
-    };
+struct With<'q> {
+    timezone: FixedOffset,
+    output_format: OutputFormat,
+    column_index_map: Option<HashMap<&'q str, usize>>,
+}
 
-    let mut timezone: FixedOffset = FixedOffset::west(0);
-    let mut output_format: OutputFormat = OutputFormat::Table;
-    let mut column_index_map: Option<HashMap<&'q str, usize>> = None;
+impl<'q> Default for With<'q> {
+    fn default() -> Self {
+        let mut timezone: FixedOffset = FixedOffset::west(0);
+        let mut output_format: OutputFormat = OutputFormat::Table;
+        let mut column_index_map: Option<HashMap<&'q str, usize>> = None;
+
+        Self {
+            timezone,
+            output_format,
+            column_index_map,
+        }
+    }
+}
+
+fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> Result<With<'q>> {
+    let mut with = With::default();
 
     // with
-    if let Some(with) = parsed_query.with {
+    if let Some(with_clause) = with_clause {
         // def columns
-        if let Some(def_columns) = with.def_columns {
+        if let Some(def_columns) = with_clause.def_columns {
             let mut column_index = HashMap::new();
             for (idx, column) in def_columns.iter().enumerate() {
                 match column {
@@ -196,29 +203,47 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
                     }
                 }
             }
-            column_index_map = Some(column_index)
+            with.column_index_map = Some(column_index)
         }
         // time zone
-        if let Some(tz) = with.def_timezone {
-            timezone = tz
+        if let Some(tz) = with_clause.def_timezone {
+            with.timezone = tz
         }
 
         // output format
-        if let Some(output) = with.def_output {
-            output_format = output
+        if let Some(output) = with_clause.def_output {
+            with.output_format = output
         }
     }
+    Ok(with)
+}
+
+pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
+    let metrics = match parsed_query.from {
+        None => return Err(LexerError::NoFrom),
+        Some(metrics) => match BuildinMetrics::from(&metrics.from) {
+            Some(build_in_query) => match build_in_query {
+                BuildinMetrics::ListMetrics => return Ok(Query::ListMetrics),
+            },
+            None => Metrics::new(metrics.from.to_string())
+                .map_err(|err_msg| LexerError::InvalidMetrics(err_msg))?,
+        },
+    };
+
+    let with = interpret_with(parsed_query.with)?;
 
     // select columns
-    let field_selectors = interpret_field_selector(column_index_map, parsed_query.select.as_ref())?;
-    let search_condition = interpret_search_condition(&timezone, parsed_query.r#where.as_ref())?;
+    let field_selectors =
+        interpret_field_selector(with.column_index_map.as_ref(), parsed_query.select.as_ref())?;
+    let search_condition =
+        interpret_search_condition(&with.timezone, parsed_query.r#where.as_ref())?;
 
     let query_context = QueryContext {
         metrics,
         field_selectors,
         search_condition,
-        output_format,
-        timezone,
+        output_format: with.output_format,
+        timezone: with.timezone,
     };
     Ok(Query::Metrics(query_context))
 }
@@ -240,15 +265,67 @@ mod test {
         let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
         let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
 
+        let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
         assert_eq!(
-            DatapointSearchCondition::new(Some(dt.into()), Some((dt + Duration::days(1)).into()),),
+            DatapointSearchCondition::new(
+                Some(expected_from),
+                Some((expected_from + Duration::days(1)).into()),
+            ),
             filter_cond
         );
     }
 
     #[test]
     fn lexer_datetime_eq_2() {
-        //TODO add test
-        assert!(false)
+        let dt = parse_datetime_str("'2021-09-27 23:00'").unwrap();
+        let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
+        let col = "ts";
+        let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
+        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+
+        let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
+        assert_eq!(
+            DatapointSearchCondition::new(
+                Some(expected_from),
+                Some((expected_from + Duration::hours(1)).into()),
+            ),
+            filter_cond
+        );
+    }
+
+    #[test]
+    fn lexer_datetime_eq_3() {
+        let dt = parse_datetime_str("'2021-09-27 23:10'").unwrap();
+        let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
+        let col = "ts";
+        let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
+        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+
+        let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
+        assert_eq!(
+            DatapointSearchCondition::new(
+                Some(expected_from),
+                Some((expected_from + Duration::minutes(1)).into()),
+            ),
+            filter_cond
+        );
+    }
+
+    #[test]
+    fn lexer_datetime_eq_4() {
+        let dt = parse_datetime_str("'2021-09-27 23:00:01'").unwrap();
+        let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
+        let col = "ts";
+        let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
+        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+
+        let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
+        assert_eq!(
+            DatapointSearchCondition::new(
+                Some(expected_from),
+                Some((expected_from + Duration::seconds(1)).into()),
+            ),
+            filter_cond
+        );
     }
 }

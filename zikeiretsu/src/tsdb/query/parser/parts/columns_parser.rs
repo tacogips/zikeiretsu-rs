@@ -60,3 +60,23 @@ fn validate_column_name(column_name: &str) -> Result<()> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_columns_1() {
+        let query = r"c1,c2, c3";
+        let mut pairs = QueryGrammer::parse(Rule::COLUMNS, query).unwrap();
+        let result = parse(pairs.next().unwrap(), false).unwrap();
+        assert_eq!(
+            result,
+            vec![
+                Column::ColumnName(ColumnName("c1")),
+                Column::ColumnName(ColumnName("c2")),
+                Column::ColumnName(ColumnName("c3"))
+            ]
+        );
+    }
+}

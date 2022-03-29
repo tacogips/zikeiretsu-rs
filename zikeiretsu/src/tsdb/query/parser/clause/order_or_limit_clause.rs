@@ -16,7 +16,7 @@ pub enum Order<'q> {
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::ORDER_OR_LIMIT_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::ORDER_OR_LIMIT_CLAUSE),
             format!("{:?}", pair.as_rule()),
         ));
@@ -31,7 +31,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
             }
 
             r => {
-                return Err(QueryError::InvalidGrammer(format!(
+                return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in build in datetime delta : {r:?}"
                 )));
             }
@@ -45,7 +45,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
 pub fn parse_order<'q>(pair: Pair<'q, Rule>) -> Result<Order<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::ORDER_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::ORDER_CLAUSE),
             format!("{:?}", pair.as_rule()),
         ));
@@ -63,7 +63,7 @@ pub fn parse_order<'q>(pair: Pair<'q, Rule>) -> Result<Order<'q>> {
 
     match column_name {
         None => {
-            return Err(QueryError::InvalidGrammer(format!(
+            return Err(ParserError::InvalidGrammer(format!(
                 "no column name which order by "
             )))
         }

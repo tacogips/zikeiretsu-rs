@@ -13,8 +13,18 @@ use crate::EngineError;
 pub use context::*;
 use thiserror::Error;
 
+pub type Result<T> = std::result::Result<T, QueryError>;
 #[derive(Error, Debug)]
 pub enum QueryError {
     #[error("engine error :{0}")]
     EngineError(#[from] EngineError),
+
+    #[error("engine error :{0}")]
+    ParserError(#[from] ParserError),
+}
+
+pub async fn execute(ctx: &QueryContext, query_str: &str) -> Result<()> {
+    parse_query(query_str)?;
+    //TODO(tacogips) imple
+    Ok(())
 }

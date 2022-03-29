@@ -11,7 +11,7 @@ pub struct WhereClause<'q> {
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::WHERE_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::WHERE_CLAUSE),
             format!("{:?}", pair.as_rule()),
         ));
@@ -37,7 +37,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
     }
 
     match datetime_filter {
-        None => Err(QueryError::NoDatetimeFilter),
+        None => Err(ParserError::NoDatetimeFilter),
         Some(datetime_filter) => Ok(WhereClause { datetime_filter }),
     }
 }

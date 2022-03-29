@@ -5,7 +5,7 @@ use pest::{iterators::Pair, ParserState};
 
 pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::TIMEZONE_OFFSET_VAL {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::TIMEZONE_OFFSET_VAL),
             format!("{:?}", pair.as_rule()),
         ));
@@ -20,7 +20,7 @@ fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
     let is_nagative = match parsing_offset.first() {
         Some(b'+') => false,
         Some(b'-') => true,
-        _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
+        _ => return Err(ParserError::InvalidTimeOffset(offfset_str.to_string())),
     };
     let sec = time_sec_from_clock_str(&offfset_str[1..])?;
 

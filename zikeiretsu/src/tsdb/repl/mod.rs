@@ -38,7 +38,3 @@ pub fn start(ctx: &QueryContext) -> Result<()> {
         }
     }
 }
-
-fn execute(ctx: &QueryContext, query_str: &str) {
-    parse_query(query_str);
-}

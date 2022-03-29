@@ -14,7 +14,7 @@ impl Deref for DeltaInMicroSeconds {
 
 pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeconds> {
     if pair.as_rule() != Rule::DURATION_DELTA {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::DURATION_DELTA),
             format!("{:?}", pair.as_rule()),
         ));
@@ -33,7 +33,7 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
             Rule::DURATION_UNIT => duration_unit = Some(parse_duration(each_delta_elem)?),
 
             r => {
-                return Err(QueryError::InvalidGrammer(format!(
+                return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in build in datetime delta : {r:?}"
                 )));
             }
@@ -56,7 +56,7 @@ pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeco
             let micro_sec = duration_unit.convert_in_micro_sec(duration_num as i64 * sign);
             Ok(DeltaInMicroSeconds(micro_sec))
         }
-        (pos_neg, duration_num, duration_unit) => Err(QueryError::InvalidGrammer(format!(
+        (pos_neg, duration_num, duration_unit) => Err(ParserError::InvalidGrammer(format!(
             "invalid duration: {pos_neg:?}, {duration_num:?}, {duration_unit:?}"
         ))),
     }
@@ -91,7 +91,7 @@ impl DurationUnit {
 
 pub fn parse_duration<'q>(pair: Pair<'q, Rule>) -> Result<DurationUnit> {
     if pair.as_rule() != Rule::DURATION_UNIT {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::DURATION_UNIT),
             format!("{:?}", pair.as_rule()),
         ));
@@ -99,7 +99,7 @@ pub fn parse_duration<'q>(pair: Pair<'q, Rule>) -> Result<DurationUnit> {
     let duration_unit = pair.into_inner().next();
     match duration_unit {
         None => {
-            return Err(QueryError::InvalidGrammer(format!(
+            return Err(ParserError::InvalidGrammer(format!(
                 "invalid empty duration unit "
             )))
         }
@@ -113,7 +113,7 @@ pub fn parse_duration<'q>(pair: Pair<'q, Rule>) -> Result<DurationUnit> {
             Rule::KW_MONTH => Ok(DurationUnit::Month),
             Rule::KW_YEAR => Ok(DurationUnit::Year),
             r => {
-                return Err(QueryError::InvalidGrammer(format!(
+                return Err(ParserError::InvalidGrammer(format!(
                     "invalid duration unit: {r:?}"
                 )));
             }

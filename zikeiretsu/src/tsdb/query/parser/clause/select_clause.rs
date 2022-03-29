@@ -10,7 +10,7 @@ pub struct SelectClause<'q> {
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::SELECT_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::SELECT_CLAUSE),
             format!("{:?}", pair.as_rule()),
         ));
@@ -30,8 +30,8 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
 
     // if it might be a bug if the result could not pass validation below.
     match select_columns {
-        Some(cols) if cols.is_empty() => Err(QueryError::EmptyColumns("select clause".to_string())),
-        None => Err(QueryError::EmptyColumns("select clause".to_string())),
+        Some(cols) if cols.is_empty() => Err(ParserError::EmptyColumns("select clause".to_string())),
+        None => Err(ParserError::EmptyColumns("select clause".to_string())),
         Some(select_columns) => Ok(SelectClause { select_columns }),
     }
 }

@@ -39,7 +39,7 @@ impl<'q> fmt::Display for Column<'q> {
 }
 
 #[derive(Error, Debug)]
-pub enum QueryError {
+pub enum ParserError {
     #[error("{0}")]
     PestError(#[from] PestError<Rule>),
 
@@ -80,7 +80,7 @@ pub enum QueryError {
     InvalidDatetimeFilterOperator(String),
 }
 
-pub type Result<T> = std::result::Result<T, QueryError>;
+pub type Result<T> = std::result::Result<T, ParserError>;
 
 #[derive(Debug)]
 pub struct ParsedQuery<'q> {
@@ -145,7 +145,7 @@ pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
                 );
                 log::error!("{} ", msg);
 
-                return Err(QueryError::InvalidGrammer(msg));
+                return Err(ParserError::InvalidGrammer(msg));
             }
         }
     }

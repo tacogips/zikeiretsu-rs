@@ -20,7 +20,7 @@ pub struct WithClause<'q> {
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::WITH_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::WITH_CLAUSE),
             format!("{:?}", pair.as_rule()),
         ));
@@ -87,7 +87,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                         }
 
                         _ => {
-                            return Err(QueryError::InvalidGrammer(format!(
+                            return Err(ParserError::InvalidGrammer(format!(
                                 "invalid defines in with clause:{}",
                                 each_define
                             )))

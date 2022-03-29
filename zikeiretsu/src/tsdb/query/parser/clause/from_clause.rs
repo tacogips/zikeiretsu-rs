@@ -10,7 +10,7 @@ pub struct FromClause<'q> {
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<FromClause<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::FROM_CLAUSE {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::FROM_CLAUSE),
             format!("{:?}", pair.as_rule()),
         ));
@@ -26,7 +26,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<FromClause<'q>> {
 
     // if it might be a bug if the result could not pass validation below.
     match from {
-        None => Err(QueryError::EmptyColumns("select clause".to_string())),
+        None => Err(ParserError::EmptyColumns("select clause".to_string())),
         Some(from) => {
             let from_clause = FromClause { from };
             Ok(from_clause)

@@ -7,7 +7,7 @@ use pest::iterators::Pair;
 
 pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::CLOCK_DELTA {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::CLOCK_DELTA),
             format!("{:?}", pair.as_rule()),
         ));
@@ -22,7 +22,7 @@ fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
     let is_nagative = match parsing_offset.first() {
         Some(b'+') => false,
         Some(b'-') => true,
-        _ => return Err(QueryError::InvalidTimeOffset(clock_delta_str.to_string())),
+        _ => return Err(ParserError::InvalidTimeOffset(clock_delta_str.to_string())),
     };
 
     let mut white_space_count = 0;
@@ -47,7 +47,7 @@ pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
     let mut parsing_offset: &[u8] = &clock_str.as_bytes();
     //parse hours
     let hour_num = if parsing_offset.is_empty() {
-        return Err(QueryError::InvalidTimeOffset(clock_str.to_string()));
+        return Err(ParserError::InvalidTimeOffset(clock_str.to_string()));
     } else if parsing_offset.len() > 2 {
         match (parsing_offset[0], parsing_offset[1]) {
             (hour_10 @ b'0'..=b'9', hour_1 @ b'0'..=b'9') => {
@@ -59,7 +59,7 @@ pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
                 parsing_offset = &parsing_offset[1..];
                 i32::from(hour - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(clock_str.to_string())),
+            _ => return Err(ParserError::InvalidTimeOffset(clock_str.to_string())),
         }
     } else {
         match parsing_offset[0] {
@@ -67,7 +67,7 @@ pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
                 parsing_offset = &parsing_offset[1..];
                 i32::from(hour - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(clock_str.to_string())),
+            _ => return Err(ParserError::InvalidTimeOffset(clock_str.to_string())),
         }
     };
 
@@ -75,14 +75,14 @@ pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
     let minute_num = if let Some(&b':') = &parsing_offset.first() {
         parsing_offset = &parsing_offset[1..];
         if parsing_offset.len() < 2 {
-            return Err(QueryError::InvalidTimeOffset(clock_str.to_string()));
+            return Err(ParserError::InvalidTimeOffset(clock_str.to_string()));
         }
         match (parsing_offset[0], parsing_offset[1]) {
             (minute_10 @ b'0'..=b'5', minute_1 @ b'0'..=b'9') => {
                 parsing_offset = &parsing_offset[2..];
                 i32::from(minute_10 - b'0') * 10 + i32::from(minute_1 - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(clock_str.to_string())),
+            _ => return Err(ParserError::InvalidTimeOffset(clock_str.to_string())),
         }
     } else {
         0
@@ -93,20 +93,20 @@ pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
         parsing_offset = &parsing_offset[1..];
 
         if parsing_offset.len() < 2 {
-            return Err(QueryError::InvalidTimeOffset(clock_str.to_string()));
+            return Err(ParserError::InvalidTimeOffset(clock_str.to_string()));
         }
         match (parsing_offset[0], parsing_offset[1]) {
             (secs_10 @ b'0'..=b'5', secs_1 @ b'0'..=b'9') => {
                 parsing_offset = &parsing_offset[2..];
                 i32::from(secs_10 - b'0') * 10 + i32::from(secs_1 - b'0')
             }
-            _ => return Err(QueryError::InvalidTimeOffset(clock_str.to_string())),
+            _ => return Err(ParserError::InvalidTimeOffset(clock_str.to_string())),
         }
     } else {
         0
     };
     if !parsing_offset.is_empty() {
-        return Err(QueryError::InvalidTimeOffset(clock_str.to_string()));
+        return Err(ParserError::InvalidTimeOffset(clock_str.to_string()));
     }
 
     Ok(hour_num * 3600 + minute_num * 60 + sec_num)

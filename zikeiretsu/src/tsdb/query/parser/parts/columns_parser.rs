@@ -7,7 +7,7 @@ use crate::tsdb::query::parser::*;
 pub fn parse<'q>(pair: Pair<'q, Rule>, allow_asterisk: bool) -> Result<Vec<Column<'q>>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::COLUMNS {
-        return Err(QueryError::UnexpectedPair(
+        return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::COLUMNS),
             format!("{:?}", pair.as_rule()),
         ));
@@ -21,7 +21,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>, allow_asterisk: bool) -> Result<Vec<Colum
                 if allow_asterisk {
                     columns.push(Column::Asterick)
                 } else {
-                    return Err(QueryError::InvalidColumnName(column_str.to_string()));
+                    return Err(ParserError::InvalidColumnName(column_str.to_string()));
                 }
             } else {
                 columns.push(Column::ColumnName(ColumnName(
@@ -56,7 +56,7 @@ pub fn invalid_colum_names() -> &'static HashSet<&'static str> {
 
 fn validate_column_name(column_name: &str) -> Result<()> {
     if invalid_colum_names().contains(column_name.to_uppercase().as_str()) {
-        return Err(QueryError::InvalidColumnName(column_name.to_string()));
+        return Err(ParserError::InvalidColumnName(column_name.to_string()));
     }
     Ok(())
 }

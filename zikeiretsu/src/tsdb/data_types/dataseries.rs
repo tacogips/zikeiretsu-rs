@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub enum SeriesValues {
+    Vacant(usize),
     Float64(Vec<f64>),
     Bool(Vec<bool>),
 }
@@ -14,6 +15,7 @@ impl SeriesValues {
         match self {
             Self::Float64(vs) => vs.len(),
             Self::Bool(vs) => vs.len(),
+            Self::Vacant(len) => len,
         }
     }
 
@@ -21,6 +23,7 @@ impl SeriesValues {
         match self {
             Self::Float64(vs) => vs.is_empty(),
             Self::Bool(vs) => vs.is_empty(),
+            Self::Vacant(len) => len == 0,
         }
     }
 }
@@ -29,6 +32,7 @@ impl std::fmt::Display for SeriesValues {
         let s = match self {
             Self::Float64(vs) => "[f64]",
             Self::Bool(vs) => "[bool]",
+            Self::Vacant => "[vacant]",
         };
 
         write!(f, "{}", s)
@@ -67,6 +71,8 @@ impl DataSeries {
                     invalid.to_string(),
                 )),
             },
+
+            SeriesValues::Vacant_ => { /* do nothing */ }
         }
     }
 
@@ -82,6 +88,7 @@ impl DataSeries {
         match self.values {
             SeriesValues::Float64(vs) => vs.get(index).map(|v| &FieldValue::Float64(*v)),
             SeriesValues::Bool(vs) => vs.get(index).map(|v| &FieldValue::Bool(*v)),
+            _ => None,
         }
     }
 
@@ -98,6 +105,8 @@ impl DataSeries {
             SeriesValues::Bool(vs) => {
                 trim_values(&mut vs, retain_start_index, cut_off_suffix_start_idx)?
             }
+
+            _ => { /* do nothing */ }
         }
 
         Ok(())

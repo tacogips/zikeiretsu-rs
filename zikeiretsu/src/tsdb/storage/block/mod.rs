@@ -176,7 +176,7 @@ pub fn read_from_block_file<P: AsRef<Path>>(
             .map(&block_file)
             .map_err(|e| BlockError::file_error(e, path))?
     };
-    read::read_from_block_with_specific_fieds(&block_data, field_selectors)
+    read::read_from_block_with_specific_fields(&block_data, field_selectors)
 }
 
 pub fn write_to_block_file<P: AsRef<Path>>(path: P, datapoints: &[DataPoint]) -> Result<()> {

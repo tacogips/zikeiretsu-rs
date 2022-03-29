@@ -5,10 +5,10 @@ use bits_ope::*;
 use std::collections::HashMap;
 
 pub(crate) fn read_from_block(block_data: &[u8]) -> Result<DataFrame> {
-    read_from_block_with_specific_fieds(block_data, None)
+    read_from_block_with_specific_fields(block_data, None)
 }
 
-pub(crate) fn read_from_block_with_specific_fieds(
+pub(crate) fn read_from_block_with_specific_fields(
     block_data: &[u8],
     field_selectors: Option<&[usize]>,
 ) -> Result<DataFrame> {
@@ -144,9 +144,9 @@ pub(crate) fn read_from_block_with_specific_fieds(
     } else {
         field_selectors_map.len()
     };
-    let mut block_field_values = Vec::<Vec<FieldValue>>::with_capacity(data_field_size);
+    let mut block_field_values = Vec::<SeriesValues>::with_capacity(data_field_size);
     for _ in 0..data_field_size {
-        block_field_values.push(vec![]);
+        block_field_values.push(SeriesValues::Vacant(number_of_datapoints));
     }
 
     let is_field_to_select = |idx: usize| {
@@ -171,10 +171,7 @@ pub(crate) fn read_from_block_with_specific_fieds(
                 if let Some(data_series_idx) = is_field_to_select(field_idx) {
                     let _ = std::mem::replace(
                         &mut block_field_values[data_series_idx],
-                        float_values
-                            .into_iter()
-                            .map(|v| FieldValue::Float64(v))
-                            .collect(),
+                        SeriesValues::Float64(float_values),
                     );
                 }
             }
@@ -191,10 +188,7 @@ pub(crate) fn read_from_block_with_specific_fieds(
                 if let Some(data_series_idx) = is_field_to_select(field_idx) {
                     let _ = std::mem::replace(
                         &mut block_field_values[data_series_idx],
-                        bool_values
-                            .into_iter()
-                            .map(|v| FieldValue::Bool(v))
-                            .collect(),
+                        SeriesValues::Bool(bool_values),
                     );
                 }
             }

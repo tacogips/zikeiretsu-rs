@@ -249,13 +249,16 @@ mod test {
     macro_rules! dataframe {
         ($ts:expr) => {{
             let mut timestamp_nanos = Vec::<TimestampNano>::new();
-            let mut values = Vec::<FieldValue>::new();
+            let mut values = Vec::<f64>::new();
             for (ts, val) in $ts {
                 timestamp_nanos.push(TimestampNano::new(ts));
-                values.push(FieldValue::Float64(val as f64));
+                values.push(val as f64);
             }
 
-            DataFrame::new(timestamp_nanos, vec![DataSeries::new(values)])
+            DataFrame::new(
+                timestamp_nanos,
+                vec![DataSeries::new(SeriesValues::Float64(values))],
+            )
         }};
     }
 

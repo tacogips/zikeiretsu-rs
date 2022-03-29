@@ -1,5 +1,7 @@
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
+use std::convert::TryFrom;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub enum OutputFormat {
@@ -12,6 +14,7 @@ pub struct WithClause<'q> {
     pub def_columns: Option<Vec<Column<'q>>>,
     pub def_timezone: Option<FixedOffset>,
     pub def_output: Option<OutputFormat>,
+    pub def_output_file_path: Option<PathBuf>,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
@@ -27,6 +30,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
         def_columns: None,
         def_timezone: None,
         def_output: None,
+        def_output_file_path: None,
     };
     for each in pair.into_inner() {
         //TODO(tacogips) for debugging
@@ -69,6 +73,19 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                                 }
                             }
                         }
+
+                        Rule::DEFINE_OUTPUT_FILE => {
+                            for each_in_output_file in each_define.into_inner() {
+                                match each_in_output_file.as_rule() {
+                                    Rule::FILE_PATH => {
+                                        with_clause.def_output_file_path =
+                                            Some(PathBuf::from(each_in_output_file.as_str()));
+                                    }
+                                    _ => { /* do nothing */ }
+                                }
+                            }
+                        }
+
                         _ => {
                             return Err(QueryError::InvalidGrammer(format!(
                                 "invalid defines in with clause:{}",
@@ -105,6 +122,7 @@ mod test {
         );
         assert_eq!(result.def_timezone, None);
         assert_eq!(result.def_output, None);
+        assert_eq!(result.def_output_file_path, None);
     }
 
     #[test]
@@ -115,6 +133,8 @@ mod test {
         assert_eq!(result.def_columns, None);
         assert_eq!(result.def_timezone, Some(FixedOffset::east(9 * 3600)));
         assert_eq!(result.def_output, None);
+
+        assert_eq!(result.def_output_file_path, None);
     }
 
     #[test]
@@ -125,6 +145,7 @@ mod test {
         assert_eq!(result.def_columns, None);
         assert_eq!(result.def_timezone, Some(FixedOffset::east(-9 * 3600)));
         assert_eq!(result.def_output, None);
+        assert_eq!(result.def_output_file_path, None);
     }
 
     #[test]
@@ -135,5 +156,20 @@ mod test {
         assert_eq!(result.def_columns, None);
         assert_eq!(result.def_timezone, None);
         assert_eq!(result.def_output, Some(OutputFormat::Json));
+        assert_eq!(result.def_output_file_path, None);
+    }
+
+    #[test]
+    fn test_parse_with_5() {
+        let query = r"with output_file =   '/some/thing.json'          ";
+        let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
+        let result = parse(pairs.next().unwrap()).unwrap();
+        assert_eq!(result.def_columns, None);
+        assert_eq!(result.def_timezone, None);
+        assert_eq!(result.def_output, None);
+        assert_eq!(
+            result.def_output_file_path,
+            Some(PathBuf::from("/some/thing.json"))
+        );
     }
 }

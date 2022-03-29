@@ -75,6 +75,7 @@ mod test {
 
             def_timezone: None,
             def_output: None,
+            def_output_file_path: None,
         };
 
         let result = interpret_with(Some(with_clause)).unwrap();

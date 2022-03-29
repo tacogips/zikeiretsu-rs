@@ -1,7 +1,5 @@
 mod args;
 
-mod fetch_metrics;
-
 use ::zikeiretsu::*;
 use args::*;
 

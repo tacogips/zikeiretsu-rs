@@ -196,25 +196,3 @@ pub fn parse_args_or_exits() -> Result<Args> {
     args.set_to_env_var()?;
     Ok(args)
 }
-
-fn convert_opt_output_format_or_default(output_format: Option<&String>) -> Result<OutputFormat> {
-    match output_format {
-        Some(format) => {
-            let c = OutputFormat::from_str(format)?;
-            Ok(c)
-        }
-        None => Ok(OutputFormat::default()),
-    }
-}
-
-fn convert_opt_output_destination_or_default(
-    output_destination: Option<&String>,
-) -> Result<OutputDestination> {
-    match output_destination {
-        Some(format) => {
-            let c = OutputDestination::from_str(format)?;
-            Ok(c)
-        }
-        None => Ok(OutputDestination::default()),
-    }
-}

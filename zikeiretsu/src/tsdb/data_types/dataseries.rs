@@ -51,9 +51,9 @@ impl DataSeries {
 
     pub fn merge(&mut self, other: &mut DataSeries) -> DataframeResult<()> {
         match &mut self.values {
-            SeriesValues::Float64(vs) => match other.values {
+            SeriesValues::Float64(vs) => match &mut other.values {
                 SeriesValues::Float64(other_vals) => {
-                    vs.append(&mut other_vals);
+                    vs.append(other_vals);
                     Ok(())
                 }
                 invalid => Err(DataframeError::UnmatchedSeriesTypeError(
@@ -61,9 +61,9 @@ impl DataSeries {
                     invalid.to_string(),
                 )),
             },
-            SeriesValues::Bool(vs) => match other.values {
+            SeriesValues::Bool(vs) => match &mut other.values {
                 SeriesValues::Bool(other_vals) => {
-                    vs.append(&mut other_vals);
+                    vs.append(other_vals);
                     Ok(())
                 }
                 invalid => Err(DataframeError::UnmatchedSeriesTypeError(
@@ -72,7 +72,7 @@ impl DataSeries {
                 )),
             },
 
-            SeriesValues::Vacant(_) => match other.values {
+            SeriesValues::Vacant(_) => match &other.values {
                 SeriesValues::Vacant(_) => Ok(()),
                 invalid => Err(DataframeError::UnmatchedSeriesTypeError(
                     self.values.to_string(),
@@ -90,10 +90,10 @@ impl DataSeries {
         self.values.is_empty()
     }
 
-    pub fn get(&self, index: usize) -> Option<&FieldValue> {
-        match self.values {
-            SeriesValues::Float64(vs) => vs.get(index).map(|v| &FieldValue::Float64(*v)),
-            SeriesValues::Bool(vs) => vs.get(index).map(|v| &FieldValue::Bool(*v)),
+    pub fn get(&self, index: usize) -> Option<FieldValue> {
+        match &self.values {
+            SeriesValues::Float64(vs) => vs.get(index).map(|v| FieldValue::Float64(*v)),
+            SeriesValues::Bool(vs) => vs.get(index).map(|v| FieldValue::Bool(*v)),
             _ => None,
         }
     }
@@ -103,13 +103,13 @@ impl DataSeries {
         retain_start_index: usize,
         cut_off_suffix_start_idx: usize,
     ) -> DataframeResult<()> {
-        match self.values {
+        match &mut self.values {
             SeriesValues::Float64(vs) => {
-                trim_values(&mut vs, retain_start_index, cut_off_suffix_start_idx)?
+                trim_values(vs, retain_start_index, cut_off_suffix_start_idx)?
             }
 
             SeriesValues::Bool(vs) => {
-                trim_values(&mut vs, retain_start_index, cut_off_suffix_start_idx)?
+                trim_values(vs, retain_start_index, cut_off_suffix_start_idx)?
             }
 
             _ => { /* do nothing */ }
@@ -119,11 +119,17 @@ impl DataSeries {
     }
 }
 
-//impl From<DataSeriesRef<'_>> for DataSeries {
-//    fn from(ds: DataSeriesRef<'_>) -> DataSeries {
-//        DataSeries::new(ds.values.into_iter().map(|e| e.clone()).collect())
-//    }
-//}
+impl From<DataSeriesRef<'_>> for DataSeries {
+    fn from(ds: DataSeriesRef<'_>) -> DataSeries {
+        let vs = match ds.values {
+            SeriesValuesRef::Float64(vs) => SeriesValues::Float64(vs.to_vec()),
+            SeriesValuesRef::Bool(vs) => SeriesValues::Bool(vs.to_vec()),
+            SeriesValuesRef::Vacant(len) => SeriesValues::Vacant(len),
+        };
+
+        DataSeries::new(vs)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum SeriesValuesRef<'a> {
@@ -142,10 +148,10 @@ impl<'a> DataSeriesRef<'a> {
         Self { values }
     }
 
-    pub fn get(&self, index: usize) -> Option<&FieldValue> {
-        match self.values {
-            SeriesValuesRef::Float64(vs) => vs.get(index).map(|v| &FieldValue::Float64(*v)),
-            SeriesValuesRef::Bool(vs) => vs.get(index).map(|v| &FieldValue::Bool(*v)),
+    pub fn get(&self, index: usize) -> Option<FieldValue> {
+        match &self.values {
+            SeriesValuesRef::Float64(vs) => vs.get(index).map(|v| FieldValue::Float64(*v)),
+            SeriesValuesRef::Bool(vs) => vs.get(index).map(|v| FieldValue::Bool(*v)),
             _ => None,
         }
     }

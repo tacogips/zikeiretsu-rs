@@ -193,14 +193,14 @@ impl DataFrame {
     }
 }
 
-//impl From<DataFrameRef<'_>> for DataFrame {
-//    fn from(df: DataFrameRef<'_>) -> DataFrame {
-//        DataFrame::new(
-//            df.timestamp_nanos.to_vec(),
-//            df.data_serieses.into_iter().map(|e| e.into()).collect(),
-//        )
-//    }
-//}
+impl From<DataFrameRef<'_>> for DataFrame {
+    fn from(df: DataFrameRef<'_>) -> DataFrame {
+        DataFrame::new(
+            df.timestamp_nanos.to_vec(),
+            df.data_serieses.into_iter().map(|e| e.into()).collect(),
+        )
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct DataFrameRef<'a> {

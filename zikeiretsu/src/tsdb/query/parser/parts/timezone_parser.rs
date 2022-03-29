@@ -23,6 +23,7 @@ fn timeoffset_sec_from_str(offfset_str: &str) -> Result<i32> {
         _ => return Err(QueryError::InvalidTimeOffset(offfset_str.to_string())),
     };
     let sec = time_sec_from_clock_str(&offfset_str[1..])?;
+
     if is_nagative {
         Ok(sec * -1)
     } else {

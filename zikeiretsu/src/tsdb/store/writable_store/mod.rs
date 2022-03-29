@@ -259,7 +259,7 @@ where
                         "clear writable store after persistence. indices:{indices:?}, datapoint len: {data_len}",
                         data_len = datapoints.len(),
                     );
-                    remove_range(all_datapoints, indices);
+                    remove_range(all_datapoints, indices)?;
                     self.shrink_to_fit_vec();
 
                     log::debug!(

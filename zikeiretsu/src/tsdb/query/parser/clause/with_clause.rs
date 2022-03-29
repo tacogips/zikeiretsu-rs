@@ -113,7 +113,7 @@ mod test {
         let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
-        assert_eq!(result.def_timezone, Some(FixedOffset::west(9 * 3600)));
+        assert_eq!(result.def_timezone, Some(FixedOffset::east(9 * 3600)));
         assert_eq!(result.def_output, None);
     }
 
@@ -123,7 +123,7 @@ mod test {
         let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
-        assert_eq!(result.def_timezone, Some(FixedOffset::west(-9 * 3600)));
+        assert_eq!(result.def_timezone, Some(FixedOffset::east(-9 * 3600)));
         assert_eq!(result.def_output, None);
     }
 

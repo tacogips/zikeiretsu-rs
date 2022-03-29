@@ -1,11 +1,12 @@
+mod from;
 mod with;
 
 use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::query::parser::*;
-
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
+use either::Either;
 use std::collections::HashMap;
 
 use crate::EngineError;
@@ -45,19 +46,6 @@ pub struct QueryContext {
     pub search_condition: DatapointSearchCondition,
     pub output_format: OutputFormat,
     pub timezone: FixedOffset,
-}
-
-pub enum BuildinMetrics {
-    ListMetrics,
-}
-
-impl BuildinMetrics {
-    fn from(metrics: &str) -> Option<Self> {
-        match metrics {
-            ".metrics" => Some(Self::ListMetrics),
-            _ => None,
-        }
-    }
 }
 
 fn interpret_search_condition<'q>(
@@ -168,15 +156,11 @@ fn interpret_field_selector<'q>(
 }
 
 pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
-    let metrics = match parsed_query.from {
-        None => return Err(LexerError::NoFrom),
-        Some(metrics) => match BuildinMetrics::from(&metrics.from) {
-            Some(build_in_query) => match build_in_query {
-                BuildinMetrics::ListMetrics => return Ok(Query::ListMetrics),
-            },
-            None => Metrics::new(metrics.from.to_string())
-                .map_err(|err_msg| LexerError::InvalidMetrics(err_msg))?,
+    let metrics = match from::parse_from(parsed_query.from.as_ref())? {
+        Either::Right(buildin_metrics) => match buildin_metrics {
+            from::BuildinMetrics::ListMetrics => return Ok(Query::ListMetrics),
         },
+        Either::Left(parsed_metrics) => parsed_metrics,
     };
 
     let with = with::interpret_with(parsed_query.with)?;

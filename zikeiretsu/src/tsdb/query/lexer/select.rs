@@ -1,15 +1,6 @@
 use super::{LexerError, Result as LexerResult};
-
-use crate::tsdb::datapoint::DatapointSearchCondition;
-use crate::tsdb::datetime::DatetimeAccuracy;
-use crate::tsdb::metrics::Metrics;
 use crate::tsdb::query::parser::*;
-use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
-use either::Either;
 use std::collections::HashMap;
-
-use crate::EngineError;
-use thiserror::Error;
 
 pub(crate) fn interpret_field_selector<'q>(
     column_index_map: Option<&HashMap<&'q str, usize>>,

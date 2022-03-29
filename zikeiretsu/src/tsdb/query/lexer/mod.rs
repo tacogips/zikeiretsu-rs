@@ -9,7 +9,6 @@ use crate::tsdb::metrics::Metrics;
 use crate::tsdb::query::parser::*;
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use either::Either;
-use std::collections::HashMap;
 
 use crate::EngineError;
 use thiserror::Error;

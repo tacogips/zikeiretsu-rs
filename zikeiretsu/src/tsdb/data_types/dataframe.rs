@@ -2,8 +2,8 @@ use super::field::*;
 use super::{datapoint::DataPoint, polars::zdata_frame_to_dataframe, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::{trim_values, VecOpeError};
-
-use polars::prelude::DataFrame as PDataFrame;
+use chrono::FixedOffset;
+use polars::prelude::{DataFrame as PDataFrame, PolarsError};
 
 use std::cmp::Ordering;
 
@@ -30,6 +30,9 @@ pub enum DataframeError {
 
     #[error("join error. {0}")]
     JoinError(#[from] JoinError),
+
+    #[error("polars error. {0}")]
+    PolarsError(#[from] PolarsError),
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -46,8 +49,12 @@ impl DataFrame {
         }
     }
 
-    pub async fn into_polars_dataframe(self, column_names: Option<&[&str]>) -> Result<PDataFrame> {
-        zdata_frame_to_dataframe(self, column_names).await
+    pub async fn into_polars_dataframe(
+        self,
+        column_names: Option<&[&str]>,
+        timezone: FixedOffset,
+    ) -> Result<PDataFrame> {
+        zdata_frame_to_dataframe(self, column_names, timezone).await
     }
 
     pub fn merge(&mut self, other: &mut DataFrame) -> Result<()> {
@@ -245,6 +252,14 @@ impl DataSeries {
 
     pub fn merge(&mut self, other: &mut DataSeries) {
         self.values.append(&mut other.values);
+    }
+
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
     }
 
     pub fn get(&self, index: usize) -> Option<&FieldValue> {

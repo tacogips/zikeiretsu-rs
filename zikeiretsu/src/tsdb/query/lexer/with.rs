@@ -1,10 +1,8 @@
 use super::{LexerError, Result as LexerResult};
 use crate::tsdb::query::parser::*;
 
-use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
+use chrono::{FixedOffset, TimeZone, Utc};
 use std::collections::HashMap;
-
-use crate::EngineError;
 
 pub(crate) struct With<'q> {
     pub timezone: FixedOffset,

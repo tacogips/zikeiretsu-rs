@@ -1,7 +1,7 @@
 use super::timestamp_sec::TimestampSec;
 
 use chrono::prelude::*;
-use chrono::{Duration, TimeZone};
+use chrono::{Duration, SecondsFormat, TimeZone};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
@@ -46,7 +46,19 @@ impl TimestampNano {
         DateTime::from_utc(ndt, Utc)
     }
 
+    pub fn as_formated_datetime<Tz: TimeZone>(&self, tz: &Tz) -> String
+    where
+        Tz::Offset: std::fmt::Display,
+    {
+        self.as_datetime_with_tz(tz)
+            .to_rfc3339_opts(SecondsFormat::Nanos, true)
+    }
+
     pub fn as_datetime_with_tz<Tz: TimeZone>(&self, tz: &Tz) -> DateTime<Tz> {
+        self.as_datetime().with_timezone(tz)
+    }
+
+    pub fn into_datetime_with_tz<Tz: TimeZone>(self, tz: &Tz) -> DateTime<Tz> {
         self.as_datetime().with_timezone(tz)
     }
 }

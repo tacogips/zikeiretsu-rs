@@ -1,3 +1,4 @@
+use super::dataseries::*;
 use super::field::*;
 use super::{datapoint::DataPoint, polars::zdata_frame_to_dataframe, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
@@ -30,6 +31,9 @@ pub enum DataframeError {
 
     #[error("join error. {0}")]
     JoinError(#[from] JoinError),
+
+    #[error("attempt to merge unmatched series type error. {0}, {1}")]
+    UnmatchedSeriesTypeError(String, String),
 
     #[error("polars error. {0}")]
     PolarsError(#[from] PolarsError),
@@ -131,17 +135,6 @@ impl DataFrame {
         Ok(result)
     }
 
-    //    TODO
-    //    async fn cut(&mut self,start_idx:usize,end_idex:usize){
-    //
-    //                    self.data_serieses
-    //                        .iter_mut()
-    //                        .map(|series| {
-    //                            DataSeriesRef::new(&series.values.as_slice()[start_idx..finish_idx + 1])
-    //                        })
-    //                        .collect(),
-    //    )
-    //
     pub async fn search_with_indices<'a>(
         &'a self,
         cond: &DatapointSearchCondition,
@@ -237,67 +230,6 @@ impl<'a> DataFrameRef<'a> {
         }
 
         Ok(result)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
-pub struct DataSeries {
-    pub values: Vec<FieldValue>,
-}
-
-impl DataSeries {
-    pub fn new(values: Vec<FieldValue>) -> Self {
-        Self { values }
-    }
-
-    pub fn merge(&mut self, other: &mut DataSeries) {
-        self.values.append(&mut other.values);
-    }
-
-    pub fn len(&self) -> usize {
-        self.values.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.values.is_empty()
-    }
-
-    pub fn get(&self, index: usize) -> Option<&FieldValue> {
-        self.values.get(index)
-    }
-
-    pub fn retain(
-        &mut self,
-        retain_start_index: usize,
-        cut_off_suffix_start_idx: usize,
-    ) -> Result<()> {
-        trim_values(
-            &mut self.values,
-            retain_start_index,
-            cut_off_suffix_start_idx,
-        );
-        Ok(())
-    }
-}
-
-impl From<DataSeriesRef<'_>> for DataSeries {
-    fn from(ds: DataSeriesRef<'_>) -> DataSeries {
-        DataSeries::new(ds.values.into_iter().map(|e| e.clone()).collect())
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub struct DataSeriesRef<'a> {
-    pub values: &'a [FieldValue],
-}
-
-impl<'a> DataSeriesRef<'a> {
-    pub fn new(values: &'a [FieldValue]) -> Self {
-        Self { values }
-    }
-
-    pub fn get(&self, index: usize) -> Option<&FieldValue> {
-        self.values.get(index)
     }
 }
 

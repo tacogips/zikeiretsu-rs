@@ -65,7 +65,7 @@ impl DataFrame {
         self.timestamp_nanos.append(&mut other.timestamp_nanos);
         for (idx, data_series) in self.data_serieses.iter_mut().enumerate() {
             match other.get_series_mut(idx) {
-                Some(other_series) => data_series.merge(other_series),
+                Some(other_series) => data_series.merge(other_series)?,
                 None => return Err(DataframeError::DataSeriesIndexOutOfBound(idx, 0)),
             }
         }
@@ -155,8 +155,16 @@ impl DataFrame {
                     tss,
                     self.data_serieses
                         .iter()
-                        .map(|series| {
-                            DataSeriesRef::new(&series.values.as_slice()[start_idx..finish_idx + 1])
+                        .map(|series| match &series.values {
+                            SeriesValues::Vacant(_) => {
+                                DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
+                            }
+                            SeriesValues::Float64(vs) => DataSeriesRef::new(
+                                SeriesValuesRef::Float64(&vs[start_idx..finish_idx + 1]),
+                            ),
+                            SeriesValues::Bool(vs) => DataSeriesRef::new(SeriesValuesRef::Bool(
+                                &vs[start_idx..finish_idx + 1],
+                            )),
                         })
                         .collect(),
                 );
@@ -185,14 +193,14 @@ impl DataFrame {
     }
 }
 
-impl From<DataFrameRef<'_>> for DataFrame {
-    fn from(df: DataFrameRef<'_>) -> DataFrame {
-        DataFrame::new(
-            df.timestamp_nanos.to_vec(),
-            df.data_serieses.into_iter().map(|e| e.into()).collect(),
-        )
-    }
-}
+//impl From<DataFrameRef<'_>> for DataFrame {
+//    fn from(df: DataFrameRef<'_>) -> DataFrame {
+//        DataFrame::new(
+//            df.timestamp_nanos.to_vec(),
+//            df.data_serieses.into_iter().map(|e| e.into()).collect(),
+//        )
+//    }
+//}
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct DataFrameRef<'a> {

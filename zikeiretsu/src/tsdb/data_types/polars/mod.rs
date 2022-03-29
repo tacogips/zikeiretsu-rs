@@ -1,4 +1,5 @@
 use super::dataframe::{DataframeError, Result as DataFrameResult};
+use super::dataseries::SeriesValues;
 use crate::tsdb::TimestampNano;
 use crate::tsdb::{data_types::FieldValue, DataFrame as ZDataFrame, DataSeries as ZDataSeries};
 use chrono::FixedOffset;
@@ -62,26 +63,9 @@ pub async fn zdata_series_to_series(
     field_name: &str,
     series: ZDataSeries,
 ) -> DataFrameResult<PSeries> {
-    if series.is_empty() {
-        Ok(PSeries::new_empty(field_name, &DataType::Float64))
-    } else {
-        match series.values.get(0).unwrap() {
-            FieldValue::Float64(_) => Ok(PSeries::new(
-                field_name,
-                series
-                    .values
-                    .into_iter()
-                    .map(|each| each.as_f64().unwrap())
-                    .collect::<Vec<f64>>(),
-            )),
-            FieldValue::Bool(_) => Ok(PSeries::new(
-                field_name,
-                series
-                    .values
-                    .into_iter()
-                    .map(|each| each.as_bool().unwrap())
-                    .collect::<Vec<bool>>(),
-            )),
-        }
+    match series.values {
+        SeriesValues::Float64(vs) => Ok(PSeries::new(field_name, vs)),
+        SeriesValues::Bool(vs) => Ok(PSeries::new(field_name, vs)),
+        SeriesValues::Vacant(len) => Ok(PSeries::new_empty(field_name, &DataType::Null)),
     }
 }

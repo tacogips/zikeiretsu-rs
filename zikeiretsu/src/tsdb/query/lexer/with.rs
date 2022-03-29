@@ -58,3 +58,33 @@ pub(crate) fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> LexerRe
     }
     Ok(with)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use chrono::FixedOffset;
+
+    #[test]
+    fn lex_with_1() {
+        let with_clause = WithClause {
+            def_columns: Some(vec![
+                Column::ColumnName(ColumnName("c1")),
+                Column::ColumnName(ColumnName("c2")),
+                Column::ColumnName(ColumnName("c3")),
+            ]),
+
+            def_timezone: None,
+            def_output: None,
+        };
+
+        let result = interpret_with(Some(with_clause)).unwrap();
+
+        let mut column_map = HashMap::new();
+        column_map.insert("c1", 0);
+        column_map.insert("c2", 1);
+        column_map.insert("c3", 2);
+        assert_eq!(result.column_index_map, Some(column_map));
+        assert_eq!(result.timezone, FixedOffset::east(0));
+        assert_eq!(result.output_format, OutputFormat::Table);
+    }
+}

@@ -52,3 +52,54 @@ pub(crate) fn interpret_field_selector<'q>(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use chrono::FixedOffset;
+
+    #[test]
+    fn lex_select_1() {
+        let mut column_map = HashMap::new();
+        column_map.insert("c1", 0);
+        column_map.insert("c2", 1);
+        column_map.insert("c3", 2);
+
+        let select = SelectClause {
+            select_columns: vec![
+                Column::ColumnName(ColumnName("c2")),
+                Column::ColumnName(ColumnName("c1")),
+                Column::ColumnName(ColumnName("c3")),
+            ],
+        };
+
+        let result = interpret_field_selector(Some(&column_map), Some(&select)).unwrap();
+
+        assert_eq!(result, Some(vec![1, 0, 2]));
+    }
+    #[test]
+    fn lex_select_2() {
+        let mut column_map = HashMap::new();
+        column_map.insert("c1", 0);
+        column_map.insert("c2", 1);
+        column_map.insert("c3", 2);
+
+        let select = SelectClause {
+            select_columns: vec![Column::Asterick],
+        };
+
+        let result = interpret_field_selector(Some(&column_map), Some(&select)).unwrap();
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn lex_select_err_1() {
+        let mut column_map = HashMap::new();
+        column_map.insert("c1", 0);
+        column_map.insert("c2", 1);
+        column_map.insert("c3", 2);
+
+        assert!(interpret_field_selector(Some(&column_map), None).is_err());
+    }
+}

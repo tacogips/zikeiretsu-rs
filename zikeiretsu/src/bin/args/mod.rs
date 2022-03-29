@@ -1,9 +1,7 @@
-use crate::operation::{output::*, *};
 use ::zikeiretsu::*;
 use argh::FromArgs;
 use dotenv::Error as DotEnvError;
 use std::env;
-use std::str::FromStr;
 use thiserror::Error;
 
 macro_rules! set_str_env_var_if_empty {
@@ -41,9 +39,6 @@ pub enum ArgsError {
 
     #[error("subpath required")]
     NoSubPath,
-
-    #[error("ouput error {0}")]
-    OutputError(#[from] OutputError),
 }
 
 type Result<T> = std::result::Result<T, ArgsError>;
@@ -126,87 +121,6 @@ impl Args {
             }
             _ => Err(ArgsError::NoCloudType),
         }
-    }
-
-    pub fn to_operation(self) -> Result<Operation> {
-        let setting_builder = SearchSettings::builder_with_no_cache();
-
-        let setting = if self.sync_before_fetch {
-            let cloud_storage = self.cloud_storage()?;
-            let cloud_setting =
-                CloudStorageSettingBuilder::new_with_sync_when_download(cloud_storage).build();
-
-            setting_builder.cloud_storage_setting(cloud_setting).build()
-        } else {
-            setting_builder.build()
-        };
-
-        let operation = match &self.ope {
-            Ope::ListMetrics(list_metrics_ope) => {
-                let output_setting = output::OutputSetting {
-                    format: convert_opt_output_format_or_default(list_metrics_ope.format.as_ref())?,
-                    destination: convert_opt_output_destination_or_default(
-                        list_metrics_ope.output.as_ref(),
-                    )?,
-                };
-
-                let list_condition = ListMetricsCondition {
-                    db_dir: self.db_dir.clone(),
-                    setting,
-                    output_setting,
-                };
-
-                Operation::ListMetrics(list_condition)
-            }
-            Ope::Fetch(fetch_ope) => {
-                if self.db_dir.is_none() {
-                    return Err(ArgsError::MissingRequiredArg("db_dir".to_string()));
-                }
-
-                let condition = DatapointSearchCondition::from_str_opts(
-                    fetch_ope.since.as_ref(),
-                    fetch_ope.until.as_ref(),
-                )?;
-
-                let output_setting = output::OutputSetting {
-                    format: convert_opt_output_format_or_default(fetch_ope.format.as_ref())?,
-                    destination: convert_opt_output_destination_or_default(
-                        fetch_ope.output.as_ref(),
-                    )?,
-                };
-
-                let condition = FetchMetricsCondition {
-                    db_dir: self.db_dir.unwrap().clone(),
-                    metrics: fetch_ope.metrics.clone(),
-                    condition,
-                    setting,
-                    output_setting,
-                };
-
-                Operation::FetchMetics(condition)
-            }
-            Ope::Describe(describe_ope) => {
-                if self.db_dir.is_none() {
-                    return Err(ArgsError::MissingRequiredArg("db_dir".to_string()));
-                }
-                let output_setting = output::OutputSetting {
-                    format: convert_opt_output_format_or_default(describe_ope.format.as_ref())?,
-                    destination: convert_opt_output_destination_or_default(
-                        describe_ope.output.as_ref(),
-                    )?,
-                };
-
-                let describe_condition = DescribeDatabaseCondition {
-                    db_dir: self.db_dir.unwrap().clone(),
-                    setting,
-                    output_setting,
-                };
-
-                Operation::Describe(describe_condition)
-            }
-        };
-
-        Ok(operation)
     }
 }
 

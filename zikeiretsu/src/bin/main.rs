@@ -1,11 +1,9 @@
 mod args;
 
 mod fetch_metrics;
-mod operation;
 
 use ::zikeiretsu::*;
 use args::*;
-use operation::{output::OutputError, *};
 
 use thiserror::Error;
 
@@ -16,9 +14,6 @@ pub enum ZikeiretsuBinError {
 
     #[error("engine error: {0}")]
     EngineError(#[from] EngineError),
-
-    #[error("output error: {0}")]
-    OutputError(#[from] OutputError),
 
     #[error("repl error: {0}")]
     ReplError(#[from] ZikeiretsuReplError),

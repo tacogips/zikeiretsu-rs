@@ -1,3 +1,4 @@
+use super::Result as StoreResult;
 use super::*;
 
 use crate::tsdb::dataframe::*;
@@ -7,7 +8,7 @@ pub struct ReadonlyStore {
 }
 
 impl ReadonlyStore {
-    pub fn new(dataframe: DataFrame, validate: bool) -> Result<Self> {
+    pub fn new(dataframe: DataFrame, validate: bool) -> StoreResult<Self> {
         if validate {
             if let Err(e) = DataFrame::check_dataframe_is_sorted(&dataframe) {
                 return Err(StoreError::UnsortedDataFrame(e.to_string()));

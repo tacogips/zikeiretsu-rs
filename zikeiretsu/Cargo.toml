@@ -22,6 +22,8 @@ simple8b-rle = { path = "../simple8b-rle" }
 base-128-variants = { path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.9" }
 
+polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" }
+
 chrono = "0.4"
 chrono-tz = "0.4"
 lazy_static = "1"

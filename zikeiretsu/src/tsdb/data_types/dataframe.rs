@@ -1,15 +1,18 @@
 use super::field::*;
-use super::{datapoint::DataPoint, DatapointSearchCondition};
+use super::{datapoint::DataPoint, polars::zdata_frame_to_dataframe, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::{trim_values, VecOpeError};
+
+use polars::prelude::DataFrame as PDataFrame;
 
 use std::cmp::Ordering;
 
 use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
 use thiserror::*;
+use tokio::task::JoinError;
 
-type Result<T> = std::result::Result<T, DataframeError>;
+pub type Result<T> = std::result::Result<T, DataframeError>;
 
 #[derive(Error, Debug)]
 pub enum DataframeError {
@@ -19,8 +22,14 @@ pub enum DataframeError {
     #[error("unsorted dataframe. {0}")]
     UnsortedDataframe(String),
 
+    #[error("unmatched number of column names . field of df:{0}, columns:{1}")]
+    UnmatchedColumnNameNumber(usize, usize),
+
     #[error("vec ope error. {0}")]
     VecOpeError(#[from] VecOpeError),
+
+    #[error("join error. {0}")]
+    JoinError(#[from] JoinError),
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -35,6 +44,10 @@ impl DataFrame {
             timestamp_nanos,
             data_serieses,
         }
+    }
+
+    pub async fn into_polars_dataframe(self, column_names: Option<&[&str]>) -> Result<PDataFrame> {
+        zdata_frame_to_dataframe(self, column_names).await
     }
 
     pub fn merge(&mut self, other: &mut DataFrame) -> Result<()> {
@@ -54,6 +67,10 @@ impl DataFrame {
 
     pub fn len(&self) -> usize {
         self.timestamp_nanos.len()
+    }
+
+    pub fn fields_len(&self) -> usize {
+        self.data_serieses.len()
     }
 
     pub fn get_series(&self, field_idx: usize) -> Option<&DataSeries> {

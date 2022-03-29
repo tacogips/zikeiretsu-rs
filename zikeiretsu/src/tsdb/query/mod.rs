@@ -1,9 +1,13 @@
-mod context;
-mod eval;
-mod lexer;
-mod output;
-mod parser;
-mod query;
+pub mod context;
+pub mod eval;
+pub mod lexer;
+pub mod output;
+pub mod parser;
+
+pub use context::*;
+pub use eval::*;
+pub use output::*;
+pub use parser::*;
 
 use crate::EngineError;
 pub use context::*;

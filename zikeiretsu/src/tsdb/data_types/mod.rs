@@ -3,6 +3,7 @@ pub mod datapoint;
 pub mod datapoints_searcher;
 pub mod dataseries;
 pub mod field;
+mod polars;
 
 pub use dataframe::*;
 pub use datapoint::*;

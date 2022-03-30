@@ -20,12 +20,12 @@ pub enum EngineError {
 
 pub type Result<T> = std::result::Result<T, EngineError>;
 
-pub struct SearchSettings {
+pub struct DBConfig {
     cache_setting: api::CacheSetting,
     cloud_setting: Option<api::CloudStorageSetting>,
 }
 
-impl SearchSettings {
+impl DBConfig {
     pub fn builder_with_cache() -> SearchSettingsBuilder {
         Self::builder_with_cache_setting(true, true)
     }
@@ -68,8 +68,8 @@ impl SearchSettingsBuilder {
         self
     }
 
-    pub fn build(self) -> SearchSettings {
-        SearchSettings {
+    pub fn build(self) -> DBConfig {
+        DBConfig {
             cache_setting: self.cache_setting,
             cloud_setting: self.cloud_setting,
         }
@@ -81,7 +81,7 @@ pub struct Zikeiretsu;
 impl Zikeiretsu {
     pub async fn list_metrics<P: AsRef<Path>>(
         db_dir: Option<P>,
-        setting: &SearchSettings,
+        setting: &DBConfig,
     ) -> Result<Vec<Metrics>> {
         let metrics = api::read::fetch_all_metrics(db_dir, setting.cloud_setting.as_ref()).await?;
 
@@ -91,7 +91,7 @@ impl Zikeiretsu {
     pub async fn block_list_data<P: AsRef<Path>>(
         db_dir: P,
         metrics: &Metrics,
-        setting: &SearchSettings,
+        setting: &DBConfig,
     ) -> Result<block_list::BlockList> {
         let block_list = api::read::read_block_list(
             db_dir.as_ref(),
@@ -116,7 +116,7 @@ impl Zikeiretsu {
         metrics: M,
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
-        setting: &SearchSettings,
+        setting: &DBConfig,
     ) -> Result<Option<ReadonlyStore>>
     where
         M: TryInto<Metrics, Error = String>,

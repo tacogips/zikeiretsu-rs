@@ -1,16 +1,14 @@
 use super::output;
+
 use crate::*;
 
-pub struct QueryContext {
+pub struct DBContext {
     pub db_dir: String,
-    pub search_setting: SearchSettings,
+    pub db_config: DBConfig,
 }
 
-impl QueryContext {
-    pub fn new(db_dir: String, search_setting: SearchSettings) -> Self {
-        Self {
-            db_dir,
-            search_setting,
-        }
+impl DBContext {
+    pub fn new(db_dir: String, db_config: DBConfig) -> Self {
+        Self { db_dir, db_config }
     }
 }

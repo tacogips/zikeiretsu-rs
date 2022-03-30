@@ -42,7 +42,3 @@
 //}
 //
 use super::Result as EvalResult;
-use crate::tsdb::query::QueryContext;
-pub async fn execute(ctx: &QueryContext, query: &str) -> EvalResult<()> {
-    unimplemented!()
-}

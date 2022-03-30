@@ -3,23 +3,25 @@ use crate::tsdb::query::parser::*;
 
 use chrono::{FixedOffset, TimeZone, Utc};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 pub(crate) struct With<'q> {
     pub timezone: FixedOffset,
     pub output_format: OutputFormat,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
+    pub output_file_path: Option<PathBuf>,
 }
 
 impl<'q> Default for With<'q> {
     fn default() -> Self {
         let timezone: FixedOffset = FixedOffset::west(0);
         let output_format: OutputFormat = OutputFormat::Table;
-        let column_index_map: Option<HashMap<&'q str, usize>> = None;
 
         Self {
             timezone,
             output_format,
-            column_index_map,
+            column_index_map: None,
+            output_file_path: None,
         }
     }
 }
@@ -48,6 +50,9 @@ pub(crate) fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> LexerRe
         if let Some(tz) = with_clause.def_timezone {
             with.timezone = tz
         }
+
+        // output file path
+        with.output_file_path = with_clause.def_output_file_path;
 
         // output format
         if let Some(output) = with_clause.def_output {

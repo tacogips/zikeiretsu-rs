@@ -22,9 +22,3 @@ pub enum QueryError {
     #[error("engine error :{0}")]
     ParserError(#[from] ParserError),
 }
-
-pub async fn execute(ctx: &QueryContext, query_str: &str) -> Result<()> {
-    parse_query(query_str)?;
-    //TODO(tacogips) imple
-    Ok(())
-}

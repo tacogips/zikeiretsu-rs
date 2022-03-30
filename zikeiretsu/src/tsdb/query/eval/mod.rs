@@ -2,6 +2,7 @@ pub mod metrics;
 pub mod metrics_list;
 pub mod output;
 
+use crate::tsdb::query::DBContext;
 pub use metrics::*;
 pub use metrics_list::*;
 pub use output::*;
@@ -19,3 +20,7 @@ pub enum EvalError {
 }
 
 pub type Result<T> = std::result::Result<T, EvalError>;
+
+pub async fn execute(ctx: &DBContext, query: &str) -> EvalResult<()> {
+    unimplemented!()
+}

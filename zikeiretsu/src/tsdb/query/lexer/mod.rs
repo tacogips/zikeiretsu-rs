@@ -38,10 +38,10 @@ pub type Result<T> = std::result::Result<T, LexerError>;
 
 pub enum Query {
     ListMetrics,
-    Metrics(QueryContext),
+    Metrics(QueryCondition),
 }
 
-pub struct QueryContext {
+pub struct QueryCondition {
     pub metrics: Metrics,
     pub field_selectors: Option<Vec<usize>>,
     pub search_condition: DatapointSearchCondition,
@@ -67,7 +67,7 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
     let search_condition =
         r#where::interpret_search_condition(&with.timezone, parsed_query.r#where.as_ref())?;
 
-    let query_context = QueryContext {
+    let query_context = QueryCondition {
         metrics,
         field_selectors,
         search_condition,

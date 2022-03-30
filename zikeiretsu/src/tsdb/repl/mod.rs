@@ -18,7 +18,7 @@ pub enum ZikeiretsuReplError {
 }
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuReplError>;
-pub fn start(ctx: &QueryContext) -> Result<()> {
+pub fn start(ctx: &DBContext) -> Result<()> {
     let mut editor = Editor::new();
     editor.set_helper(Some(validator::InputValidator));
 

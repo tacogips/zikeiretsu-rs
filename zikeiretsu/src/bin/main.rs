@@ -43,8 +43,8 @@ pub type Result<T> = std::result::Result<T, ZikeiretsuBinError>;
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let db_dir = "".to_string();
-    let search_setting = SearchSettings::builder_with_cache().build();
-    let mut ctx = QueryContext::new(db_dir, search_setting);
+    let db_config = DBConfig::builder_with_cache().build();
+    let mut ctx = DBContext::new(db_dir, db_config);
     repl::start(&mut ctx)?;
     ////TODO(tacogips) impl client
     //let arg = parse_args_or_exits()?;

@@ -56,7 +56,6 @@ pub(crate) fn interpret_field_selector<'q>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use chrono::FixedOffset;
 
     #[test]
     fn lex_select_1() {

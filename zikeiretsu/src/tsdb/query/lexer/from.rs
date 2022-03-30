@@ -1,6 +1,6 @@
 use super::{LexerError, Result as LexerResult};
 use crate::tsdb::metrics::Metrics;
-use crate::tsdb::query::parser::*;
+use crate::tsdb::query::parser::clause::FromClause;
 use either::Either;
 
 pub(crate) enum BuildinMetrics {

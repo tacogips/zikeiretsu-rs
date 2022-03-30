@@ -1,6 +1,7 @@
 use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::datetime::DatetimeAccuracy;
-use crate::tsdb::query::parser::*;
+use crate::tsdb::query::parser::clause::WhereClause;
+use crate::tsdb::query::parser::DatetimeFilter;
 use chrono::{Duration, FixedOffset};
 
 use super::Result as LexerResult;

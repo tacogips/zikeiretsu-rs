@@ -2,7 +2,10 @@ pub mod metrics;
 pub mod metrics_list;
 pub mod output;
 
-use crate::tsdb::query::DBContext;
+use crate::tsdb::query::{
+    parser::{parse_query, ParserError},
+    DBContext,
+};
 pub use metrics::*;
 pub use metrics_list::*;
 pub use output::*;
@@ -17,10 +20,14 @@ pub enum EvalError {
 
     #[error("dataframe error {0}")]
     DataframeError(#[from] DataframeError),
+
+    #[error("parser error {0}")]
+    ParserError(#[from] ParserError),
 }
 
 pub type Result<T> = std::result::Result<T, EvalError>;
 
 pub async fn execute(ctx: &DBContext, query: &str) -> EvalResult<()> {
-    unimplemented!()
+    let parsed_query = parse_query(query)?;
+    Ok(())
 }

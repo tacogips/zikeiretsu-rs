@@ -1,4 +1,5 @@
 use super::{LexerError, Result as LexerResult};
+use crate::tsdb::query::parser::clause::SelectClause;
 use crate::tsdb::query::parser::*;
 use std::collections::HashMap;
 

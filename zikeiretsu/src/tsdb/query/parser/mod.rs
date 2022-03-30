@@ -1,9 +1,9 @@
-mod clause;
-mod parts;
+pub mod clause;
+pub mod parts;
 
 use crate::tsdb::DatetimeUtilError;
 use chrono::{FixedOffset, TimeZone};
-pub use clause::*;
+use clause::*;
 use log;
 pub use parts::*;
 use pest::{error::Error as PestError, Parser};

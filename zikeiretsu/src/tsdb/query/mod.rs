@@ -4,10 +4,10 @@ pub mod lexer;
 pub mod output;
 pub mod parser;
 
-pub use context::*;
-pub use eval::*;
-pub use output::*;
-pub use parser::*;
+use context::*;
+use eval::*;
+use output::*;
+use parser::*;
 
 use crate::EngineError;
 pub use context::*;

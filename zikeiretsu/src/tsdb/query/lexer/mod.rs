@@ -6,6 +6,7 @@ mod with;
 use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
+use crate::tsdb::query::parser::clause::{OutputFormat, WithClause};
 use crate::tsdb::query::parser::*;
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use either::Either;

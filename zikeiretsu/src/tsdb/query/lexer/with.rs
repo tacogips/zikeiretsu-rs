@@ -1,7 +1,7 @@
 use super::{LexerError, Result as LexerResult};
+use crate::tsdb::query::parser::clause::{OutputFormat, WithClause};
 use crate::tsdb::query::parser::*;
-
-use chrono::{FixedOffset, TimeZone, Utc};
+use chrono::FixedOffset;
 use std::collections::HashMap;
 use std::path::PathBuf;
 

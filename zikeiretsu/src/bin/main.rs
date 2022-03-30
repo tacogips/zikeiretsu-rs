@@ -7,9 +7,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ZikeiretsuBinError {
-    #[error("args error: {0}")]
-    ArgsError(#[from] ArgsError),
-
     #[error("engine error: {0}")]
     EngineError(#[from] EngineError),
 

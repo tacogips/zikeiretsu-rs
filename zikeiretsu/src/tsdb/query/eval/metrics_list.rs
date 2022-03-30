@@ -1,3 +1,37 @@
+use super::output::*;
+use super::EvalError;
+use crate::tsdb::engine::Engine;
+use crate::tsdb::query::lexer::OutputCondition;
+use crate::tsdb::query::DBContext;
+use crate::tsdb::{block_list, Metrics};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct DatabaseDescribe {
+    metrics: Metrics,
+    block_list: block_list::BlockList,
+}
+
+pub async fn execute_metrics_list(
+    ctx: &DBContext,
+    output_condition: OutputCondition,
+) -> Result<(), EvalError> {
+    let metricses = Engine::list_metrics(Some(&ctx.db_dir), &ctx.db_config).await?;
+
+    let mut describes = Vec::<DatabaseDescribe>::new();
+    for metrics in metricses.into_iter() {
+        let block_list =
+            Engine::block_list_data(&ctx.db_dir.clone(), &metrics, &ctx.db_config).await?;
+
+        describes.push(DatabaseDescribe {
+            metrics,
+            block_list,
+        });
+    }
+
+    unimplemented!()
+}
+
 //use super::{operation::*, Result};
 //
 //use ::zikeiretsu::*;

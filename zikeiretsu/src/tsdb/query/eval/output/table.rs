@@ -1,13 +1,13 @@
-pub use super::{EvalResult, Output};
+use super::{DataFrameOutput, EvalResult};
 use crate::tsdb::DataFrame as ZDataFrame;
 use async_trait::async_trait;
 use chrono::FixedOffset;
 use std::io::Write as IoWrite;
 
-pub struct TableOutput<Dest: IoWrite + Send + Sync>(Dest);
+pub struct TableDfOutput<Dest: IoWrite + Send + Sync>(pub Dest);
 
 #[async_trait]
-impl<Dest: IoWrite + Send + Sync> Output for TableOutput<Dest> {
+impl<Dest: IoWrite + Send + Sync> DataFrameOutput for TableDfOutput<Dest> {
     async fn output(
         &mut self,
         data: ZDataFrame,

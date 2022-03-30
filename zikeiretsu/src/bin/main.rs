@@ -42,7 +42,9 @@ pub async fn main() -> Result<()> {
     let db_dir = "".to_string();
     let db_config = DBConfig::builder_with_cache().build();
     let mut ctx = DBContext::new(db_dir, db_config);
-    repl::start(&mut ctx)?;
+    if let Err(e) = repl::start(&mut ctx).await {
+        eprintln!("repl error: {e}")
+    }
     ////TODO(tacogips) impl client
     //let arg = parse_args_or_exits()?;
     //let operation = arg.to_operation()?;

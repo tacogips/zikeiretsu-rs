@@ -76,14 +76,13 @@ impl SearchSettingsBuilder {
     }
 }
 
-pub struct Zikeiretsu;
-
-impl Zikeiretsu {
+pub struct Engine;
+impl Engine {
     pub async fn list_metrics<P: AsRef<Path>>(
         db_dir: Option<P>,
-        setting: &DBConfig,
+        config: &DBConfig,
     ) -> Result<Vec<Metrics>> {
-        let metrics = api::read::fetch_all_metrics(db_dir, setting.cloud_setting.as_ref()).await?;
+        let metrics = api::read::fetch_all_metrics(db_dir, config.cloud_setting.as_ref()).await?;
 
         Ok(metrics)
     }

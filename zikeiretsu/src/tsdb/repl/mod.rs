@@ -1,6 +1,7 @@
 mod validator;
 
 use super::query::*;
+use crate::tsdb::query::eval::execute;
 use crate::EngineError;
 use rustyline::error::ReadlineError;
 use thiserror::Error;
@@ -18,7 +19,7 @@ pub enum ZikeiretsuReplError {
 }
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuReplError>;
-pub fn start(ctx: &DBContext) -> Result<()> {
+pub async fn start(ctx: &DBContext) -> Result<()> {
     let mut editor = Editor::new();
     editor.set_helper(Some(validator::InputValidator));
 
@@ -27,11 +28,12 @@ pub fn start(ctx: &DBContext) -> Result<()> {
 
         match readline {
             Ok(line) => {
-                println!("input line [{line}]")
+                if let Err(e) = execute(&ctx, &line).await {
+                    eprintln!("erorr: {e}")
+                }
             }
 
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
-                println!("bye");
                 return Ok(());
             }
             Err(err) => return Err(ZikeiretsuReplError::from(err)),

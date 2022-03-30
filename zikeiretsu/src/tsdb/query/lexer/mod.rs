@@ -6,10 +6,12 @@ mod with;
 use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
-use crate::tsdb::query::parser::clause::{OutputFormat, WithClause};
+pub use crate::tsdb::query::parser::clause::OutputFormat;
+pub use crate::tsdb::query::parser::clause::WithClause;
 use crate::tsdb::query::parser::*;
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use either::Either;
+use std::path::PathBuf;
 
 use crate::EngineError;
 use thiserror::Error;
@@ -37,28 +39,38 @@ pub enum LexerError {
 
 pub type Result<T> = std::result::Result<T, LexerError>;
 
-pub enum Query {
-    ListMetrics,
-    Metrics(QueryCondition),
+pub enum InterpretedQuery {
+    ListMetrics(OutputCondition),
+    Metrics(InterpretedQueryCondition),
 }
 
-pub struct QueryCondition {
+pub struct OutputCondition {
+    pub output_format: OutputFormat,
+    pub output_file_path: Option<PathBuf>,
+}
+
+pub struct InterpretedQueryCondition {
     pub metrics: Metrics,
     pub field_selectors: Option<Vec<usize>>,
     pub search_condition: DatapointSearchCondition,
     pub output_format: OutputFormat,
+    pub output_file_path: Option<PathBuf>,
     pub timezone: FixedOffset,
 }
 
-pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
+pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
+    let with = with::interpret_with(parsed_query.with)?;
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => match buildin_metrics {
-            from::BuildinMetrics::ListMetrics => return Ok(Query::ListMetrics),
+            from::BuildinMetrics::ListMetrics => {
+                return Ok(InterpretedQuery::ListMetrics(OutputCondition {
+                    output_format: with.output_format,
+                    output_file_path: with.output_file_path,
+                }))
+            }
         },
         Either::Left(parsed_metrics) => parsed_metrics,
     };
-
-    let with = with::interpret_with(parsed_query.with)?;
 
     // select columns
     let field_selectors = select::interpret_field_selector(
@@ -68,12 +80,13 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Query> {
     let search_condition =
         r#where::interpret_search_condition(&with.timezone, parsed_query.r#where.as_ref())?;
 
-    let query_context = QueryCondition {
+    let query_context = InterpretedQueryCondition {
         metrics,
         field_selectors,
         search_condition,
         output_format: with.output_format,
+        output_file_path: with.output_file_path,
         timezone: with.timezone,
     };
-    Ok(Query::Metrics(query_context))
+    Ok(InterpretedQuery::Metrics(query_context))
 }

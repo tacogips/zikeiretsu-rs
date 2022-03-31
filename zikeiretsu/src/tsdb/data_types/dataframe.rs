@@ -40,7 +40,7 @@ pub enum DataframeError {
 }
 
 pub trait DataSeriesSeq {
-    fn data_serieses(&self) -> &[DataSeries];
+    fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>>;
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -49,13 +49,20 @@ pub struct DataFrame {
     pub data_serieses: Vec<DataSeries>,
 }
 
-//impl DataSeriesSeq for DataFrame {
-//    fn data_serieses(self) -> &[DataSeries] {
-//        DataSeries
-//        SeriesValues ::TimestampNano::
-//        self.data_serieses.as_slice()
-//    }
-//}
+impl DataSeriesSeq for DataFrame {
+    fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>> {
+        let mut vs: Vec<DataSeriesRef<'_>> = self
+            .data_serieses
+            .iter()
+            .map(|ds| ds.as_dataseries_ref())
+            .collect();
+
+        let ts = DataSeriesRef::new(SeriesValuesRef::TimestampNano(&self.timestamp_nanos));
+        vs.insert(0, ts);
+
+        vs
+    }
+}
 
 impl DataFrame {
     pub fn new(timestamp_nanos: Vec<TimestampNano>, data_serieses: Vec<DataSeries>) -> Self {

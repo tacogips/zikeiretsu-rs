@@ -148,6 +148,18 @@ impl DataSeries {
 
         Ok(())
     }
+
+    pub fn as_dataseries_ref<'a>(&'a self) -> DataSeriesRef<'a> {
+        let vs = match &self.values {
+            SeriesValues::Float64(vs) => SeriesValuesRef::Float64(&vs),
+            SeriesValues::Bool(vs) => SeriesValuesRef::Bool(&vs),
+            SeriesValues::String(vs) => SeriesValuesRef::String(&vs),
+            SeriesValues::TimestampNano(vs) => SeriesValuesRef::TimestampNano(&vs),
+            SeriesValues::Vacant(len) => SeriesValuesRef::Vacant(*len),
+        };
+
+        DataSeriesRef::new(vs)
+    }
 }
 
 impl From<DataSeriesRef<'_>> for DataSeries {

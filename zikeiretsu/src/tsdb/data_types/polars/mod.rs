@@ -11,8 +11,6 @@ pub async fn zdata_frame_to_dataframe(
     column_names: Option<&[&str]>,
     timezone: FixedOffset,
 ) -> DataFrameResult<PDataFrame> {
-    //Vec<TimestampNano>
-
     let field_names: Vec<String> = match column_names {
         Some(column_names) => {
             if data_frame.fields_len() != column_names.len() {
@@ -29,43 +27,37 @@ pub async fn zdata_frame_to_dataframe(
             .collect(),
     };
 
-    let tss = tokio::task::spawn(async move {
-        to_timestamp_series(data_frame.timestamp_nanos, timezone).await
-    });
-    let serieses = field_names
-        .iter()
-        .zip(data_frame.data_serieses)
-        .map(|(field_name, each_series)| zdata_series_to_series(field_name, each_series));
+    let serieses =
+        field_names
+            .iter()
+            .zip(data_frame.data_serieses)
+            .map(|(field_name, each_series)| {
+                zdata_series_to_series(field_name, each_series, &timezone)
+            });
 
-    let mut datas: Vec<PSeries> = join_all(serieses)
+    let serieses: Vec<PSeries> = join_all(serieses)
         .await
         .into_iter()
         .collect::<DataFrameResult<Vec<PSeries>>>()?;
-    let mut serieses: Vec<PSeries> = vec![tss.await??];
-    serieses.append(&mut datas);
     Ok(PDataFrame::new(serieses)?)
-}
-
-pub async fn to_timestamp_series(
-    timestamps: Vec<TimestampNano>,
-    tz: FixedOffset,
-) -> DataFrameResult<PSeries> {
-    Ok(PSeries::new(
-        "ts",
-        timestamps
-            .into_iter()
-            .map(|ts| ts.as_formated_datetime(&tz))
-            .collect::<Vec<String>>(),
-    ))
 }
 
 pub async fn zdata_series_to_series(
     field_name: &str,
     series: ZDataSeries,
+    tz: &FixedOffset,
 ) -> DataFrameResult<PSeries> {
     match series.values {
         SeriesValues::Float64(vs) => Ok(PSeries::new(field_name, vs)),
         SeriesValues::Bool(vs) => Ok(PSeries::new(field_name, vs)),
-        SeriesValues::Vacant(len) => Ok(PSeries::new_empty(field_name, &DataType::Null)),
+        SeriesValues::Vacant(_) => Ok(PSeries::new_empty(field_name, &DataType::Null)),
+        SeriesValues::String(vs) => Ok(PSeries::new(field_name, vs)),
+        SeriesValues::TimestampNano(timestamps) => Ok(PSeries::new(
+            field_name,
+            timestamps
+                .into_iter()
+                .map(|ts| ts.as_formated_datetime(tz))
+                .collect::<Vec<String>>(),
+        )),
     }
 }

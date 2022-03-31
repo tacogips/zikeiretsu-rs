@@ -1,11 +1,14 @@
 use super::dataframe::{DataframeError, Result as DataframeResult};
 use super::field::*;
+use crate::tsdb::datetime::*;
 use crate::tsdb::util::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub enum SeriesValues {
     Vacant(usize),
+    TimestampNano(Vec<TimestampNano>),
+    String(Vec<String>),
     Float64(Vec<f64>),
     Bool(Vec<bool>),
 }
@@ -15,6 +18,8 @@ impl SeriesValues {
         match self {
             Self::Float64(vs) => vs.len(),
             Self::Bool(vs) => vs.len(),
+            Self::String(vs) => vs.len(),
+            Self::TimestampNano(vs) => vs.len(),
             Self::Vacant(len) => *len,
         }
     }
@@ -23,6 +28,8 @@ impl SeriesValues {
         match self {
             Self::Float64(vs) => vs.is_empty(),
             Self::Bool(vs) => vs.is_empty(),
+            Self::String(vs) => vs.is_empty(),
+            Self::TimestampNano(vs) => vs.is_empty(),
             Self::Vacant(len) => *len == 0,
         }
     }
@@ -32,6 +39,8 @@ impl std::fmt::Display for SeriesValues {
         let s = match self {
             Self::Float64(_) => "[f64]",
             Self::Bool(_) => "[bool]",
+            Self::String(vs) => "[string]",
+            Self::TimestampNano(vs) => "[timestamp nano]",
             Self::Vacant(_) => "[vacant]",
         };
 
@@ -63,6 +72,28 @@ impl DataSeries {
             },
             SeriesValues::Bool(vs) => match &mut other.values {
                 SeriesValues::Bool(other_vals) => {
+                    vs.append(other_vals);
+                    Ok(())
+                }
+                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
+                    self.values.to_string(),
+                    invalid.to_string(),
+                )),
+            },
+
+            SeriesValues::String(vs) => match &mut other.values {
+                SeriesValues::String(other_vals) => {
+                    vs.append(other_vals);
+                    Ok(())
+                }
+                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
+                    self.values.to_string(),
+                    invalid.to_string(),
+                )),
+            },
+
+            SeriesValues::TimestampNano(vs) => match &mut other.values {
+                SeriesValues::TimestampNano(other_vals) => {
                     vs.append(other_vals);
                     Ok(())
                 }
@@ -124,6 +155,8 @@ impl From<DataSeriesRef<'_>> for DataSeries {
         let vs = match ds.values {
             SeriesValuesRef::Float64(vs) => SeriesValues::Float64(vs.to_vec()),
             SeriesValuesRef::Bool(vs) => SeriesValues::Bool(vs.to_vec()),
+            SeriesValuesRef::String(vs) => SeriesValues::String(vs.to_vec()),
+            SeriesValuesRef::TimestampNano(vs) => SeriesValues::TimestampNano(vs.to_vec()),
             SeriesValuesRef::Vacant(len) => SeriesValues::Vacant(len),
         };
 
@@ -136,6 +169,8 @@ pub enum SeriesValuesRef<'a> {
     Vacant(usize),
     Float64(&'a [f64]),
     Bool(&'a [bool]),
+    String(&'a [String]),
+    TimestampNano(&'a [TimestampNano]),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize)]

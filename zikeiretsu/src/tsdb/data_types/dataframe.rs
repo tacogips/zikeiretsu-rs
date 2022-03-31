@@ -39,6 +39,10 @@ pub enum DataframeError {
     PolarsError(#[from] PolarsError),
 }
 
+trait DataSeriesSeq {
+    fn data_serieses(&self) -> &[&DataSeries];
+}
+
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataFrame {
     pub timestamp_nanos: Vec<TimestampNano>,
@@ -162,6 +166,15 @@ impl DataFrame {
                             SeriesValues::Float64(vs) => DataSeriesRef::new(
                                 SeriesValuesRef::Float64(&vs[start_idx..finish_idx + 1]),
                             ),
+
+                            SeriesValues::String(vs) => DataSeriesRef::new(
+                                SeriesValuesRef::String(&vs[start_idx..finish_idx + 1]),
+                            ),
+
+                            SeriesValues::TimestampNano(vs) => DataSeriesRef::new(
+                                SeriesValuesRef::TimestampNano(&vs[start_idx..finish_idx + 1]),
+                            ),
+
                             SeriesValues::Bool(vs) => DataSeriesRef::new(SeriesValuesRef::Bool(
                                 &vs[start_idx..finish_idx + 1],
                             )),

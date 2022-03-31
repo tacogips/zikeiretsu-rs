@@ -1,4 +1,5 @@
 use super::dataframe::{DataframeError, Result as DataframeResult};
+use super::dataseries_ref::*;
 use super::field::*;
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::*;
@@ -173,33 +174,5 @@ impl From<DataSeriesRef<'_>> for DataSeries {
         };
 
         DataSeries::new(vs)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub enum SeriesValuesRef<'a> {
-    Vacant(usize),
-    Float64(&'a [f64]),
-    Bool(&'a [bool]),
-    String(&'a [String]),
-    TimestampNano(&'a [TimestampNano]),
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub struct DataSeriesRef<'a> {
-    pub values: SeriesValuesRef<'a>,
-}
-
-impl<'a> DataSeriesRef<'a> {
-    pub fn new(values: SeriesValuesRef<'a>) -> Self {
-        Self { values }
-    }
-
-    pub fn get(&self, index: usize) -> Option<FieldValue> {
-        match &self.values {
-            SeriesValuesRef::Float64(vs) => vs.get(index).map(|v| FieldValue::Float64(*v)),
-            SeriesValuesRef::Bool(vs) => vs.get(index).map(|v| FieldValue::Bool(*v)),
-            _ => None,
-        }
     }
 }

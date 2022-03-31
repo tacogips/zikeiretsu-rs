@@ -6,29 +6,34 @@ pub use table::*;
 
 use super::Result as EvalResult;
 use crate::tsdb::query::lexer::OutputFormat;
-use crate::tsdb::DataFrame;
+use crate::tsdb::DataSeriesRefs;
 use async_trait::async_trait;
 use std::io::Write as IoWrite;
+use std::marker::PhantomData;
 use std::path::PathBuf;
 
 use chrono::FixedOffset;
 #[async_trait]
 pub trait DataFrameOutput {
+    type Data;
     async fn output(
         &mut self,
-        data: DataFrame,
+        data: Self::Data,
         column_names: Option<&[&str]>,
-        timezone: FixedOffset,
+        timezone: &FixedOffset,
     ) -> EvalResult<()>;
 }
 
-pub fn new_dataframe_output<'d, Dest: 'd + IoWrite + Send + Sync>(
+pub fn new_dataframe_output<'d, Dest: 'd + IoWrite + Send + Sync, Data: 'd + Send + Sync>(
     format: OutputFormat,
     output_dest: Dest,
-) -> Box<dyn DataFrameOutput + 'd> {
+) -> Box<dyn DataFrameOutput<Data = Data> + 'd>
+where
+    Data: DataSeriesRefs,
+{
     match format {
-        OutputFormat::Json => Box::new(JsonDfOutput(output_dest)),
-        OutputFormat::Table => Box::new(TableDfOutput(output_dest)),
+        OutputFormat::Json => Box::new(JsonDfOutput(output_dest, PhantomData)),
+        OutputFormat::Table => Box::new(TableDfOutput(output_dest, PhantomData)),
     }
 }
 

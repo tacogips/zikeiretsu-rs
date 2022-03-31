@@ -1,7 +1,7 @@
 use super::dataseries::*;
 use super::dataseries_ref::*;
 use super::field::*;
-use super::{datapoint::DataPoint, polars::zdata_frame_to_dataframe, DatapointSearchCondition};
+use super::{datapoint::DataPoint, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::{trim_values, VecOpeError};
 use chrono::FixedOffset;
@@ -52,14 +52,6 @@ impl DataFrame {
             timestamp_nanos,
             data_serieses,
         }
-    }
-
-    pub async fn as_polars_dataframe(
-        &self,
-        column_names: Option<&[&str]>,
-        timezone: &FixedOffset,
-    ) -> Result<PDataFrame> {
-        zdata_frame_to_dataframe(&self, column_names, timezone).await
     }
 
     pub fn merge(&mut self, other: &mut DataFrame) -> Result<()> {

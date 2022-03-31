@@ -33,3 +33,14 @@ impl<'a> DataSeriesRef<'a> {
 pub trait DataSeriesRefs {
     fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>>;
 }
+
+impl<'a> DataSeriesRefs for Vec<&'a Vec<String>> {
+    fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'a>> {
+        let vs: Vec<DataSeriesRef<'_>> = self
+            .iter()
+            .map(|strs| DataSeriesRef::new(SeriesValuesRef::String(strs)))
+            .collect();
+
+        vs
+    }
+}

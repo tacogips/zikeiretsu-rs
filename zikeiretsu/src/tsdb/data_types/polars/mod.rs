@@ -7,9 +7,9 @@ use futures::future::join_all;
 use polars::prelude::{DataFrame as PDataFrame, Series as PSeries, *};
 
 pub async fn zdata_frame_to_dataframe(
-    data_frame: ZDataFrame,
+    data_frame: &ZDataFrame,
     column_names: Option<&[&str]>,
-    timezone: FixedOffset,
+    timezone: &FixedOffset,
 ) -> DataFrameResult<PDataFrame> {
     let field_names: Vec<String> = match column_names {
         Some(column_names) => {
@@ -30,9 +30,9 @@ pub async fn zdata_frame_to_dataframe(
     let serieses =
         field_names
             .iter()
-            .zip(data_frame.data_serieses)
+            .zip(data_frame.data_serieses.iter())
             .map(|(field_name, each_series)| {
-                zdata_series_to_series(field_name, each_series, &timezone)
+                zdata_series_to_series(field_name, &each_series, timezone)
             });
 
     let serieses: Vec<PSeries> = join_all(serieses)
@@ -44,10 +44,10 @@ pub async fn zdata_frame_to_dataframe(
 
 pub async fn zdata_series_to_series(
     field_name: &str,
-    series: ZDataSeries,
+    series: &ZDataSeries,
     tz: &FixedOffset,
 ) -> DataFrameResult<PSeries> {
-    match series.values {
+    match &series.values {
         SeriesValues::Float64(vs) => Ok(PSeries::new(field_name, vs)),
         SeriesValues::Bool(vs) => Ok(PSeries::new(field_name, vs)),
         SeriesValues::Vacant(_) => Ok(PSeries::new_empty(field_name, &DataType::Null)),

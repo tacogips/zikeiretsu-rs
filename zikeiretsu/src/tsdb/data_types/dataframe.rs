@@ -39,8 +39,8 @@ pub enum DataframeError {
     PolarsError(#[from] PolarsError),
 }
 
-trait DataSeriesSeq {
-    fn data_serieses(&self) -> &[&DataSeries];
+pub trait DataSeriesSeq {
+    fn data_serieses(&self) -> &[DataSeries];
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
@@ -48,6 +48,14 @@ pub struct DataFrame {
     pub timestamp_nanos: Vec<TimestampNano>,
     pub data_serieses: Vec<DataSeries>,
 }
+
+//impl DataSeriesSeq for DataFrame {
+//    fn data_serieses(self) -> &[DataSeries] {
+//        DataSeries
+//        SeriesValues ::TimestampNano::
+//        self.data_serieses.as_slice()
+//    }
+//}
 
 impl DataFrame {
     pub fn new(timestamp_nanos: Vec<TimestampNano>, data_serieses: Vec<DataSeries>) -> Self {
@@ -57,12 +65,12 @@ impl DataFrame {
         }
     }
 
-    pub async fn into_polars_dataframe(
-        self,
+    pub async fn as_polars_dataframe(
+        &self,
         column_names: Option<&[&str]>,
-        timezone: FixedOffset,
+        timezone: &FixedOffset,
     ) -> Result<PDataFrame> {
-        zdata_frame_to_dataframe(self, column_names, timezone).await
+        zdata_frame_to_dataframe(&self, column_names, timezone).await
     }
 
     pub fn merge(&mut self, other: &mut DataFrame) -> Result<()> {

@@ -14,7 +14,7 @@ impl<Dest: IoWrite + Send + Sync> DataFrameOutput for TableDfOutput<Dest> {
         column_names: Option<&[&str]>,
         timezone: chrono::FixedOffset,
     ) -> EvalResult<()> {
-        let df = data.into_polars_dataframe(column_names, timezone).await?;
+        let df = data.as_polars_dataframe(column_names, &timezone).await?;
         write!(self.0, "{:?}", df)?;
         Ok(())
     }

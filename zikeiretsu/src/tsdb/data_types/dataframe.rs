@@ -147,6 +147,10 @@ impl DataFrame {
                                 SeriesValuesRef::Float64(&vs[start_idx..finish_idx + 1]),
                             ),
 
+                            SeriesValues::UInt64(vs) => DataSeriesRef::new(
+                                SeriesValuesRef::UInt64(&vs[start_idx..finish_idx + 1]),
+                            ),
+
                             SeriesValues::String(vs) => DataSeriesRef::new(
                                 SeriesValuesRef::String(&vs[start_idx..finish_idx + 1]),
                             ),

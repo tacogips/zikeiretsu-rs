@@ -85,6 +85,12 @@ where
 
                 bools::compress(&bool_values, &mut block_file)?;
             }
+
+            unsupported_field_type => {
+                return Err(BlockError::UnsupportedFieldType(
+                    unsupported_field_type.clone(),
+                ))
+            }
         }
     }
 

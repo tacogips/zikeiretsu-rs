@@ -73,6 +73,9 @@ pub enum BlockError {
     #[error("invalid block file : {0} at {1}")]
     InvalidBlockfileError(String, usize),
 
+    #[error("unsupported field type : {0}")]
+    UnsupportedFieldType(FieldType),
+
     #[error("unknwon error : {0}")]
     UnKnownError(String),
 

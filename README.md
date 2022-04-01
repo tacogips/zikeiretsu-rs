@@ -135,12 +135,12 @@ Number of fields. 1 - 256
 Data types of each fields.
 
 #### data and compression type
-- integer   					 ... 1 (not implemented yet)
+- integer   					 ... 1 (not supported yet)
 - float   	  			   ... 2
-- string      			   ... 3 (not implemented yet)
-- timestamp   			   ... 4 (not implemented yet)
+- string      			   ... 3 (not supported yet)
+- timestamp nono   		 ... 4 (not supported yet)
 - bool        			   ... 5
-- unsigned int   			 ... 6 (not implemented yet)
+- unsigned int   			 ... 6 (not supported yet)
 
 ### (4) Head timestamp
 

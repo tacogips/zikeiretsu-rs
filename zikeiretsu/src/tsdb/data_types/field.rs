@@ -1,4 +1,5 @@
 use super::DataPoint;
+use crate::datetime::TimestampNano;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use strum::AsRefStr;
@@ -26,7 +27,10 @@ type Result<T> = std::result::Result<T, FieldError>;
 
 #[derive(AsRefStr, Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub enum FieldValue {
+    TimestampNano(TimestampNano),
     Float64(f64),
+    UInt64(u64),
+    String(String),
     Bool(bool),
 }
 
@@ -54,7 +58,10 @@ impl FieldValue {
     pub fn as_type(&self) -> FieldType {
         match self {
             Self::Float64(_) => FieldType::Float64,
+            Self::UInt64(_) => FieldType::UInt64,
+            Self::TimestampNano(_) => FieldType::TimestampNano,
             Self::Bool(_) => FieldType::Bool,
+            Self::String(_) => FieldType::String,
         }
     }
 }
@@ -63,7 +70,10 @@ impl fmt::Display for FieldValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FieldValue::Float64(v) => write!(f, "{v:?}"),
+            FieldValue::UInt64(v) => write!(f, "{v:?}"),
+            FieldValue::TimestampNano(v) => write!(f, "{v:?}"),
             FieldValue::Bool(v) => write!(f, "{v:?}"),
+            FieldValue::String(v) => write!(f, "{v:?}"),
         }
     }
 }
@@ -80,13 +90,19 @@ pub fn same_field_types(types: &Vec<FieldType>, values: &Vec<FieldValue>) -> boo
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum FieldType {
     Float64,
+    UInt64,
     Bool,
+    TimestampNano,
+    String,
 }
 
 impl fmt::Display for FieldType {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         let name = match self {
             FieldType::Float64 => "Float64",
+            FieldType::UInt64 => "UInt64",
+            FieldType::String => "String",
+            FieldType::TimestampNano => "TimestampNano",
             FieldType::Bool => "Bool",
         };
 

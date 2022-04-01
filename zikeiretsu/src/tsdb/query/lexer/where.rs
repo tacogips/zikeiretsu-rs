@@ -66,6 +66,7 @@ fn datetime_filter_to_condition<'q>(
 mod test {
     use super::*;
     use crate::tsdb::datetime::*;
+    use crate::tsdb::parser::*;
 
     fn jst() -> FixedOffset {
         FixedOffset::east(9 * 3600)

@@ -192,6 +192,11 @@ pub(crate) fn read_from_block_with_specific_fields(
                     );
                 }
             }
+            unsupported_field_type => {
+                return Err(BlockError::UnsupportedFieldType(
+                    unsupported_field_type.clone(),
+                ))
+            }
         }
     }
 

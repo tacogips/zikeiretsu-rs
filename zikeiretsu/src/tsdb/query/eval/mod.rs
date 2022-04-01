@@ -47,7 +47,9 @@ pub async fn execute(ctx: &DBContext, query: &str) -> Result<()> {
     let parsed_query = parse_query(query)?;
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {
-        InterpretedQuery::ListMetrics(output_condition) => {}
+        InterpretedQuery::ListMetrics(output_condition) => {
+            metrics_list::execute_metrics_list(ctx, output_condition).await?;
+        }
         InterpretedQuery::Metrics(query_condition) => {}
     }
 

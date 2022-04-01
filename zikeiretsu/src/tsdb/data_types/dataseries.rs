@@ -11,6 +11,7 @@ pub enum SeriesValues {
     TimestampNano(Vec<TimestampNano>),
     String(Vec<String>),
     Float64(Vec<f64>),
+    UInt64(Vec<u64>),
     Bool(Vec<bool>),
 }
 
@@ -18,6 +19,7 @@ impl SeriesValues {
     pub fn len(&self) -> usize {
         match self {
             Self::Float64(vs) => vs.len(),
+            Self::UInt64(vs) => vs.len(),
             Self::Bool(vs) => vs.len(),
             Self::String(vs) => vs.len(),
             Self::TimestampNano(vs) => vs.len(),
@@ -28,6 +30,7 @@ impl SeriesValues {
     pub fn is_empty(&self) -> bool {
         match self {
             Self::Float64(vs) => vs.is_empty(),
+            Self::UInt64(vs) => vs.is_empty(),
             Self::Bool(vs) => vs.is_empty(),
             Self::String(vs) => vs.is_empty(),
             Self::TimestampNano(vs) => vs.is_empty(),
@@ -39,9 +42,10 @@ impl std::fmt::Display for SeriesValues {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Float64(_) => "[f64]",
+            Self::UInt64(_) => "[u64]",
             Self::Bool(_) => "[bool]",
-            Self::String(vs) => "[string]",
-            Self::TimestampNano(vs) => "[timestamp nano]",
+            Self::String(_) => "[string]",
+            Self::TimestampNano(_) => "[timestamp nano]",
             Self::Vacant(_) => "[vacant]",
         };
 
@@ -71,6 +75,18 @@ impl DataSeries {
                     invalid.to_string(),
                 )),
             },
+
+            SeriesValues::UInt64(vs) => match &mut other.values {
+                SeriesValues::UInt64(other_vals) => {
+                    vs.append(other_vals);
+                    Ok(())
+                }
+                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
+                    self.values.to_string(),
+                    invalid.to_string(),
+                )),
+            },
+
             SeriesValues::Bool(vs) => match &mut other.values {
                 SeriesValues::Bool(other_vals) => {
                     vs.append(other_vals);
@@ -125,8 +141,11 @@ impl DataSeries {
     pub fn get(&self, index: usize) -> Option<FieldValue> {
         match &self.values {
             SeriesValues::Float64(vs) => vs.get(index).map(|v| FieldValue::Float64(*v)),
+            SeriesValues::UInt64(vs) => vs.get(index).map(|v| FieldValue::UInt64(*v)),
             SeriesValues::Bool(vs) => vs.get(index).map(|v| FieldValue::Bool(*v)),
-            _ => None,
+            SeriesValues::String(vs) => vs.get(index).map(|v| FieldValue::String(v.clone())),
+            SeriesValues::TimestampNano(vs) => vs.get(index).map(|v| FieldValue::TimestampNano(*v)),
+            SeriesValues::Vacant(_) => None,
         }
     }
 
@@ -153,6 +172,7 @@ impl DataSeries {
     pub fn as_dataseries_ref<'a>(&'a self) -> DataSeriesRef<'a> {
         let vs = match &self.values {
             SeriesValues::Float64(vs) => SeriesValuesRef::Float64(&vs),
+            SeriesValues::UInt64(vs) => SeriesValuesRef::UInt64(&vs),
             SeriesValues::Bool(vs) => SeriesValuesRef::Bool(&vs),
             SeriesValues::String(vs) => SeriesValuesRef::String(&vs),
             SeriesValues::TimestampNano(vs) => SeriesValuesRef::TimestampNano(&vs),
@@ -167,6 +187,7 @@ impl From<DataSeriesRef<'_>> for DataSeries {
     fn from(ds: DataSeriesRef<'_>) -> DataSeries {
         let vs = match ds.values {
             SeriesValuesRef::Float64(vs) => SeriesValues::Float64(vs.to_vec()),
+            SeriesValuesRef::UInt64(vs) => SeriesValues::UInt64(vs.to_vec()),
             SeriesValuesRef::Bool(vs) => SeriesValues::Bool(vs.to_vec()),
             SeriesValuesRef::String(vs) => SeriesValues::String(vs.to_vec()),
             SeriesValuesRef::TimestampNano(vs) => SeriesValues::TimestampNano(vs.to_vec()),

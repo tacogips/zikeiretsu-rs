@@ -4,15 +4,13 @@ use super::field::*;
 use super::{datapoint::DataPoint, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::{trim_values, VecOpeError};
-use chrono::FixedOffset;
-use polars::prelude::{DataFrame as PDataFrame, PolarsError};
+use polars::prelude::PolarsError;
 
 use std::cmp::Ordering;
 
 use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
 use thiserror::*;
-use tokio::task::JoinError;
 
 pub type Result<T> = std::result::Result<T, DataframeError>;
 
@@ -24,18 +22,11 @@ pub enum DataframeError {
     #[error("unsorted dataframe. {0}")]
     UnsortedDataframe(String),
 
-    #[error("unmatched number of column names . field of df:{0}, columns:{1}")]
-    UnmatchedColumnNameNumber(usize, usize),
-
     #[error("vec ope error. {0}")]
     VecOpeError(#[from] VecOpeError),
 
-    #[error("join error. {0}")]
-    JoinError(#[from] JoinError),
-
     #[error("attempt to merge unmatched series type error. {0}, {1}")]
     UnmatchedSeriesTypeError(String, String),
-
     #[error("polars error. {0}")]
     PolarsError(#[from] PolarsError),
 }

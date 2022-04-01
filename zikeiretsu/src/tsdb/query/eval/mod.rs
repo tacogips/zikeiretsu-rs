@@ -7,6 +7,7 @@ use crate::tsdb::query::{
     DBContext,
 };
 
+use crate::tsdb::data_types::DataSeriesRefsError;
 use crate::tsdb::engine::EngineError;
 use crate::tsdb::lexer::{interpret, InterpretedQuery, InterpretedQueryCondition, LexerError};
 pub use metrics::*;
@@ -32,6 +33,12 @@ pub enum EvalError {
 
     #[error("engine error {0}")]
     EngineError(#[from] EngineError),
+
+    #[error("dataseries ref error {0}")]
+    DataSeriesRefsError(#[from] DataSeriesRefsError),
+
+    #[error("serde json error {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 }
 
 pub type Result<T> = std::result::Result<T, EvalError>;

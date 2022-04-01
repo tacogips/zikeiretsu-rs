@@ -1,7 +1,7 @@
-use super::{DataFrameOutput, EvalResult};
-use crate::tsdb::DataFrame as ZDataFrame;
+use super::{DataSeriesRefsOutput, EvalResult};
 use crate::tsdb::DataSeriesRefs;
 use async_trait::async_trait;
+use chrono::FixedOffset;
 use std::io::Write as IoWrite;
 use std::marker::PhantomData;
 
@@ -11,7 +11,7 @@ pub struct JsonDfOutput<Dest: IoWrite + Send + Sync, DSR: Send + Sync>(
 );
 
 #[async_trait]
-impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataFrameOutput
+impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataSeriesRefsOutput
     for JsonDfOutput<Dest, DSR>
 {
     type Data = DSR;
@@ -19,9 +19,11 @@ impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataFrameOu
         &mut self,
         data: Self::Data,
         column_names: Option<&[&str]>,
-        timezone: &chrono::FixedOffset,
+        timezone: Option<&FixedOffset>,
     ) -> EvalResult<()> {
-        //TODO(tacogips)
-        unimplemented!()
+        let df = data.as_polar_dataframes(column_names, timezone).await?;
+
+        write!(self.0, "{:?}", serde_json::to_string(&df)?)?;
+        Ok(())
     }
 }

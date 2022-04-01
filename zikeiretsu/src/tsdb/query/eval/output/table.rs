@@ -1,4 +1,4 @@
-use super::{DataFrameOutput, EvalResult};
+use super::{DataSeriesRefsOutput, EvalResult};
 use crate::tsdb::DataFrame as ZDataFrame;
 use crate::tsdb::DataSeriesRefs;
 use async_trait::async_trait;
@@ -12,7 +12,7 @@ pub struct TableDfOutput<Dest: IoWrite + Send + Sync, DSR: Send + Sync>(
 );
 
 #[async_trait]
-impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataFrameOutput
+impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataSeriesRefsOutput
     for TableDfOutput<Dest, DSR>
 {
     type Data = DSR;
@@ -20,31 +20,10 @@ impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataFrameOu
         &mut self,
         data: Self::Data,
         column_names: Option<&[&str]>,
-        timezone: &chrono::FixedOffset,
+        timezone: Option<&FixedOffset>,
     ) -> EvalResult<()> {
-        let df = data.as_data_serieses_ref_vec();
+        let df = data.as_polar_dataframes(column_names, timezone).await;
         write!(self.0, "{:?}", df)?;
         Ok(())
     }
 }
-
-//pub struct JsonDfOutput<Dest: IoWrite + Send + Sync, DSR: Send + Sync>(
-//    pub Dest,
-//    pub PhantomData<DSR>,
-//);
-//
-//#[async_trait]
-//impl<Dest: IoWrite + Send + Sync, DSR: DataSeriesRefs + Send + Sync> DataFrameOutput
-//    for JsonDfOutput<Dest, DSR>
-//{
-//    type Data = DSR;
-//    async fn output(
-//        &mut self,
-//        data: DSR,
-//        column_names: Option<&[&str]>,
-//        timezone: chrono::FixedOffset,
-//    ) -> EvalResult<()> {
-//        //TODO(tacogips)
-//        unimplemented!()
-//    }
-//}

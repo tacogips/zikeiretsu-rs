@@ -10,24 +10,27 @@ use crate::tsdb::DataSeriesRefs;
 use async_trait::async_trait;
 use std::io::Write as IoWrite;
 use std::marker::PhantomData;
-use std::path::PathBuf;
 
 use chrono::FixedOffset;
 #[async_trait]
-pub trait DataFrameOutput {
+pub trait DataSeriesRefsOutput {
     type Data;
     async fn output(
         &mut self,
         data: Self::Data,
         column_names: Option<&[&str]>,
-        timezone: &FixedOffset,
+        timezone: Option<&FixedOffset>,
     ) -> EvalResult<()>;
 }
 
-pub fn new_dataframe_output<'d, Dest: 'd + IoWrite + Send + Sync, Data: 'd + Send + Sync>(
+pub fn new_data_series_refs_vec_output<
+    'd,
+    Dest: 'd + IoWrite + Send + Sync,
+    Data: 'd + Send + Sync,
+>(
     format: OutputFormat,
     output_dest: Dest,
-) -> Box<dyn DataFrameOutput<Data = Data> + 'd>
+) -> Box<dyn DataSeriesRefsOutput<Data = Data> + 'd>
 where
     Data: DataSeriesRefs,
 {

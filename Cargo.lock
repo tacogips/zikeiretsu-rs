@@ -1518,6 +1518,7 @@ dependencies = [
  "polars-arrow",
  "rayon",
  "regex 1.5.4",
+ "serde",
  "thiserror",
 ]
 

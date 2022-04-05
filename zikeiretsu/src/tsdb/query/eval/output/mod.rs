@@ -23,16 +23,13 @@ pub trait DataSeriesRefsOutput {
     ) -> EvalResult<()>;
 }
 
-pub fn new_data_series_refs_vec_output<
-    'd,
-    Dest: 'd + IoWrite + Send + Sync,
-    Data: 'd + Send + Sync,
->(
-    format: OutputFormat,
+pub fn new_data_series_refs_vec_output<'d, Dest, Data>(
+    format: &OutputFormat,
     output_dest: Dest,
 ) -> Box<dyn DataSeriesRefsOutput<Data = Data> + 'd>
 where
-    Data: DataSeriesRefs,
+    Dest: 'd + IoWrite + Send + Sync,
+    Data: 'd + DataSeriesRefs + Send + Sync,
 {
     match format {
         OutputFormat::Json => Box::new(JsonDfOutput(output_dest, PhantomData)),

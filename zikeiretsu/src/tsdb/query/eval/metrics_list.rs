@@ -1,8 +1,9 @@
 use super::output::*;
 use super::EvalError;
 use crate::tsdb::engine::Engine;
-use crate::tsdb::query::lexer::OutputCondition;
+use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::query::DBContext;
+use crate::tsdb::StringDataSeriesRefs;
 use crate::tsdb::{block_list, Metrics};
 use serde::Serialize;
 
@@ -29,6 +30,29 @@ pub async fn execute_metrics_list(
         });
     }
 
+    match output_condition.output_wirter()? {
+        OutputWriter::Stdout => {
+            let out = async_std::io::stdout();
+            let mut out = std::io::BufWriter::new(out.lock());
+
+            let output = new_data_series_refs_vec_output::<_, StringDataSeriesRefs<'_>>(
+                &output_condition.output_format,
+                out,
+            );
+
+            // TODO (tacogips)
+            unimplemented!()
+        }
+        OutputWriter::File(f) => {
+            let mut out = std::io::BufWriter::new(f);
+            let output = new_data_series_refs_vec_output::<_, StringDataSeriesRefs<'_>>(
+                &output_condition.output_format,
+                out,
+            );
+        }
+    }
+
+    // TODO (tacogips)
     unimplemented!()
 }
 

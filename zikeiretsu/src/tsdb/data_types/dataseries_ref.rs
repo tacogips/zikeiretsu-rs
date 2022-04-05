@@ -103,7 +103,9 @@ pub trait DataSeriesRefs {
     }
 }
 
-impl<'a> DataSeriesRefs for Vec<&'a Vec<String>> {
+pub type StringDataSeriesRefs<'a> = Vec<&'a Vec<String>>;
+
+impl<'a> DataSeriesRefs for StringDataSeriesRefs<'a> {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'a>> {
         let vs: Vec<DataSeriesRef<'_>> = self
             .iter()

@@ -11,7 +11,11 @@ pub use crate::tsdb::query::parser::clause::WithClause;
 use crate::tsdb::query::parser::*;
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use either::Either;
+use std::fs;
+use std::io::{Error as IoError, Write as IoWrite};
 use std::path::PathBuf;
+
+use std::result::Result as StdResult;
 
 use crate::EngineError;
 use thiserror::Error;
@@ -39,6 +43,15 @@ pub enum LexerError {
 
 pub type Result<T> = std::result::Result<T, LexerError>;
 
+#[derive(Error, Debug)]
+pub enum OutputError {
+    #[error("{0}")]
+    IoError(#[from] IoError),
+
+    #[error("invalid output file path : {0}")]
+    InvalidPath(String),
+}
+
 pub enum InterpretedQuery {
     ListMetrics(OutputCondition),
     Metrics(InterpretedQueryCondition),
@@ -47,6 +60,30 @@ pub enum InterpretedQuery {
 pub struct OutputCondition {
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
+}
+
+pub enum OutputWriter {
+    Stdout,
+    File(fs::File),
+}
+
+impl OutputCondition {
+    pub fn output_wirter(&self) -> StdResult<OutputWriter, OutputError> {
+        match &self.output_file_path {
+            None => Ok(OutputWriter::Stdout),
+
+            Some(output_file_path) => match output_file_path.parent() {
+                None => Err(OutputError::InvalidPath(format!("{:?} ", output_file_path))),
+                Some(output_dir) => {
+                    if output_dir.exists() {
+                        fs::create_dir_all(output_dir)?;
+                    }
+                    let f = fs::File::create(output_file_path)?;
+                    Ok(OutputWriter::File(f))
+                }
+            },
+        }
+    }
 }
 
 pub struct InterpretedQueryCondition {

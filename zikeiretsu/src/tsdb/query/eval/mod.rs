@@ -9,7 +9,9 @@ use crate::tsdb::query::{
 
 use crate::tsdb::data_types::DataSeriesRefsError;
 use crate::tsdb::engine::EngineError;
-use crate::tsdb::lexer::{interpret, InterpretedQuery, InterpretedQueryCondition, LexerError};
+use crate::tsdb::lexer::{
+    interpret, InterpretedQuery, InterpretedQueryCondition, LexerError, OutputError,
+};
 pub use metrics::*;
 pub use metrics_list::*;
 pub use output::*;
@@ -30,6 +32,9 @@ pub enum EvalError {
 
     #[error("lexer error {0}")]
     LexerError(#[from] LexerError),
+
+    #[error("output error {0}")]
+    OutputError(#[from] OutputError),
 
     #[error("engine error {0}")]
     EngineError(#[from] EngineError),

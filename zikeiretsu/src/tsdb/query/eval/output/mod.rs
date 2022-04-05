@@ -30,3 +30,25 @@ where
         OutputFormat::Table => Box::new(TableDfOutput(output_dest)),
     }
 }
+
+macro_rules! output_with_condition {
+    ($output_condition:expr, $df:expr) => {{
+        match $output_condition.output_wirter()? {
+            OutputWriter::Stdout => {
+                let out = std::io::stdout();
+                let out = std::io::BufWriter::new(out.lock());
+                let mut destination =
+                    new_data_series_refs_vec_output(&$output_condition.output_format, out);
+                destination.output(&$df)?;
+            }
+            OutputWriter::File(f) => {
+                let out = std::io::BufWriter::new(f);
+                let mut destination =
+                    new_data_series_refs_vec_output::<_>(&$output_condition.output_format, out);
+                destination.output(&$df)?;
+            }
+        }
+    }};
+}
+
+pub(crate) use output_with_condition;

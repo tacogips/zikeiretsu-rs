@@ -3,7 +3,7 @@ use pest::iterators::Pair;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum OutputFormat {
     Json,
     Table,

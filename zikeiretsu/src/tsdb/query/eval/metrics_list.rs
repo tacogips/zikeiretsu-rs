@@ -18,21 +18,6 @@ pub async fn execute_metrics_list(
 
     let p_df = series.as_polar_dataframes(Some(&["metrics"]), None).await?;
 
-    match output_condition.output_wirter()? {
-        OutputWriter::Stdout => {
-            let out = std::io::stdout();
-            let out = std::io::BufWriter::new(out.lock());
-            let mut destination =
-                new_data_series_refs_vec_output(&output_condition.output_format, out);
-            destination.output(&p_df)?;
-        }
-        OutputWriter::File(f) => {
-            let out = std::io::BufWriter::new(f);
-            let mut destination =
-                new_data_series_refs_vec_output::<_>(&output_condition.output_format, out);
-            destination.output(&p_df)?;
-        }
-    }
-
+    output_with_condition!(output_condition, p_df);
     Ok(())
 }

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 pub(crate) fn interpret_field_selector<'q>(
     column_index_map: Option<&HashMap<&'q str, usize>>,
     select: Option<&SelectClause<'q>>,
-) -> LexerResult<Option<Vec<usize>>> {
+) -> LexerResult<Option<(Vec<usize>, Vec<String>)>> {
     // select columns
     match select {
         None => Err(LexerError::NoSelect),
@@ -20,6 +20,7 @@ pub(crate) fn interpret_field_selector<'q>(
                 Ok(None)
             } else {
                 let mut field_selectors = Vec::<usize>::new();
+                let mut field_names = Vec::<String>::new();
                 match column_index_map {
                     None => {
                         return Err(LexerError::NoColumnDef(format!(
@@ -36,7 +37,10 @@ pub(crate) fn interpret_field_selector<'q>(
                         for column in select.select_columns.iter() {
                             if let Column::ColumnName(column_name) = column {
                                 match column_index_map.get(column_name.as_str()) {
-                                    Some(column_idx) => field_selectors.push(*column_idx),
+                                    Some(column_idx) => {
+                                        field_selectors.push(*column_idx);
+                                        field_names.push(column_name.as_string());
+                                    }
                                     None => {
                                         return Err(LexerError::NoColumnDef(format!(
                                             "{}",
@@ -48,7 +52,7 @@ pub(crate) fn interpret_field_selector<'q>(
                         }
                     }
                 }
-                Ok(Some(field_selectors))
+                Ok(Some((field_selectors, field_names)))
             }
         }
     }
@@ -57,6 +61,15 @@ pub(crate) fn interpret_field_selector<'q>(
 #[cfg(test)]
 mod test {
     use super::*;
+
+    macro_rules! ss {
+        ($($s : expr),*)=>{
+            let mut v = Vec::new();
+            $(v.push($s.to_string());)*
+            v
+        }
+
+    }
 
     #[test]
     fn lex_select_1() {
@@ -75,7 +88,7 @@ mod test {
 
         let result = interpret_field_selector(Some(&column_map), Some(&select)).unwrap();
 
-        assert_eq!(result, Some(vec![1, 0, 2]));
+        assert_eq!(result, Some((vec![1, 0, 2], ss!("c2", "c1", "c3"))));
     }
     #[test]
     fn lex_select_2() {

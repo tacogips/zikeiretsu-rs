@@ -22,6 +22,10 @@ impl<'q> ColumnName<'q> {
     pub fn as_str(&self) -> &'q str {
         self.0
     }
+
+    pub fn as_string(&self) -> String {
+        self.0.to_string()
+    }
 }
 
 #[derive(Debug, PartialEq)]

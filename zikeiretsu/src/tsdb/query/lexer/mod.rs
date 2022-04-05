@@ -89,10 +89,20 @@ impl OutputCondition {
 pub struct InterpretedQueryCondition {
     pub metrics: Metrics,
     pub field_selectors: Option<Vec<usize>>,
+    pub field_names: Option<Vec<String>>,
     pub search_condition: DatapointSearchCondition,
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
     pub timezone: FixedOffset,
+}
+
+impl InterpretedQueryCondition {
+    pub fn as_output_condition(&self) -> OutputCondition {
+        OutputCondition {
+            output_format: self.output_format.clone(),
+            output_file_path: self.output_file_path.clone(),
+        }
+    }
 }
 
 pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
@@ -110,16 +120,21 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
     };
 
     // select columns
-    let field_selectors = select::interpret_field_selector(
+    let (field_selectors, field_names) = match select::interpret_field_selector(
         with.column_index_map.as_ref(),
         parsed_query.select.as_ref(),
-    )?;
+    )? {
+        None => (None, None),
+        Some((field_selectors, field_names)) => (Some(field_selectors), Some(field_names)),
+    };
+
     let search_condition =
         r#where::interpret_search_condition(&with.timezone, parsed_query.r#where.as_ref())?;
 
     let query_context = InterpretedQueryCondition {
         metrics,
         field_selectors,
+        field_names,
         search_condition,
         output_format: with.output_format,
         output_file_path: with.output_file_path,

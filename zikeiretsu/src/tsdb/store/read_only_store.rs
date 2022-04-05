@@ -21,7 +21,7 @@ impl ReadonlyStore {
         self.dataframe.len()
     }
 
-    pub fn all_dataframe(&self) -> &DataFrame {
+    pub fn as_dataframe(&self) -> &DataFrame {
         &self.dataframe
     }
 }

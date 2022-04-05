@@ -110,25 +110,26 @@ impl Engine {
         WritableStore::builder(metics, field_types)
     }
 
-    pub async fn readonly_store<P: AsRef<Path>, M>(
+    pub async fn search<P: AsRef<Path>, M, ME>(
         db_dir: P,
         metrics: M,
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
-        setting: &DBConfig,
+        db_config: &DBConfig,
     ) -> Result<Option<ReadonlyStore>>
     where
-        M: TryInto<Metrics, Error = String>,
+        M: TryInto<Metrics, Error = ME>,
+        ME: std::fmt::Display,
     {
         let dataframe = api::read::search_dataframe(
             db_dir,
             &metrics
                 .try_into()
-                .map_err(|e| StorageApiError::InvalidMetricsName(e))?,
+                .map_err(|e| StorageApiError::InvalidMetricsName(format!("{}", e)))?,
             field_selectors,
             condition,
-            &setting.cache_setting,
-            setting.cloud_setting.as_ref(),
+            &db_config.cache_setting,
+            db_config.cloud_setting.as_ref(),
         )
         .await?;
         match dataframe {

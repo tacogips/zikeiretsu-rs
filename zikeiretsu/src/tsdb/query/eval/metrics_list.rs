@@ -3,14 +3,12 @@ use super::EvalError;
 use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::query::DBContext;
-use crate::tsdb::StringDataSeriesRefs;
 use crate::tsdb::{block_list, Metrics};
+use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs, StringSeriesRef};
 use serde::Serialize;
 
-#[derive(Serialize)]
-struct DatabaseDescribe {
-    metrics: Metrics,
-    block_list: block_list::BlockList,
+fn convert_to_metrics_list_serieses<'a>(metricses: &'a Vec<Metrics>) -> StringDataSeriesRefs<'a> {
+    unimplemented!()
 }
 
 pub async fn execute_metrics_list(
@@ -18,36 +16,26 @@ pub async fn execute_metrics_list(
     output_condition: OutputCondition,
 ) -> Result<(), EvalError> {
     let metricses = Engine::list_metrics(Some(&ctx.db_dir), &ctx.db_config).await?;
-
-    let mut describes = Vec::<DatabaseDescribe>::new();
-    for metrics in metricses.into_iter() {
-        let block_list =
-            Engine::block_list_data(&ctx.db_dir.clone(), &metrics, &ctx.db_config).await?;
-
-        describes.push(DatabaseDescribe {
-            metrics,
-            block_list,
-        });
-    }
+    let series = convert_to_metrics_list_serieses(&metricses);
+    let mut p_df = series.as_polar_dataframes(Some(&["metrics"]), None).await?;
 
     match output_condition.output_wirter()? {
         OutputWriter::Stdout => {
             let out = std::io::stdout();
             let mut out = std::io::BufWriter::new(out.lock());
-
-            let output = new_data_series_refs_vec_output(&output_condition.output_format, out);
-
-            // TODO (tacogips)
-            unimplemented!()
+            let mut destination =
+                new_data_series_refs_vec_output(&output_condition.output_format, out);
+            destination.output(&p_df)?;
         }
         OutputWriter::File(f) => {
             let mut out = std::io::BufWriter::new(f);
-            let output = new_data_series_refs_vec_output::<_>(&output_condition.output_format, out);
+            let mut destination =
+                new_data_series_refs_vec_output::<_>(&output_condition.output_format, out);
+            destination.output(&p_df)?;
         }
     }
 
-    // TODO (tacogips)
-    unimplemented!()
+    Ok(())
 }
 
 //use super::{operation::*, Result};

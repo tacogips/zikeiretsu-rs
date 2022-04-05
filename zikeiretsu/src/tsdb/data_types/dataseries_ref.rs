@@ -103,11 +103,21 @@ pub trait DataSeriesRefs {
     }
 }
 
-pub type StringDataSeriesRefs<'a> = Vec<&'a Vec<String>>;
+pub type StringSeriesRef<'a> = &'a Vec<String>;
+pub struct StringDataSeriesRefs<'a> {
+    values: Vec<StringSeriesRef<'a>>,
+}
+
+impl<'a> StringDataSeriesRefs<'a> {
+    pub fn appnd(&mut self, series: StringSeriesRef<'a>) {
+        self.values.push(series);
+    }
+}
 
 impl<'a> DataSeriesRefs for StringDataSeriesRefs<'a> {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'a>> {
         let vs: Vec<DataSeriesRef<'_>> = self
+            .values
             .iter()
             .map(|strs| DataSeriesRef::new(SeriesValuesRef::String(strs)))
             .collect();

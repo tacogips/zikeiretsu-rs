@@ -107,9 +107,14 @@ pub type StringSeriesRef<'a> = &'a Vec<String>;
 pub struct StringDataSeriesRefs<'a> {
     values: Vec<StringSeriesRef<'a>>,
 }
+impl<'a> Default for StringDataSeriesRefs<'a> {
+    fn default() -> Self {
+        Self { values: vec![] }
+    }
+}
 
 impl<'a> StringDataSeriesRefs<'a> {
-    pub fn appnd(&mut self, series: StringSeriesRef<'a>) {
+    pub fn push(&mut self, series: StringSeriesRef<'a>) {
         self.values.push(series);
     }
 }
@@ -119,7 +124,7 @@ impl<'a> DataSeriesRefs for StringDataSeriesRefs<'a> {
         let vs: Vec<DataSeriesRef<'_>> = self
             .values
             .iter()
-            .map(|strs| DataSeriesRef::new(SeriesValuesRef::String(strs)))
+            .map(|strs| DataSeriesRef::new(SeriesValuesRef::String(&strs[..])))
             .collect();
 
         vs

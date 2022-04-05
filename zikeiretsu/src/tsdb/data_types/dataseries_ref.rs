@@ -68,9 +68,9 @@ pub enum DataSeriesRefsError {
 pub trait DataSeriesRefs {
     fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>>;
 
-    async fn as_polar_dataframes(
+    async fn as_polar_dataframes<S>(
         &self,
-        column_names: Option<&[&str]>,
+        column_names: Option<&[String]>,
         timezone: Option<&FixedOffset>,
     ) -> Result<PDataFrame> {
         let data_series_vec = self.as_data_serieses_ref_vec();

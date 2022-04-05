@@ -93,16 +93,8 @@ pub struct InterpretedQueryCondition {
     pub search_condition: DatapointSearchCondition,
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
+    pub output_condition: Option<OutputCondition>,
     pub timezone: FixedOffset,
-}
-
-impl InterpretedQueryCondition {
-    pub fn as_output_condition(&self) -> OutputCondition {
-        OutputCondition {
-            output_format: self.output_format.clone(),
-            output_file_path: self.output_file_path.clone(),
-        }
-    }
 }
 
 pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {

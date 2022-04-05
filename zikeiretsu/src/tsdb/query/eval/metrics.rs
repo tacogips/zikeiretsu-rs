@@ -28,10 +28,15 @@ pub async fn execute_search_metrics(
         Some(store) => {
             let p_df = store
                 .as_dataframe()
-                .as_polar_dataframes(condition.field_names, None)
+                .as_polar_dataframes(
+                    condition.field_names.map(|names| names.as_slice()),
+                    Some(&condition.timezone),
+                )
                 .await?;
 
-            output_with_condition!(condition.as_output_condition(), p_df);
+            if let Some(output_condition) = condition.output_condition {
+                output_with_condition!(output_condition, p_df);
+            }
             Ok(Some(()))
         }
     }

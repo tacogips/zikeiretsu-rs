@@ -19,7 +19,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<FromClause<'q>> {
     let mut from: Option<&'q str> = None;
     for each in pair.into_inner() {
         match each.as_rule() {
-            Rule::TABLE_NAME => from = Some(each.as_str()),
+            Rule::METRICS_NAME => from = Some(each.as_str()),
             _ => {}
         }
     }

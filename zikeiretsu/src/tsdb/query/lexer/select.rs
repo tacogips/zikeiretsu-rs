@@ -63,12 +63,11 @@ mod test {
     use super::*;
 
     macro_rules! ss {
-        ($($s : expr),*)=>{
+        ($($s : expr),*)=>{{
             let mut v = Vec::new();
             $(v.push($s.to_string());)*
             v
-        }
-
+        }}
     }
 
     #[test]

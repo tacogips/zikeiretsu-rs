@@ -289,7 +289,7 @@ mod test {
             let store = ReadonlyStore::new(dataframe, false).unwrap();
 
             {
-                let result = store.all_dataframe().search(&condition).await;
+                let result = store.as_dataframe().search(&condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),
@@ -308,7 +308,7 @@ mod test {
                     Some(TimestampNano::new(1629745451_715063000)),
                     Some(TimestampNano::new(1629745451_715065001)),
                 );
-                let result = store.all_dataframe().search(&another_condition).await;
+                let result = store.as_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),
@@ -424,7 +424,7 @@ mod test {
                     {1639745451_715062000, vec![1200f64,37f64]}
                 );
 
-                let result = store.all_dataframe().search(&condition).await;
+                let result = store.as_dataframe().search(&condition).await;
                 assert!(result.is_some());
 
                 assert_eq!(result.clone().unwrap().len(), expected.len());
@@ -444,7 +444,7 @@ mod test {
                     None,
                     Some(TimestampNano::new(1639745451_715061001)),
                 );
-                let result = store.all_dataframe().search(&another_condition).await;
+                let result = store.as_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),

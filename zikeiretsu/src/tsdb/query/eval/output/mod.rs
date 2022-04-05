@@ -8,32 +8,26 @@ use super::Result as EvalResult;
 use crate::tsdb::query::lexer::OutputFormat;
 use crate::tsdb::DataSeriesRefs;
 use async_trait::async_trait;
+use polars::prelude::{DataFrame as PDataFrame, Series as PSeries, *};
 use std::io::Write as IoWrite;
 use std::marker::PhantomData;
 
 use chrono::FixedOffset;
-#[async_trait]
+
 pub trait DataSeriesRefsOutput {
-    type Data;
-    async fn output(
-        &mut self,
-        data: Self::Data,
-        column_names: Option<&[&str]>,
-        timezone: Option<&FixedOffset>,
-    ) -> EvalResult<()>;
+    fn output(&mut self, data: &PDataFrame) -> EvalResult<()>;
 }
 
-pub fn new_data_series_refs_vec_output<'d, Dest, Data>(
+pub fn new_data_series_refs_vec_output<'d, Dest>(
     format: &OutputFormat,
     output_dest: Dest,
-) -> Box<dyn DataSeriesRefsOutput<Data = Data> + 'd>
+) -> Box<dyn DataSeriesRefsOutput + 'd>
 where
-    Dest: 'd + IoWrite + Send + Sync,
-    Data: 'd + DataSeriesRefs + Send + Sync,
+    Dest: 'd + IoWrite,
 {
     match format {
-        OutputFormat::Json => Box::new(JsonDfOutput(output_dest, PhantomData)),
-        OutputFormat::Table => Box::new(TableDfOutput(output_dest, PhantomData)),
+        OutputFormat::Json => Box::new(JsonDfOutput(output_dest)),
+        OutputFormat::Table => Box::new(TableDfOutput(output_dest)),
     }
 }
 

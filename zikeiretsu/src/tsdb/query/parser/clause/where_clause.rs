@@ -5,7 +5,7 @@ use crate::tsdb::query::parser::*;
 use crate::tsdb::query::parser::parts::DatetimeFilter;
 #[derive(Debug, PartialEq)]
 pub struct WhereClause<'q> {
-    pub datetime_filter: DatetimeFilter<'q>,
+    pub datetime_filter: Option<DatetimeFilter<'q>>,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
@@ -28,6 +28,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
                                 datetime_filter_parser::parse(each_filter)?;
                             datetime_filter = Some(parsed_datetime_filter);
                         }
+                        //TODO(tacogips) add metrics name filter tin the case of  metrics list
                         _ => {}
                     }
                 }
@@ -36,10 +37,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
         }
     }
 
-    match datetime_filter {
-        None => Err(ParserError::NoDatetimeFilter),
-        Some(datetime_filter) => Ok(WhereClause { datetime_filter }),
-    }
+    Ok(WhereClause { datetime_filter })
 }
 
 #[cfg(test)]

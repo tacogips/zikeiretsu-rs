@@ -6,13 +6,16 @@ use chrono::{Duration, FixedOffset};
 
 use super::Result as LexerResult;
 
-pub(crate) fn interpret_search_condition<'q>(
+pub(crate) fn interpret_datatime_search_condition<'q>(
     timezone: &FixedOffset,
     where_clause: Option<&WhereClause<'q>>,
 ) -> LexerResult<DatapointSearchCondition> {
     match where_clause {
         None => Ok(DatapointSearchCondition::all()),
-        Some(where_clause) => datetime_filter_to_condition(timezone, &where_clause.datetime_filter),
+        Some(where_clause) => match &where_clause.datetime_filter {
+            None => Ok(DatapointSearchCondition::all()),
+            Some(datetime_filter) => datetime_filter_to_condition(timezone, &datetime_filter),
+        },
     }
 }
 

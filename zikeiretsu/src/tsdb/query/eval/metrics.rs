@@ -20,7 +20,7 @@ pub async fn execute_search_metrics(
             .field_selectors
             .as_ref()
             .map(|indices| indices.as_slice()),
-        &condition.search_condition,
+        &condition.datetime_search_condition,
         &ctx.db_config,
     )
     .await?;

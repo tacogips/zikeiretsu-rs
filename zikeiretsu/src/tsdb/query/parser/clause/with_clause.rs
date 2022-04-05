@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, PartialEq)]
 pub enum OutputFormat {
     Json,
-    Table,
+    DataFrame,
 }
 
 #[derive(Debug)]
@@ -66,8 +66,8 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                                     Rule::KW_JSON => {
                                         with_clause.def_output = Some(OutputFormat::Json)
                                     }
-                                    Rule::KW_TABLE => {
-                                        with_clause.def_output = Some(OutputFormat::Table)
+                                    Rule::KW_DATAFRAME => {
+                                        with_clause.def_output = Some(OutputFormat::DataFrame)
                                     }
                                     _ => { /* do nothing */ }
                                 }

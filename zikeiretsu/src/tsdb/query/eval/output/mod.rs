@@ -27,7 +27,7 @@ where
 {
     match format {
         OutputFormat::Json => Box::new(JsonDfOutput(output_dest)),
-        OutputFormat::Table => Box::new(TableDfOutput(output_dest)),
+        OutputFormat::DataFrame => Box::new(TableDfOutput(output_dest)),
     }
 }
 

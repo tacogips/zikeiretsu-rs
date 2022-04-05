@@ -15,7 +15,7 @@ pub(crate) struct With<'q> {
 impl<'q> Default for With<'q> {
     fn default() -> Self {
         let timezone: FixedOffset = FixedOffset::west(0);
-        let output_format: OutputFormat = OutputFormat::Table;
+        let output_format: OutputFormat = OutputFormat::DataFrame;
 
         Self {
             timezone,
@@ -89,6 +89,6 @@ mod test {
         column_map.insert("c3", 2);
         assert_eq!(result.column_index_map, Some(column_map));
         assert_eq!(result.timezone, FixedOffset::east(0));
-        assert_eq!(result.output_format, OutputFormat::Table);
+        assert_eq!(result.output_format, OutputFormat::DataFrame);
     }
 }

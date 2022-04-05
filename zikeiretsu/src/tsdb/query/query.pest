@@ -134,6 +134,7 @@ REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
 
 FILTER = { DATETIME_FILTER }
 DATETIME_FILTER = { KW_TIMESTAMP ~ REL_OP ~ ( DATETIME_RANGE | DATETIME )}
+//TODO(tacogips) handle metrics_filter
 METRICS_FILTER  = { KW_METRICS   ~ "=" ~ METRICS_NAME }
 
 // === WITH CLAUSE =========================================

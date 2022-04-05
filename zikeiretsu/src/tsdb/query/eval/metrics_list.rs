@@ -9,15 +9,23 @@ use serde::Serialize;
 
 pub async fn execute_metrics_list(
     ctx: &DBContext,
-    output_condition: OutputCondition,
-) -> Result<(), EvalError> {
+    output_condition: Option<OutputCondition>,
+) -> Result<Vec<Metrics>, EvalError> {
     let metricses = Engine::list_metrics(Some(&ctx.db_dir), &ctx.db_config).await?;
-    let metricses = metricses.into_iter().map(|m| m.into_inner()).collect();
+    let metricses_strs = metricses
+        .clone()
+        .into_iter()
+        .map(|m| m.into_inner())
+        .collect();
     let mut series = StringDataSeriesRefs::default();
-    series.push(&metricses);
+    series.push(&metricses_strs);
 
-    let p_df = series.as_polar_dataframes(Some(&["metrics"]), None).await?;
+    let p_df = series
+        .as_polar_dataframes(Some(vec!["metrics".to_string()]), None)
+        .await?;
 
-    output_with_condition!(output_condition, p_df);
-    Ok(())
+    if let Some(output_condition) = output_condition {
+        output_with_condition!(output_condition, p_df);
+    }
+    Ok(metricses)
 }

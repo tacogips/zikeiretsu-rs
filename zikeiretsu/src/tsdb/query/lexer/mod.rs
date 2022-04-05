@@ -91,8 +91,6 @@ pub struct InterpretedQueryCondition {
     pub field_selectors: Option<Vec<usize>>,
     pub field_names: Option<Vec<String>>,
     pub search_condition: DatapointSearchCondition,
-    pub output_format: OutputFormat,
-    pub output_file_path: Option<PathBuf>,
     pub output_condition: Option<OutputCondition>,
     pub timezone: FixedOffset,
 }
@@ -123,13 +121,17 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
     let search_condition =
         r#where::interpret_search_condition(&with.timezone, parsed_query.r#where.as_ref())?;
 
+    let output_condition = Some(OutputCondition {
+        output_format: with.output_format,
+        output_file_path: with.output_file_path,
+    });
+
     let query_context = InterpretedQueryCondition {
         metrics,
         field_selectors,
         field_names,
         search_condition,
-        output_format: with.output_format,
-        output_file_path: with.output_file_path,
+        output_condition,
         timezone: with.timezone,
     };
     Ok(InterpretedQuery::Metrics(query_context))

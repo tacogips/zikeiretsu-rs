@@ -6,12 +6,13 @@ use crate::tsdb::query::lexer::{InterpretedQueryCondition, OutputCondition, Outp
 use crate::tsdb::query::DBContext;
 use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs, StringSeriesRef};
+use polars::prelude::{DataFrame as PDataFrame, Series as PSeries};
 use serde::Serialize;
 
 pub async fn execute_search_metrics(
     ctx: &DBContext,
     condition: InterpretedQueryCondition,
-) -> Result<Option<()>, EvalError> {
+) -> Result<Option<PDataFrame>, EvalError> {
     let store = Engine::search(
         &ctx.db_dir,
         condition.metrics.clone(),
@@ -28,16 +29,13 @@ pub async fn execute_search_metrics(
         Some(store) => {
             let p_df = store
                 .as_dataframe()
-                .as_polar_dataframes(
-                    condition.field_names.map(|names| names.as_slice()),
-                    Some(&condition.timezone),
-                )
+                .as_polar_dataframes(condition.field_names, Some(&condition.timezone))
                 .await?;
 
             if let Some(output_condition) = condition.output_condition {
                 output_with_condition!(output_condition, p_df);
             }
-            Ok(Some(()))
+            Ok(Some(p_df))
         }
     }
 }

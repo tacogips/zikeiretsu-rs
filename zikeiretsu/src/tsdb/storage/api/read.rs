@@ -110,7 +110,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
     cloud_setting: Option<&CloudStorageSetting>,
-) -> Result<Option<DataFrame>> {
+) -> Result<Option<TimeSeriesDataFrame>> {
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
@@ -142,7 +142,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
             });
 
             let dataframes_of_blocks = join_all(tasks).await;
-            let dataframes_of_blocks: Result<Vec<DataFrame>> =
+            let dataframes_of_blocks: Result<Vec<TimeSeriesDataFrame>> =
                 dataframes_of_blocks.into_iter().collect();
 
             let merged_dataframe = dataframes_of_blocks?
@@ -179,7 +179,7 @@ async fn read_block(
     field_selectors: Option<&[usize]>,
     block_timestamp: &block_list::BlockTimestamp,
     cloud_setting: Option<&CloudStorageSetting>,
-) -> Result<DataFrame> {
+) -> Result<TimeSeriesDataFrame> {
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
@@ -213,7 +213,7 @@ async fn read_block(
 fn read_from_block_file(
     block_file_path: &PathBuf,
     field_selectors: Option<&[usize]>,
-) -> Result<DataFrame> {
+) -> Result<TimeSeriesDataFrame> {
     let result = block::read_from_block_file(block_file_path, field_selectors)?;
     Ok(result)
 }

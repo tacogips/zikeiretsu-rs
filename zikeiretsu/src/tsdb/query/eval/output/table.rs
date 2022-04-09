@@ -1,6 +1,6 @@
 use super::{DataSeriesRefsOutput, EvalResult};
-use crate::tsdb::DataFrame as ZDataFrame;
 use crate::tsdb::DataSeriesRefs;
+use crate::tsdb::TimeSeriesDataFrame as ZDataFrame;
 use async_trait::async_trait;
 use chrono::FixedOffset;
 use polars::prelude::{DataFrame as PDataFrame, Series as PSeries, *};

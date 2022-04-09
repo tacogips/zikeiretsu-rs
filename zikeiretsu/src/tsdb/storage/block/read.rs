@@ -4,14 +4,14 @@ use crate::tsdb::*;
 use bits_ope::*;
 use std::collections::HashMap;
 
-pub(crate) fn read_from_block(block_data: &[u8]) -> Result<DataFrame> {
+pub(crate) fn read_from_block(block_data: &[u8]) -> Result<TimeSeriesDataFrame> {
     read_from_block_with_specific_fields(block_data, None)
 }
 
 pub(crate) fn read_from_block_with_specific_fields(
     block_data: &[u8],
     field_selectors: Option<&[usize]>,
-) -> Result<DataFrame> {
+) -> Result<TimeSeriesDataFrame> {
     // 1. number  of data
     let (number_of_data, mut block_idx): (u64, usize) =
         base_128_variants::decompress_u64(&block_data)?;
@@ -200,7 +200,7 @@ pub(crate) fn read_from_block_with_specific_fields(
         }
     }
 
-    let dataframe = DataFrame::new(
+    let dataframe = TimeSeriesDataFrame::new(
         timestamps,
         block_field_values
             .into_iter()

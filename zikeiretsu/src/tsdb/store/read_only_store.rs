@@ -4,13 +4,13 @@ use super::*;
 use crate::tsdb::dataframe::*;
 
 pub struct ReadonlyStore {
-    dataframe: DataFrame,
+    dataframe: TimeSeriesDataFrame,
 }
 
 impl ReadonlyStore {
-    pub fn new(dataframe: DataFrame, validate: bool) -> StoreResult<Self> {
+    pub fn new(dataframe: TimeSeriesDataFrame, validate: bool) -> StoreResult<Self> {
         if validate {
-            if let Err(e) = DataFrame::check_dataframe_is_sorted(&dataframe) {
+            if let Err(e) = TimeSeriesDataFrame::check_dataframe_is_sorted(&dataframe) {
                 return Err(StoreError::UnsortedDataFrame(e.to_string()));
             }
         }
@@ -21,7 +21,7 @@ impl ReadonlyStore {
         self.dataframe.len()
     }
 
-    pub fn as_dataframe(&self) -> &DataFrame {
+    pub fn as_dataframe(&self) -> &TimeSeriesDataFrame {
         &self.dataframe
     }
 }

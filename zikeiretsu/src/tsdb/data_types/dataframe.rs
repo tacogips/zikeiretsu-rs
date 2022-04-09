@@ -32,12 +32,12 @@ pub enum DataframeError {
 }
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
-pub struct DataFrame {
+pub struct TimeSeriesDataFrame {
     pub timestamp_nanos: Vec<TimestampNano>,
     pub data_serieses: Vec<DataSeries>,
 }
 
-impl DataFrame {
+impl TimeSeriesDataFrame {
     pub fn new(timestamp_nanos: Vec<TimestampNano>, data_serieses: Vec<DataSeries>) -> Self {
         Self {
             timestamp_nanos,
@@ -45,7 +45,7 @@ impl DataFrame {
         }
     }
 
-    pub fn merge(&mut self, other: &mut DataFrame) -> Result<()> {
+    pub fn merge(&mut self, other: &mut TimeSeriesDataFrame) -> Result<()> {
         self.timestamp_nanos.append(&mut other.timestamp_nanos);
         for (idx, data_series) in self.data_serieses.iter_mut().enumerate() {
             match other.get_series_mut(idx) {
@@ -170,7 +170,7 @@ impl DataFrame {
         }
     }
 
-    pub(crate) fn check_dataframe_is_sorted(dataframe: &DataFrame) -> Result<()> {
+    pub(crate) fn check_dataframe_is_sorted(dataframe: &TimeSeriesDataFrame) -> Result<()> {
         if dataframe.is_empty() {
             Ok(())
         } else {
@@ -190,16 +190,16 @@ impl DataFrame {
     }
 }
 
-impl From<DataFrameRef<'_>> for DataFrame {
-    fn from(df: DataFrameRef<'_>) -> DataFrame {
-        DataFrame::new(
+impl From<DataFrameRef<'_>> for TimeSeriesDataFrame {
+    fn from(df: DataFrameRef<'_>) -> TimeSeriesDataFrame {
+        TimeSeriesDataFrame::new(
             df.timestamp_nanos.to_vec(),
             df.data_serieses.into_iter().map(|e| e.into()).collect(),
         )
     }
 }
 
-impl DataSeriesRefs for DataFrame {
+impl DataSeriesRefs for TimeSeriesDataFrame {
     fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>> {
         let mut vs: Vec<DataSeriesRef<'_>> = self
             .data_serieses
@@ -267,7 +267,7 @@ mod test {
                 values.push(val as f64);
             }
 
-            DataFrame::new(
+            TimeSeriesDataFrame::new(
                 timestamp_nanos,
                 vec![DataSeries::new(SeriesValues::Float64(values))],
             )
@@ -300,7 +300,7 @@ mod test {
         assert!(result.is_some());
         let result = result.unwrap();
 
-        let result: DataFrame = result.into();
+        let result: TimeSeriesDataFrame = result.into();
         assert_eq!(
             result,
             dataframe!([(20, 4), (20, 5), (20, 6), (30, 7), (40, 8),])
@@ -334,7 +334,7 @@ mod test {
         assert!(result.is_some());
         let result = result.unwrap();
 
-        let result: DataFrame = result.into();
+        let result: TimeSeriesDataFrame = result.into();
         assert_eq!(
             result,
             dataframe!([
@@ -386,7 +386,7 @@ mod test {
         assert!(result.is_some());
         let result = result.unwrap();
 
-        let result: DataFrame = result.into();
+        let result: TimeSeriesDataFrame = result.into();
         assert_eq!(
             result,
             dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (20, 5), (20, 6), (30, 7),])

@@ -13,6 +13,20 @@ pub async fn execute_describe_metrics(
     output_condition: Option<OutputCondition>,
 ) -> Result<Vec<Metrics>, EvalError> {
     let metricses = Engine::list_metrics(Some(&ctx.db_dir), &ctx.db_config).await?;
+    let metricses = match metrics_filter {
+        Some(metrics_filter) => metricses
+            .into_iter()
+            .find(|each| *each == metrics_filter)
+            .map_or(
+                Err(EvalError::MetricsNotFoundError(format!(
+                    "{}",
+                    metrics_filter
+                ))),
+                |found| Ok(vec![found]),
+            )?,
+        None => metricses,
+    };
+
     let metricses_strs = metricses
         .clone()
         .into_iter()

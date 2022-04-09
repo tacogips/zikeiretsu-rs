@@ -45,6 +45,9 @@ pub enum EvalError {
 
     #[error("serde json error {0}")]
     SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("metrics not found: {0}")]
+    MetricsNotFoundError(String),
 }
 
 pub type Result<T> = std::result::Result<T, EvalError>;

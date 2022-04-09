@@ -6,8 +6,7 @@ mod with;
 use crate::tsdb::datapoint::DatapointSearchCondition;
 use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
-pub use crate::tsdb::query::parser::clause::OutputFormat;
-pub use crate::tsdb::query::parser::clause::WithClause;
+pub use crate::tsdb::query::parser::clause::{OutputFormat, WhereClause, WithClause};
 use crate::tsdb::query::parser::*;
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use either::Either;
@@ -24,6 +23,9 @@ use thiserror::Error;
 pub enum LexerError {
     #[error("invalid datertime range. start:{0}, end: {1}")]
     InvalidDatetimeRange(String, String),
+
+    #[error("metrics filter not supported :{0}")]
+    MetricsFilterIsNotSupported(String),
 
     #[error("no from clause")]
     NoFrom,
@@ -100,10 +102,11 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => match buildin_metrics {
             from::BuildinMetrics::ListMetrics => {
+                invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
                 return Ok(InterpretedQuery::ListMetrics(OutputCondition {
                     output_format: with.output_format,
                     output_file_path: with.output_file_path,
-                }))
+                }));
             }
         },
         Either::Left(parsed_metrics) => parsed_metrics,
@@ -123,6 +126,8 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
         parsed_query.r#where.as_ref(),
     )?;
 
+    invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
+
     let output_condition = Some(OutputCondition {
         output_format: with.output_format,
         output_file_path: with.output_file_path,
@@ -137,4 +142,15 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
         timezone: with.timezone,
     };
     Ok(InterpretedQuery::Metrics(query_context))
+}
+
+fn invalid_if_metrics_filter_exists(where_clause: Option<&WhereClause<'_>>) -> Result<()> {
+    if let Some(where_clause) = where_clause {
+        if where_clause.metrics_filter.is_some() {
+            return Err(LexerError::MetricsFilterIsNotSupported(
+                "allowed only [.list, .describe]".to_string(),
+            ));
+        }
+    }
+    Ok(())
 }

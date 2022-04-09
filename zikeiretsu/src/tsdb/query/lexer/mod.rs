@@ -56,12 +56,18 @@ pub enum OutputError {
 
 pub enum InterpretedQuery {
     ListMetrics(OutputCondition),
+    DescribeMetrics(DescribeMetrics),
     Metrics(InterpretedQueryCondition),
 }
 
 pub struct OutputCondition {
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
+}
+
+pub struct DescribeMetrics {
+    pub output_condition: OutputCondition,
+    pub metrics_filter: Option<Metrics>,
 }
 
 pub enum OutputWriter {
@@ -108,6 +114,23 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
                     output_file_path: with.output_file_path,
                 }));
             }
+
+            from::BuildinMetrics::DescribeMetrics => {
+                let output_condition = OutputCondition {
+                    output_format: with.output_format,
+                    output_file_path: with.output_file_path,
+                };
+
+                let metrics_filter = match parsed_query.r#where {
+                    Some(where_clause) => where_clause.metrics_filter,
+                    None => None,
+                };
+
+                return Ok(InterpretedQuery::DescribeMetrics(DescribeMetrics {
+                    output_condition,
+                    metrics_filter,
+                }));
+            }
         },
         Either::Left(parsed_metrics) => parsed_metrics,
     };
@@ -148,7 +171,7 @@ fn invalid_if_metrics_filter_exists(where_clause: Option<&WhereClause<'_>>) -> R
     if let Some(where_clause) = where_clause {
         if where_clause.metrics_filter.is_some() {
             return Err(LexerError::MetricsFilterIsNotSupported(
-                "allowed only [.list, .describe]".to_string(),
+                "allowed only on '.describe'".to_string(),
             ));
         }
     }

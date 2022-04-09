@@ -1,3 +1,4 @@
+pub mod describe_metrics;
 pub mod metrics;
 pub mod metrics_list;
 pub mod output;
@@ -54,6 +55,15 @@ pub async fn execute(ctx: &DBContext, query: &str) -> Result<()> {
     match interpreted_query {
         InterpretedQuery::ListMetrics(output_condition) => {
             metrics_list::execute_metrics_list(ctx, Some(output_condition)).await?;
+        }
+
+        InterpretedQuery::DescribeMetrics(describe_condition) => {
+            describe_metrics::execute_describe_metrics(
+                ctx,
+                describe_condition.metrics_filter,
+                Some(describe_condition.output_condition),
+            )
+            .await?;
         }
         InterpretedQuery::Metrics(query_condition) => {}
     }

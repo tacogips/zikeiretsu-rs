@@ -1,10 +1,11 @@
 use super::output::*;
 use super::EvalError;
-use crate::tsdb::engine::Engine;
+use crate::tsdb::engine::{Engine, EngineError};
 use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::query::DBContext;
 use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs, StringSeriesRef, TimeSeriesDataFrame};
+use futures::{future, Future, FutureExt};
 use serde::Serialize;
 
 pub async fn execute_describe_metrics(
@@ -48,8 +49,26 @@ pub async fn execute_describe_metrics(
     Ok(metricses)
 }
 
-pub async fn load_metrics_describes(metrics: &[Metrics]) -> Result<(), EvalError> {
-    unimplemented!()
+async fn load_metrics_describes(
+    ctx: &DBContext,
+    metricses: Vec<Metrics>,
+) -> Result<Vec<MetricsDescribe>, EvalError> {
+    let metrics_descibes = metricses.into_iter().map(|metrics| async move {
+        Engine::block_list_data(&ctx.db_dir, &metrics, &ctx.db_config)
+            .await
+            .and_then(|block_list| {
+                Ok(MetricsDescribe {
+                    metrics,
+                    block_list,
+                })
+            })
+    });
+    let describes = future::join_all(metrics_descibes)
+        .await
+        .into_iter()
+        .collect::<Result<Vec<MetricsDescribe>, EngineError>>()?;
+
+    Ok(describes)
 }
 
 //pub async fn execute(describe_database_condition: DescribeDatabaseCondition) -> Result<()> {
@@ -92,12 +111,12 @@ pub async fn load_metrics_describes(metrics: &[Metrics]) -> Result<(), EvalError
 //}
 //
 
-struct MetrcisDescribe {
+struct MetricsDescribe {
     metrics: Metrics,
     block_list: block_list::BlockList,
 }
 
-impl MetrcisDescribe {
+impl MetricsDescribe {
     fn datetime_range(&self) -> Vec<String> {
         unimplemented!()
         //let mut result = Vec::<String>::new();

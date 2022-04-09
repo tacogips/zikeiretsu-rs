@@ -82,6 +82,9 @@ pub enum ParserError {
 
     #[error("invalid date time filter operator:{0}")]
     InvalidDatetimeFilterOperator(String),
+
+    #[error("invalid metrics:{0}")]
+    InvalidMetricsError(String),
 }
 
 pub type Result<T> = std::result::Result<T, ParserError>;

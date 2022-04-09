@@ -1,11 +1,13 @@
 use pest::iterators::Pair;
 
 use crate::tsdb::query::parser::*;
+use crate::tsdb::Metrics;
 
 use crate::tsdb::query::parser::parts::DatetimeFilter;
 #[derive(Debug, PartialEq)]
 pub struct WhereClause<'q> {
     pub datetime_filter: Option<DatetimeFilter<'q>>,
+    pub metrics_filter: Option<Metrics>,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
@@ -18,6 +20,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
     }
 
     let mut datetime_filter: Option<DatetimeFilter<'q>> = None;
+    let mut metrics_filter: Option<Metrics> = None;
     for each in pair.into_inner() {
         match each.as_rule() {
             Rule::FILTER => {
@@ -28,6 +31,11 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
                                 datetime_filter_parser::parse(each_filter)?;
                             datetime_filter = Some(parsed_datetime_filter);
                         }
+
+                        Rule::METRICS_FILTER => {
+                            metrics_filter = Some(parse_metrics_filter(each_filter)?);
+                        }
+
                         //TODO(tacogips) add metrics name filter tin the case of  metrics list
                         _ => {}
                     }
@@ -37,7 +45,35 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
         }
     }
 
-    Ok(WhereClause { datetime_filter })
+    Ok(WhereClause {
+        datetime_filter,
+        metrics_filter,
+    })
+}
+
+pub fn parse_metrics_filter<'q>(pair: Pair<'q, Rule>) -> Result<Metrics> {
+    #[cfg(debug_assertions)]
+    if pair.as_rule() != Rule::METRICS_FILTER {
+        return Err(ParserError::UnexpectedPair(
+            format!("{:?}", Rule::METRICS_FILTER),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
+
+    for each in pair.into_inner() {
+        match each.as_rule() {
+            Rule::METRICS_NAME => {
+                return Ok(Metrics::try_from(each.as_str())
+                    .map_err(|_| ParserError::InvalidMetricsError(each.as_str().to_string()))?)
+            }
+
+            _ => { /* do nothing */ }
+        }
+    }
+
+    Err(ParserError::InvalidGrammer(format!(
+        "no metrics in metrics filter"
+    )))
 }
 
 #[cfg(test)]
@@ -78,7 +114,9 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: DatetimeFilter::Gte(ColumnName("ts"), expected),
+                datetime_filter: Some(DatetimeFilter::Gte(ColumnName("ts"), expected)),
+
+                metrics_filter: None,
             }
         );
     }
@@ -123,7 +161,13 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: DatetimeFilter::In(ColumnName("ts"), expected_from, expected_to),
+                datetime_filter: Some(DatetimeFilter::In(
+                    ColumnName("ts"),
+                    expected_from,
+                    expected_to
+                )),
+
+                metrics_filter: None,
             }
         );
     }
@@ -170,7 +214,13 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: DatetimeFilter::In(ColumnName("ts"), expected_from, expected_to),
+                datetime_filter: Some(DatetimeFilter::In(
+                    ColumnName("ts"),
+                    expected_from,
+                    expected_to
+                )),
+
+                metrics_filter: None,
             }
         );
     }
@@ -195,7 +245,12 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: DatetimeFilter::In(ColumnName("ts"), expected_from, expected_to),
+                datetime_filter: Some(DatetimeFilter::In(
+                    ColumnName("ts"),
+                    expected_from,
+                    expected_to
+                )),
+                metrics_filter: None,
             }
         );
     }

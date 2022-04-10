@@ -1,3 +1,4 @@
+use super::super::boolean::parse_bool;
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
 use std::convert::TryFrom;
@@ -15,6 +16,8 @@ pub struct WithClause<'q> {
     pub def_timezone: Option<FixedOffset>,
     pub def_output: Option<OutputFormat>,
     pub def_output_file_path: Option<PathBuf>,
+    pub def_use_cache: bool,
+    pub def_sync_cloud: bool,
 }
 
 pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
@@ -31,6 +34,8 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
         def_timezone: None,
         def_output: None,
         def_output_file_path: None,
+        def_use_cache: true,
+        def_sync_cloud: true,
     };
     for each in pair.into_inner() {
         //TODO(tacogips) for debugging
@@ -80,6 +85,28 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                                     Rule::FILE_PATH => {
                                         with_clause.def_output_file_path =
                                             Some(PathBuf::from(each_in_output_file.as_str()));
+                                    }
+                                    _ => { /* do nothing */ }
+                                }
+                            }
+                        }
+
+                        Rule::DEFINE_CACHE => {
+                            for each_inner in each_define.into_inner() {
+                                match each_inner.as_rule() {
+                                    Rule::BOOLEAN_VALUE => {
+                                        with_clause.def_use_cache = parse_bool(each_inner)?;
+                                    }
+                                    _ => { /* do nothing */ }
+                                }
+                            }
+                        }
+
+                        Rule::DEFINE_CLOUD => {
+                            for each_inner in each_define.into_inner() {
+                                match each_inner.as_rule() {
+                                    Rule::BOOLEAN_VALUE => {
+                                        with_clause.def_sync_cloud = parse_bool(each_inner)?;
                                     }
                                     _ => { /* do nothing */ }
                                 }

@@ -79,6 +79,8 @@ mod test {
             def_timezone: None,
             def_output: None,
             def_output_file_path: None,
+            def_use_cache: true,
+            def_sync_cloud: true,
         };
 
         let result = interpret_with(Some(with_clause)).unwrap();

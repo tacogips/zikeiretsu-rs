@@ -1,6 +1,5 @@
 use crate::tsdb::query::parser::*;
-
-use pest::{iterators::Pair, Parser};
+use pest::iterators::Pair;
 
 pub fn parse_ascii_digits<'q>(pair: Pair<'q, Rule>) -> Result<u64> {
     if pair.as_rule() != Rule::ASCII_DIGITS {

@@ -1,4 +1,5 @@
 pub mod ascii_digits_parser;
+pub mod boolean;
 pub mod clock_parser;
 pub mod columns_parser;
 pub mod datetime_filter_parser;

@@ -2,6 +2,7 @@ use super::{storage_api, DatapointSorter, WritableStore};
 use crate::tsdb::datapoint::*;
 use crate::tsdb::store::writable_store::Result;
 use crate::tsdb::timestamp_nano::TimestampNano;
+use crate::tsdb::CloudStorage;
 use chrono::{DateTime, Duration, Utc};
 use log;
 use std::path::PathBuf;
@@ -18,7 +19,10 @@ pub struct PersistCondition {
 #[derive(Clone)]
 pub enum Persistence {
     OnMemory,
-    Storage(PathBuf, Option<storage_api::CloudStorageSetting>),
+    Storage(
+        PathBuf,
+        Option<(CloudStorage, storage_api::CloudStorageSetting)>,
+    ),
 }
 
 pub struct PeriodicallyPeristenceShutdown {

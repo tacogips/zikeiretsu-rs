@@ -1,6 +1,7 @@
 use super::{LexerError, Result as LexerResult};
 use crate::tsdb::query::parser::clause::{OutputFormat, WithClause};
 use crate::tsdb::query::parser::*;
+use crate::tsdb::DBConfig;
 use chrono::FixedOffset;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -10,6 +11,7 @@ pub(crate) struct With<'q> {
     pub output_format: OutputFormat,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
     pub output_file_path: Option<PathBuf>,
+    pub db_config: DBConfig,
 }
 
 impl<'q> Default for With<'q> {
@@ -22,6 +24,7 @@ impl<'q> Default for With<'q> {
             output_format,
             column_index_map: None,
             output_file_path: None,
+            db_config: DBConfig::default(),
         }
     }
 }

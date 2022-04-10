@@ -237,7 +237,7 @@ where
 
     /// persist on disk and to cloud
     pub async fn persist(&mut self, condition: PersistCondition) -> Result<Option<()>> {
-        if let Persistence::Storage(db_dir, cloud_setting) = self.persistence.clone() {
+        if let Persistence::Storage(db_dir, cloud_storage_and_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
             let all_datapoints = self.datapoints().await?;
             let datapoints_searcher = DatapointSearcher::new(&all_datapoints);
@@ -250,7 +250,9 @@ where
                     db_dir,
                     &metrics,
                     &datapoints,
-                    cloud_setting.as_ref(),
+                    cloud_storage_and_setting
+                        .as_ref()
+                        .map(|(cloud_strorage, cloud_setting)| (cloud_strorage, cloud_setting)),
                 )
                 .await?;
 

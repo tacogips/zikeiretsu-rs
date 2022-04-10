@@ -7,18 +7,36 @@ pub struct CloudStorageSetting {
     pub download_block_if_not_exits: bool,
     pub upload_data_after_write: bool,
     pub remove_local_file_after_upload: bool,
-    pub cloud_storage: CloudStorage,
 }
 
-impl CloudStorageSetting {
-    pub fn builder(cloud_storage: CloudStorage) -> CloudStorageSettingBuilder {
-        CloudStorageSettingBuilder {
+impl Default for CloudStorageSetting {
+    fn default() -> Self {
+        Self {
             update_block_list: true,
             download_block_list_if_not_exits: true,
             download_block_if_not_exits: true,
             upload_data_after_write: true,
             remove_local_file_after_upload: false,
-            cloud_storage,
+        }
+    }
+}
+
+impl CloudStorageSetting {
+    pub fn builder() -> CloudStorageSettingBuilder {
+        let CloudStorageSetting {
+            update_block_list,
+            download_block_list_if_not_exits,
+            download_block_if_not_exits,
+            upload_data_after_write,
+            remove_local_file_after_upload,
+        } = CloudStorageSetting::default();
+
+        CloudStorageSettingBuilder {
+            update_block_list,
+            download_block_list_if_not_exits,
+            download_block_if_not_exits,
+            upload_data_after_write,
+            remove_local_file_after_upload,
         }
     }
 }
@@ -29,7 +47,6 @@ pub struct CloudStorageSettingBuilder {
     download_block_if_not_exits: bool,
     upload_data_after_write: bool,
     remove_local_file_after_upload: bool,
-    cloud_storage: CloudStorage,
 }
 
 impl CloudStorageSettingBuilder {
@@ -40,7 +57,6 @@ impl CloudStorageSettingBuilder {
             download_block_if_not_exits: true,
             upload_data_after_write: false,
             remove_local_file_after_upload: false,
-            cloud_storage,
         }
     }
 
@@ -80,7 +96,6 @@ impl CloudStorageSettingBuilder {
             download_block_if_not_exits,
             upload_data_after_write,
             remove_local_file_after_upload,
-            cloud_storage,
         } = self;
 
         CloudStorageSetting {
@@ -89,7 +104,6 @@ impl CloudStorageSettingBuilder {
             download_block_if_not_exits,
             upload_data_after_write,
             remove_local_file_after_upload,
-            cloud_storage,
         }
     }
 }

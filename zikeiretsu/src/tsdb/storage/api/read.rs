@@ -25,20 +25,19 @@ lazy_static! {
 
 pub async fn fetch_all_metrics<P: AsRef<Path>>(
     db_dir: Option<P>,
-    cloud_setting: Option<&CloudStorageSetting>,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Vec<Metrics>> {
     //TODO(tacogips) need some lock
-    if let Some(cloud_setting) = cloud_setting {
+    if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if cloud_setting.update_block_list {
-            let block_file_urls =
-                CloudBlockListFilePath::list_files_urls(&cloud_setting.cloud_storage).await?;
+            let block_file_urls = CloudBlockListFilePath::list_files_urls(&cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
 
             for each_block_file_url in block_file_urls.iter() {
                 match CloudBlockListFilePath::extract_metrics_from_url(
                     each_block_file_url,
-                    &cloud_setting.cloud_storage,
+                    &cloud_storage,
                 ) {
                     Ok(metrics) => {
                         result.push(metrics);
@@ -109,13 +108,14 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     field_selectors: Option<&[usize]>,
     condition: &DatapointSearchCondition,
     cache_setting: &CacheSetting,
-    cloud_setting: Option<&CloudStorageSetting>,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Option<TimeSeriesDataFrame>> {
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
-    let block_list = read_block_list(db_dir, &metrics, cache_setting, cloud_setting).await?;
+    let block_list =
+        read_block_list(db_dir, &metrics, cache_setting, cloud_storage_and_setting).await?;
 
     let (since_sec, until_sec) = condition.as_secs();
 
@@ -137,7 +137,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     &metrics,
                     field_selectors.clone(),
                     &block_timestamp,
-                    cloud_setting,
+                    cloud_storage_and_setting,
                 )
             });
 
@@ -178,19 +178,16 @@ async fn read_block(
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
     block_timestamp: &block_list::BlockTimestamp,
-    cloud_setting: Option<&CloudStorageSetting>,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<TimeSeriesDataFrame> {
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
-    if let Some(cloud_setting) = cloud_setting {
+    if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if !block_file_path.exists() {
             if cloud_setting.download_block_if_not_exits {
-                let cloud_block_file_path = CloudBlockFilePath::new(
-                    &metrics,
-                    &block_timestamp,
-                    &cloud_setting.cloud_storage,
-                );
+                let cloud_block_file_path =
+                    CloudBlockFilePath::new(&metrics, &block_timestamp, &cloud_storage);
 
                 let download_result = cloud_block_file_path.download(&block_file_path).await?;
 
@@ -222,15 +219,16 @@ pub(crate) async fn read_block_list<'a>(
     db_dir: &Path,
     metrics: &Metrics,
     cache_setting: &CacheSetting,
-    cloud_setting: Option<&CloudStorageSetting>,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<block_list::BlockList> {
     let block_list_path = block_list_file_path(&db_dir, &metrics);
-    let downloaded_from_cloud = if let Some(cloud_setting) = cloud_setting {
+    let downloaded_from_cloud = if let Some((cloud_storage, cloud_setting)) =
+        cloud_storage_and_setting
+    {
         if cloud_setting.update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
         {
-            let cloud_block_list_file_path =
-                CloudBlockListFilePath::new(&metrics, &cloud_setting.cloud_storage);
+            let cloud_block_list_file_path = CloudBlockListFilePath::new(&metrics, &cloud_storage);
 
             let download_result = cloud_block_list_file_path
                 .download(&block_list_path)

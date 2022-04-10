@@ -1,7 +1,7 @@
 use super::Result as StoreResult;
 use super::*;
 
-use crate::tsdb::dataframe::*;
+use crate::tsdb::time_series_dataframe::*;
 
 pub struct ReadonlyStore {
     dataframe: TimeSeriesDataFrame,

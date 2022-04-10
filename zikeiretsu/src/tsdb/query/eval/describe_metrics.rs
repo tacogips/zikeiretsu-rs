@@ -31,22 +31,16 @@ pub async fn execute_describe_metrics(
         return Err(EvalError::MetricsNotFoundError("[empty]".to_string()));
     }
 
-    let metricses_strs = metricses
-        .clone()
-        .into_iter()
-        .map(|m| m.into_inner())
-        .collect();
-    let mut series = StringDataSeriesRefs::default();
-    series.push(&metricses_strs);
+    let describes = load_metrics_describes(&ctx, metricses).await?;
+    //let p_df = series
+    //    .as_polar_dataframes(Some(vec!["metrics".to_string()]), None)
+    //    .await?;
 
-    let p_df = series
-        .as_polar_dataframes(Some(vec!["metrics".to_string()]), None)
-        .await?;
-
-    if let Some(output_condition) = output_condition {
-        output_with_condition!(output_condition, p_df);
-    }
-    Ok(metricses)
+    //if let Some(output_condition) = output_condition {
+    //    output_with_condition!(output_condition, p_df);
+    //}
+    //Ok(metricses)
+    unimplemented!()
 }
 
 async fn load_metrics_describes(
@@ -69,6 +63,29 @@ async fn load_metrics_describes(
         .collect::<Result<Vec<MetricsDescribe>, EngineError>>()?;
 
     Ok(describes)
+}
+
+async fn to_string_series_ref<'a>(
+    ctx: &DBContext,
+    describes: &[MetricsDescribe],
+) -> Result<StringDataSeriesRefs<'a>, EvalError> {
+    unimplemented!()
+    //    let metrics_descibes = metricses.into_iter().map(|metrics| async move {
+    //        Engine::block_list_data(&ctx.db_dir, &metrics, &ctx.db_config)
+    //            .await
+    //            .and_then(|block_list| {
+    //                Ok(MetricsDescribe {
+    //                    metrics,
+    //                    block_list,
+    //                })
+    //            })
+    //    });
+    //    let describes = future::join_all(metrics_descibes)
+    //        .await
+    //        .into_iter()
+    //        .collect::<Result<Vec<MetricsDescribe>, EngineError>>()?;
+    //
+    //    Ok(describes)
 }
 
 //pub async fn execute(describe_database_condition: DescribeDatabaseCondition) -> Result<()> {

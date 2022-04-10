@@ -6,7 +6,7 @@ use crate::tsdb::{
     cloudstorage::*,
     storage::{block, block_list, cache},
 };
-use crate::tsdb::{dataframe::*, datapoint::*, metrics::Metrics};
+use crate::tsdb::{datapoint::*, metrics::Metrics, time_series_dataframe::*};
 use futures::future::join_all;
 use lazy_static::lazy_static;
 use lockfile::Lockfile;

@@ -69,6 +69,11 @@ impl DataFrame {
         self.data_serieses.get_mut(field_idx)
     }
 }
+impl Default for DataFrame {
+    fn default() -> Self {
+        Self::new(vec![])
+    }
+}
 
 impl DataSeriesRefs for DataFrame {
     fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>> {

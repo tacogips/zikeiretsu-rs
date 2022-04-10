@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub enum SeriesValues {
     Vacant(usize),
     TimestampNano(Vec<TimestampNano>),
+    TimestampSec(Vec<TimestampSec>),
     String(Vec<String>),
     Float64(Vec<f64>),
     UInt64(Vec<u64>),
@@ -23,6 +24,7 @@ impl SeriesValues {
             Self::Bool(vs) => vs.len(),
             Self::String(vs) => vs.len(),
             Self::TimestampNano(vs) => vs.len(),
+            Self::TimestampSec(vs) => vs.len(),
             Self::Vacant(len) => *len,
         }
     }
@@ -34,6 +36,7 @@ impl SeriesValues {
             Self::Bool(vs) => vs.is_empty(),
             Self::String(vs) => vs.is_empty(),
             Self::TimestampNano(vs) => vs.is_empty(),
+            Self::TimestampSec(vs) => vs.is_empty(),
             Self::Vacant(len) => *len == 0,
         }
     }
@@ -46,6 +49,7 @@ impl std::fmt::Display for SeriesValues {
             Self::Bool(_) => "[bool]",
             Self::String(_) => "[string]",
             Self::TimestampNano(_) => "[timestamp nano]",
+            Self::TimestampSec(_) => "[timestamp sec]",
             Self::Vacant(_) => "[vacant]",
         };
 
@@ -56,6 +60,11 @@ impl std::fmt::Display for SeriesValues {
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataSeries {
     pub values: SeriesValues,
+}
+impl From<SeriesValues> for DataSeries {
+    fn from(vs: SeriesValues) -> Self {
+        DataSeries::new(vs)
+    }
 }
 
 impl DataSeries {
@@ -120,6 +129,17 @@ impl DataSeries {
                 )),
             },
 
+            SeriesValues::TimestampSec(vs) => match &mut other.values {
+                SeriesValues::TimestampSec(other_vals) => {
+                    vs.append(other_vals);
+                    Ok(())
+                }
+                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
+                    self.values.to_string(),
+                    invalid.to_string(),
+                )),
+            },
+
             SeriesValues::Vacant(_) => match &other.values {
                 SeriesValues::Vacant(_) => Ok(()),
                 invalid => Err(DataframeError::UnmatchedSeriesTypeError(
@@ -145,6 +165,7 @@ impl DataSeries {
             SeriesValues::Bool(vs) => vs.get(index).map(|v| FieldValue::Bool(*v)),
             SeriesValues::String(vs) => vs.get(index).map(|v| FieldValue::String(v.clone())),
             SeriesValues::TimestampNano(vs) => vs.get(index).map(|v| FieldValue::TimestampNano(*v)),
+            SeriesValues::TimestampSec(vs) => vs.get(index).map(|v| FieldValue::TimestampSec(*v)),
             SeriesValues::Vacant(_) => None,
         }
     }
@@ -176,6 +197,7 @@ impl DataSeries {
             SeriesValues::Bool(vs) => SeriesValuesRef::Bool(&vs),
             SeriesValues::String(vs) => SeriesValuesRef::String(&vs),
             SeriesValues::TimestampNano(vs) => SeriesValuesRef::TimestampNano(&vs),
+            SeriesValues::TimestampSec(vs) => SeriesValuesRef::TimestampSec(&vs),
             SeriesValues::Vacant(len) => SeriesValuesRef::Vacant(*len),
         };
 
@@ -191,6 +213,7 @@ impl From<DataSeriesRef<'_>> for DataSeries {
             SeriesValuesRef::Bool(vs) => SeriesValues::Bool(vs.to_vec()),
             SeriesValuesRef::String(vs) => SeriesValues::String(vs.to_vec()),
             SeriesValuesRef::TimestampNano(vs) => SeriesValues::TimestampNano(vs.to_vec()),
+            SeriesValuesRef::TimestampSec(vs) => SeriesValues::TimestampSec(vs.to_vec()),
             SeriesValuesRef::Vacant(len) => SeriesValues::Vacant(len),
         };
 

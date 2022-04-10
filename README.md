@@ -141,6 +141,7 @@ Data types of each fields.
 - timestamp nono   		 ... 4 (not supported yet)
 - bool        			   ... 5
 - unsigned int   			 ... 6 (not supported yet)
+- timestamp sec   		 ... 7 (not supported yet)
 
 ### (4) Head timestamp
 

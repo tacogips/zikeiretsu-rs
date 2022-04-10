@@ -1,5 +1,5 @@
 use super::DataPoint;
-use crate::datetime::TimestampNano;
+use crate::datetime::{TimestampNano, TimestampSec};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use strum::AsRefStr;
@@ -28,6 +28,7 @@ type Result<T> = std::result::Result<T, FieldError>;
 #[derive(AsRefStr, Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub enum FieldValue {
     TimestampNano(TimestampNano),
+    TimestampSec(TimestampSec),
     Float64(f64),
     UInt64(u64),
     String(String),
@@ -60,6 +61,7 @@ impl FieldValue {
             Self::Float64(_) => FieldType::Float64,
             Self::UInt64(_) => FieldType::UInt64,
             Self::TimestampNano(_) => FieldType::TimestampNano,
+            Self::TimestampSec(_) => FieldType::TimestampSec,
             Self::Bool(_) => FieldType::Bool,
             Self::String(_) => FieldType::String,
         }
@@ -72,6 +74,7 @@ impl fmt::Display for FieldValue {
             FieldValue::Float64(v) => write!(f, "{v:?}"),
             FieldValue::UInt64(v) => write!(f, "{v:?}"),
             FieldValue::TimestampNano(v) => write!(f, "{v:?}"),
+            FieldValue::TimestampSec(v) => write!(f, "{v:?}"),
             FieldValue::Bool(v) => write!(f, "{v:?}"),
             FieldValue::String(v) => write!(f, "{v:?}"),
         }
@@ -93,6 +96,7 @@ pub enum FieldType {
     UInt64,
     Bool,
     TimestampNano,
+    TimestampSec,
     String,
 }
 
@@ -103,6 +107,7 @@ impl fmt::Display for FieldType {
             FieldType::UInt64 => "UInt64",
             FieldType::String => "String",
             FieldType::TimestampNano => "TimestampNano",
+            FieldType::TimestampSec => "TimestampSec",
             FieldType::Bool => "Bool",
         };
 

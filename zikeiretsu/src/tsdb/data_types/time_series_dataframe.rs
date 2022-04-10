@@ -144,6 +144,10 @@ impl TimeSeriesDataFrame {
                                 SeriesValuesRef::TimestampNano(&vs[start_idx..finish_idx + 1]),
                             ),
 
+                            SeriesValues::TimestampSec(vs) => DataSeriesRef::new(
+                                SeriesValuesRef::TimestampSec(&vs[start_idx..finish_idx + 1]),
+                            ),
+
                             SeriesValues::Bool(vs) => DataSeriesRef::new(SeriesValuesRef::Bool(
                                 &vs[start_idx..finish_idx + 1],
                             )),

@@ -16,6 +16,42 @@ impl TimestampSec {
 
         Self::new(timestamp as u64)
     }
+
+    pub fn as_formated_datetime<Tz: TimeZone>(&self, tz: Option<&Tz>) -> String
+    where
+        Tz::Offset: std::fmt::Display,
+    {
+        match tz {
+            Some(tz) => self
+                .as_datetime_with_tz(tz)
+                .to_rfc3339_opts(SecondsFormat::Secs, true),
+
+            None => self
+                .as_datetime()
+                .to_rfc3339_opts(SecondsFormat::Secs, true),
+        }
+    }
+
+    pub fn as_datetime(&self) -> DateTime<Utc> {
+        let ndt = NaiveDateTime::from_timestamp(self.0 as i64, 0);
+        DateTime::from_utc(ndt, Utc)
+    }
+
+    pub fn as_datetime_with_tz<Tz: TimeZone>(&self, tz: &Tz) -> DateTime<Tz> {
+        self.as_datetime().with_timezone(tz)
+    }
+
+    pub fn into_datetime_with_tz<Tz: TimeZone>(self, tz: &Tz) -> DateTime<Tz> {
+        self.as_datetime().with_timezone(tz)
+    }
+
+    pub fn zero() -> Self {
+        Self::new(0)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
 }
 
 impl fmt::Display for TimestampSec {

@@ -15,6 +15,7 @@ pub enum SeriesValuesRef<'a> {
     Bool(&'a [bool]),
     String(&'a [String]),
     TimestampNano(&'a [TimestampNano]),
+    TimestampSec(&'a [TimestampSec]),
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
@@ -43,6 +44,14 @@ impl<'a> DataSeriesRef<'a> {
             SeriesValuesRef::Vacant(_) => PSeries::new_empty(field_name, &DataType::Null),
             SeriesValuesRef::String(vs) => PSeries::new(field_name, vs),
             SeriesValuesRef::TimestampNano(timestamps) => PSeries::new(
+                field_name,
+                timestamps
+                    .into_iter()
+                    .map(|ts| ts.as_formated_datetime(tz))
+                    .collect::<Vec<String>>(),
+            ),
+
+            SeriesValuesRef::TimestampSec(timestamps) => PSeries::new(
                 field_name,
                 timestamps
                     .into_iter()

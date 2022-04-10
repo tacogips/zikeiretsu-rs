@@ -6,6 +6,7 @@ pub fn type_to_val(typ: &FieldType) -> u8 {
         FieldType::TimestampNano => 4,
         FieldType::Bool => 5,
         FieldType::UInt64 => 6,
+        FieldType::TimestampSec => 7,
     }
 }
 
@@ -16,6 +17,7 @@ pub fn val_to_type(v: u8) -> FieldType {
         4u8 => FieldType::TimestampNano,
         5u8 => FieldType::Bool,
         6u8 => FieldType::UInt64,
+        7u8 => FieldType::TimestampSec,
         v => panic!("invalid field type value {}", v),
     }
 }

@@ -123,6 +123,33 @@ impl BlockList {
         }
     }
 
+    pub fn range(&self) -> Option<(&TimestampSec, &TimestampSec)> {
+        let mut min: Option<&TimestampSec> = None;
+        let mut max: Option<&TimestampSec> = None;
+
+        for each in self.block_timestamps.iter() {
+            if let Some(current_min) = min.take() {
+                if each.since_sec < *current_min {
+                    min = Some(&each.since_sec)
+                }
+            } else {
+                min = Some(&each.since_sec)
+            }
+
+            if let Some(current_max) = max.take() {
+                if each.until_sec > *current_max {
+                    min = Some(&each.until_sec)
+                }
+            } else {
+                max = Some(&each.until_sec)
+            }
+        }
+        match (min, max) {
+            (None, None) => None,
+            (Some(min), Some(max)) => Some((min, max)),
+            _ => panic!("range of block list has bug"),
+        }
+    }
     pub fn update_updated_at(&mut self, dt: TimestampNano) {
         self.updated_timestamp_sec = dt;
     }

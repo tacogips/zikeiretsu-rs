@@ -1,14 +1,8 @@
 use super::dataseries::*;
 use super::dataseries_ref::*;
-use super::field::*;
-use super::{datapoint::DataPoint, DatapointSearchCondition};
-use crate::tsdb::datetime::*;
-use crate::tsdb::util::{trim_values, VecOpeError};
+use crate::tsdb::util::VecOpeError;
 use polars::prelude::PolarsError;
 
-use std::cmp::Ordering;
-
-use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
 use thiserror::*;
 
@@ -73,5 +67,14 @@ impl DataFrame {
 
     pub fn get_series_mut(&mut self, field_idx: usize) -> Option<&mut DataSeries> {
         self.data_serieses.get_mut(field_idx)
+    }
+}
+
+impl DataSeriesRefs for DataFrame {
+    fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>> {
+        self.data_serieses
+            .iter()
+            .map(|ds| ds.as_dataseries_ref())
+            .collect()
     }
 }

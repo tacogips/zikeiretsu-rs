@@ -1,3 +1,61 @@
+use clap::Parser;
+use std::path::PathBuf;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about)]
+pub struct Args {
+    #[clap(long, short, env = "ZDB_DIR")]
+    db_dir: Option<String>,
+
+    #[clap(long, short, env = "ZDB_CLOUD_TYPE")]
+    cloud_type: Option<String>,
+
+    #[clap(long, short, env = "ZDB_BUCKET")]
+    bucket: Option<String>,
+
+    #[clap(long, short, env = "ZDB_CLOUD_SUBPATH")]
+    cloud_sub_path: Option<String>,
+
+    #[clap(long, short, env = "ZDB_SERVICE_ACCOUNT")]
+    sevice_account_path: Option<PathBuf>,
+
+    ///// service account file path for GCP. it could be specify by environment variable
+    ///// `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS`
+    //#[argh(option, short = 'a')]
+    //service_account: Option<String>,
+
+    //#[argh(option, short = 'd')]
+    //db_dir: Option<String>,
+
+    ///// path to env file.
+    //#[argh(option, short = 'e')]
+    //env_file: Option<String>,
+
+    ///// type of cloud storage. only 'gcp' is available(aws nor azure are not yet).it could be specify by environment variable `ZDB_CLOUD_TYPE`
+    //#[argh(option, short = 'c')]
+    //cloud_type: Option<String>,
+
+    ///// bucket name of cloud storage. required if download datas from cloud storage. it could be specify by environment variable `ZDB_BUCKET`
+    //#[argh(option, short = 'b')]
+    //bucket: Option<String>,
+
+    ///// subpath of the block datas on cloud storage. it could be specify by environment variable `ZDB_CLOUD_SUBPATH`
+    //#[argh(option, short = 'p')]
+    //cloud_subpath: Option<String>,
+
+    ///// service account file path for GCP. it could be specify by environment variable
+    ///// `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS`
+    //#[argh(option, short = 'a')]
+    //service_account: Option<String>,
+
+    /////download latest datas from cloud before fetch
+    //#[argh(switch, short = 'x')]
+    //sync_before_fetch: bool,
+
+    //#[clap(args)]
+    query: Option<String>,
+}
+
 //use ::zikeiretsu::*;
 //use argh::FromArgs;
 //
@@ -45,6 +103,7 @@
 //
 ///// A Toy Timeseries DB 0.1.5
 //pub struct Args {
+//}
 //    /// path to block files. it could be specify by environment variable `ZDB_DIR`
 //    #[argh(option, short = 'd')]
 //    db_dir: Option<String>,

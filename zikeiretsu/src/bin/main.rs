@@ -2,6 +2,7 @@ mod args;
 
 use ::zikeiretsu::*;
 use args::*;
+use dotenv::dotenv;
 
 use thiserror::Error;
 
@@ -16,59 +17,21 @@ pub enum ZikeiretsuBinError {
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuBinError>;
 
-//#[tokio::main]
-//pub async fn main() -> Result<()> {
-//    //TODO(tacogips) impl client
-//    let arg = parse_args_or_exits()?;
-//    let operation = arg.to_operation()?;
-//    match operation {
-//        Operation::ListMetrics(list_metrics_condition) => {
-//            list_metrics::execute(list_metrics_condition).await?;
-//        }
-//
-//        Operation::FetchMetics(fetch_metrics_condition) => {
-//            fetch_metrics::execute(fetch_metrics_condition).await?;
-//        }
-//
-//        Operation::Describe(describe_database_condition) => {
-//            describe_metrics::execute(describe_database_condition).await?;
-//        }
-//    }
-//    Ok(())
-//}
-
 #[tokio::main]
 pub async fn main() -> Result<()> {
+    let _ = dotenv();
+
     let db_dir = "".to_string();
     let db_config = DBConfig::builder_with_cache().build();
     let mut ctx = DBContext::new(db_dir, db_config);
-    if let Err(e) = repl::start(&mut ctx).await {
+
+    repl(&mut ctx).await?;
+    Ok(())
+}
+
+pub async fn repl(ctx: &mut DBContext) -> Result<()> {
+    if let Err(e) = repl::start(&ctx).await {
         eprintln!("repl error: {e}")
     }
-    ////TODO(tacogips) impl client
-    //let arg = parse_args_or_exits()?;
-    //let operation = arg.to_operation()?;
-    //match operation {
-    //    Operation::ListMetrics(list_metrics_condition) => {
-    //        list_metrics::execute(list_metrics_condition).await?;
-    //    }
-
-    //    Operation::FetchMetics(fetch_metrics_condition) => {
-    //        fetch_metrics::execute(fetch_metrics_condition).await?;
-    //    }
-
-    //    Operation::Describe(describe_database_condition) => {
-    //        describe_metrics::execute(describe_database_condition).await?;
-    //    }
-    //}
-    //Ok(())
-    //TODO(tacogips) for debugging
-    //TODO(tacogips) for debugging
-
-    //TODO(tacogips) for debugging
-
-    //TODO(tacogips) for debugging
-    //TODO(tacogips) for debugging
-
     Ok(())
 }

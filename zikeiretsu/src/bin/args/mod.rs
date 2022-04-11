@@ -1,59 +1,88 @@
+use super::ZikeiretsuBinError;
+use ::zikeiretsu::{Bucket, CloudStorage, DBContext, SubDir};
 use clap::Parser;
+use std::env;
 use std::path::PathBuf;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum ArgsError {
+    #[error("invalid cloud type {0}")]
+    InvalidCloudType(String),
+
+    #[error("cloud type required")]
+    NoCloudType,
+
+    #[error("bucket required")]
+    NoBucket,
+    #[error("subpath required")]
+    NoSubPath,
+}
+
+type Result<T> = std::result::Result<T, ArgsError>;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Args {
-    #[clap(long, short, env = "ZDB_DIR")]
+    #[clap(long = "db_dir", short = 'd', env = "ZDB_DIR")]
     db_dir: Option<String>,
 
-    #[clap(long, short, env = "ZDB_CLOUD_TYPE")]
+    #[clap(long = "cloud_type", short = 't', env = "ZDB_CLOUD_TYPE")]
     cloud_type: Option<String>,
 
-    #[clap(long, short, env = "ZDB_BUCKET")]
+    #[clap(long = "bucket", short = 'b', env = "ZDB_BUCKET")]
     bucket: Option<String>,
 
-    #[clap(long, short, env = "ZDB_CLOUD_SUBPATH")]
-    cloud_sub_path: Option<String>,
+    #[clap(long = "bucket_sub_path", short = 'p', env = "ZDB_CLOUD_SUBPATH")]
+    bucket_sub_path: Option<String>,
 
-    #[clap(long, short, env = "ZDB_SERVICE_ACCOUNT")]
-    sevice_account_path: Option<PathBuf>,
+    #[clap(long = "service_account", short = 's', env = "ZDB_SERVICE_ACCOUNT")]
+    sevice_account_file_path: Option<PathBuf>,
 
-    ///// service account file path for GCP. it could be specify by environment variable
-    ///// `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS`
-    //#[argh(option, short = 'a')]
-    //service_account: Option<String>,
+    pub query: Option<String>,
+}
 
-    //#[argh(option, short = 'd')]
-    //db_dir: Option<String>,
+impl Args {
+    pub fn setup(&self) -> Result<()> {
+        if let Some(service_account) = self.sevice_account_file_path.as_ref() {
+            env::set_var("SERVICE_ACCOUNT", service_account);
+        }
+        Ok(())
+    }
 
-    ///// path to env file.
-    //#[argh(option, short = 'e')]
-    //env_file: Option<String>,
+    fn parse_cloud_storage(&self) -> Result<Option<CloudStorage>> {
+        match &self.cloud_type {
+            Some(cloud_type) => {
+                let bucket = if let Some(bucket) = self.bucket.as_ref() {
+                    bucket
+                } else {
+                    return Err(ArgsError::NoBucket);
+                };
 
-    ///// type of cloud storage. only 'gcp' is available(aws nor azure are not yet).it could be specify by environment variable `ZDB_CLOUD_TYPE`
-    //#[argh(option, short = 'c')]
-    //cloud_type: Option<String>,
+                let subpath = if let Some(subpath) = self.bucket_sub_path.as_ref() {
+                    subpath
+                } else {
+                    return Err(ArgsError::NoSubPath);
+                };
+                match cloud_type.as_str() {
+                    "gcp" => Ok(Some(CloudStorage::Gcp(
+                        Bucket(bucket.to_string()),
+                        SubDir(subpath.to_string()),
+                    ))),
+                    invalid_cloud_type @ _ => {
+                        Err(ArgsError::InvalidCloudType(invalid_cloud_type.to_string()))
+                    }
+                }
+            }
+            _ => Ok(None),
+        }
+    }
 
-    ///// bucket name of cloud storage. required if download datas from cloud storage. it could be specify by environment variable `ZDB_BUCKET`
-    //#[argh(option, short = 'b')]
-    //bucket: Option<String>,
-
-    ///// subpath of the block datas on cloud storage. it could be specify by environment variable `ZDB_CLOUD_SUBPATH`
-    //#[argh(option, short = 'p')]
-    //cloud_subpath: Option<String>,
-
-    ///// service account file path for GCP. it could be specify by environment variable
-    ///// `SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS`
-    //#[argh(option, short = 'a')]
-    //service_account: Option<String>,
-
-    /////download latest datas from cloud before fetch
-    //#[argh(switch, short = 'x')]
-    //sync_before_fetch: bool,
-
-    //#[clap(args)]
-    query: Option<String>,
+    pub fn as_db_context(&self) -> Result<DBContext> {
+        let cloud_stroage = self.parse_cloud_storage()?;
+        let ctx = DBContext::new(self.db_dir.clone(), cloud_stroage);
+        Ok(ctx)
+    }
 }
 
 //use ::zikeiretsu::*;

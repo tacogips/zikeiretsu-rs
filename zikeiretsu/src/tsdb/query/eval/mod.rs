@@ -51,7 +51,7 @@ pub enum EvalError {
 
 pub type Result<T> = std::result::Result<T, EvalError>;
 
-pub async fn execute(ctx: &DBContext, query: &str) -> Result<()> {
+pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
     let parsed_query = parse_query(query)?;
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {

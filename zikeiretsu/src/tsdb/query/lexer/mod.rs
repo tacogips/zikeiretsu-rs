@@ -8,6 +8,7 @@ use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
 pub use crate::tsdb::query::parser::clause::{OutputFormat, WhereClause, WithClause};
 use crate::tsdb::query::parser::*;
+use crate::tsdb::{CacheSetting, CloudStorageSetting};
 use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
 use either::Either;
 use std::fs;
@@ -54,10 +55,15 @@ pub enum OutputError {
     InvalidPath(String),
 }
 
+pub struct QuerySetting {
+    pub cache_setting: CacheSetting,
+    pub cloud_setting: CloudStorageSetting,
+}
+
 pub enum InterpretedQuery {
-    ListMetrics(OutputCondition),
-    DescribeMetrics(DescribeMetrics),
-    Metrics(InterpretedQueryCondition),
+    ListMetrics(OutputCondition, QuerySetting),
+    DescribeMetrics(DescribeMetrics, QuerySetting),
+    SearchMetrics(InterpretedQueryCondition, QuerySetting),
 }
 
 pub struct OutputCondition {
@@ -105,14 +111,23 @@ pub struct InterpretedQueryCondition {
 
 pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
     let with = with::interpret_with(parsed_query.with)?;
+
+    let query_setting = QuerySetting {
+        cache_setting: with.cache_setting,
+        cloud_setting: with.cloud_setting,
+    };
+
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => match buildin_metrics {
             from::BuildinMetrics::ListMetrics => {
                 invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
-                return Ok(InterpretedQuery::ListMetrics(OutputCondition {
-                    output_format: with.output_format,
-                    output_file_path: with.output_file_path,
-                }));
+                return Ok(InterpretedQuery::ListMetrics(
+                    OutputCondition {
+                        output_format: with.output_format,
+                        output_file_path: with.output_file_path,
+                    },
+                    query_setting,
+                ));
             }
 
             from::BuildinMetrics::DescribeMetrics => {
@@ -126,10 +141,13 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
                     None => None,
                 };
 
-                return Ok(InterpretedQuery::DescribeMetrics(DescribeMetrics {
-                    output_condition,
-                    metrics_filter,
-                }));
+                return Ok(InterpretedQuery::DescribeMetrics(
+                    DescribeMetrics {
+                        output_condition,
+                        metrics_filter,
+                    },
+                    query_setting,
+                ));
             }
         },
         Either::Left(parsed_metrics) => parsed_metrics,
@@ -164,7 +182,10 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
         output_condition,
         timezone: with.timezone,
     };
-    Ok(InterpretedQuery::Metrics(query_context))
+    Ok(InterpretedQuery::SearchMetrics(
+        query_context,
+        query_setting,
+    ))
 }
 
 fn invalid_if_metrics_filter_exists(where_clause: Option<&WhereClause<'_>>) -> Result<()> {

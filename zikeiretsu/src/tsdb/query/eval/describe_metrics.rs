@@ -3,6 +3,7 @@ use super::EvalError;
 use crate::tsdb::engine::{Engine, EngineError};
 use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::query::DBContext;
+use crate::tsdb::DBConfig;
 use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{
     DataFrame, DataSeries, DataSeriesRefs, SeriesValues, StringDataSeriesRefs, StringSeriesRef,
@@ -13,10 +14,16 @@ use serde::Serialize;
 
 pub async fn execute_describe_metrics(
     ctx: &DBContext,
+    db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
     output_condition: Option<OutputCondition>,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
-    let metricses = Engine::list_metrics(Some(&ctx.db_dir), &ctx.db_config).await?;
+    let db_dir = match &ctx.db_dir {
+        Some(db_dir) => db_dir,
+        None => return Err(EvalError::DBDirNotSet),
+    };
+
+    let metricses = Engine::list_metrics(Some(&db_dir), &db_config).await?;
     let metricses = match metrics_filter {
         Some(metrics_filter) => metricses
             .into_iter()
@@ -34,7 +41,7 @@ pub async fn execute_describe_metrics(
         return Err(EvalError::MetricsNotFoundError("[empty]".to_string()));
     }
 
-    let describes = load_metrics_describes(&ctx, metricses).await?;
+    let describes = load_metrics_describes(&ctx, &db_config, metricses).await?;
     let df = describes_to_dataframe(describes.as_slice())?;
     let p_df = df
         .as_polar_dataframes(
@@ -56,10 +63,16 @@ pub async fn execute_describe_metrics(
 
 async fn load_metrics_describes(
     ctx: &DBContext,
+    db_config: &DBConfig,
     metricses: Vec<Metrics>,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
+    let db_dir = match &ctx.db_dir {
+        Some(db_dir) => db_dir,
+        None => return Err(EvalError::DBDirNotSet),
+    };
+
     let metrics_descibes = metricses.into_iter().map(|metrics| async move {
-        Engine::block_list_data(&ctx.db_dir, &metrics, &ctx.db_config)
+        Engine::block_list_data(&db_dir, &metrics, &db_config)
             .await
             .and_then(|block_list| {
                 Ok(MetricsDescribe {

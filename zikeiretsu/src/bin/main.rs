@@ -22,8 +22,7 @@ pub async fn main() -> Result<()> {
     let _ = dotenv();
 
     let db_dir = "".to_string();
-    let db_config = DBConfig::builder_with_cache().build();
-    let mut ctx = DBContext::new(db_dir, db_config);
+    let mut ctx = DBContext::new(Some(db_dir), None);
 
     repl(&mut ctx).await?;
     Ok(())

@@ -22,9 +22,9 @@ pub enum EngineError {
 pub type Result<T> = std::result::Result<T, EngineError>;
 
 pub struct DBConfig {
-    cache_setting: api::CacheSetting,
-    cloud_storage: Option<CloudStorage>,
-    cloud_setting: api::CloudStorageSetting,
+    pub cache_setting: api::CacheSetting,
+    pub cloud_storage: Option<CloudStorage>,
+    pub cloud_setting: api::CloudStorageSetting,
 }
 
 impl DBConfig {
@@ -52,7 +52,7 @@ impl DBConfig {
     }
 
     pub fn cloud_storage_and_setting(&self) -> Option<(&CloudStorage, &CloudStorageSetting)> {
-        match self.cloud_storage {
+        match &self.cloud_storage {
             None => None,
             Some(cloud_storage) => Some((&cloud_storage, &self.cloud_setting)),
         }

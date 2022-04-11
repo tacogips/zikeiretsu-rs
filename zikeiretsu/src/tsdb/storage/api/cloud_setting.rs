@@ -22,7 +22,7 @@ impl Default for CloudStorageSetting {
 }
 
 impl CloudStorageSetting {
-    fn not_sync_to_cloud() -> Self {
+    pub fn not_sync_to_cloud() -> Self {
         Self {
             update_block_list: false,
             download_block_list_if_not_exits: false,

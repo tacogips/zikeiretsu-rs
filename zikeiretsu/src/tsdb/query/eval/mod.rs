@@ -1,21 +1,16 @@
 pub mod describe_metrics;
-pub mod metrics;
 pub mod metrics_list;
 pub mod output;
-
-use crate::tsdb::query::{
-    parser::{parse_query, ParserError},
-    DBContext,
-};
-use crate::tsdb::DBConfig;
+pub mod search_metrics;
 
 use crate::tsdb::data_types::DataSeriesRefsError;
 use crate::tsdb::engine::EngineError;
 use crate::tsdb::lexer::{
     interpret, InterpretedQuery, InterpretedQueryCondition, LexerError, OutputError,
 };
-pub use metrics::*;
-pub use metrics_list::*;
+use crate::tsdb::query::parser::{parse_query, ParserError};
+use crate::tsdb::query::QuerySetting;
+use crate::tsdb::{DBConfig, DBContext};
 pub use output::*;
 use std::io::Error as IoError;
 use thiserror::Error;
@@ -61,22 +56,12 @@ pub async fn execute(ctx: &DBContext, query: &str) -> Result<()> {
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {
         InterpretedQuery::ListMetrics(output_condition, query_setting) => {
-            let db_config = DBConfig {
-                cache_setting: query_setting.cache_setting,
-                cloud_storage: ctx.cloud_storage.clone(),
-                cloud_setting: query_setting.cloud_setting,
-            };
-
+            let db_config = to_db_config(&ctx, query_setting);
             metrics_list::execute_metrics_list(ctx, &db_config, Some(output_condition)).await?;
         }
 
         InterpretedQuery::DescribeMetrics(describe_condition, query_setting) => {
-            let db_config = DBConfig {
-                cache_setting: query_setting.cache_setting,
-                cloud_storage: ctx.cloud_storage.clone(),
-                cloud_setting: query_setting.cloud_setting,
-            };
-
+            let db_config = to_db_config(&ctx, query_setting);
             describe_metrics::execute_describe_metrics(
                 ctx,
                 &db_config,
@@ -86,10 +71,18 @@ pub async fn execute(ctx: &DBContext, query: &str) -> Result<()> {
             .await?;
         }
         InterpretedQuery::SearchMetrics(query_condition, query_setting) => {
-
-            //TODO(impl)
+            let db_config = to_db_config(&ctx, query_setting);
+            search_metrics::execute_search_metrics(ctx, &db_config, query_condition).await?;
         }
     }
 
     Ok(())
+}
+
+fn to_db_config(ctx: &DBContext, query_setting: QuerySetting) -> DBConfig {
+    DBConfig {
+        cache_setting: query_setting.cache_setting,
+        cloud_storage: ctx.cloud_storage.clone(),
+        cloud_setting: query_setting.cloud_setting,
+    }
 }

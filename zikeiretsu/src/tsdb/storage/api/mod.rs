@@ -18,6 +18,15 @@ pub struct CacheSetting {
     pub write_cache: bool,
 }
 
+impl Default for CacheSetting {
+    fn default() -> Self {
+        Self {
+            read_cache: true,
+            write_cache: true,
+        }
+    }
+}
+
 impl CacheSetting {
     pub fn none() -> Self {
         Self {

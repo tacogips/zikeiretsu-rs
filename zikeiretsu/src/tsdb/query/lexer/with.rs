@@ -1,7 +1,7 @@
 use super::{LexerError, Result as LexerResult};
 use crate::tsdb::query::parser::clause::{OutputFormat, WithClause};
 use crate::tsdb::query::parser::*;
-use crate::tsdb::DBConfig;
+use crate::tsdb::{CacheSetting, CloudStorageSetting};
 use chrono::FixedOffset;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -11,7 +11,8 @@ pub(crate) struct With<'q> {
     pub output_format: OutputFormat,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
     pub output_file_path: Option<PathBuf>,
-    pub db_config: DBConfig,
+    pub cache_setting: CacheSetting,
+    pub cloud_setting: CloudStorageSetting,
 }
 
 impl<'q> Default for With<'q> {
@@ -24,7 +25,8 @@ impl<'q> Default for With<'q> {
             output_format,
             column_index_map: None,
             output_file_path: None,
-            db_config: DBConfig::default(),
+            cache_setting: CacheSetting::default(),
+            cloud_setting: CloudStorageSetting::default(),
         }
     }
 }
@@ -60,6 +62,16 @@ pub(crate) fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> LexerRe
         // output format
         if let Some(output) = with_clause.def_output {
             with.output_format = output
+        }
+
+        // cache setting
+        if !with_clause.def_use_cache {
+            with.cache_setting = CacheSetting::none();
+        }
+
+        // cloud setting
+        if !with_clause.def_sync_cloud {
+            with.cloud_setting = CloudStorageSetting::not_sync_to_cloud();
         }
     }
     Ok(with)

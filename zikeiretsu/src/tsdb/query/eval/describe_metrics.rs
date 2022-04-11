@@ -6,11 +6,9 @@ use crate::tsdb::query::DBContext;
 use crate::tsdb::DBConfig;
 use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{
-    DataFrame, DataSeries, DataSeriesRefs, SeriesValues, StringDataSeriesRefs, StringSeriesRef,
-    TimeSeriesDataFrame, TimestampNano, TimestampSec,
+    DataFrame, DataSeries, DataSeriesRefs, SeriesValues, TimestampNano, TimestampSec,
 };
-use futures::{future, Future, FutureExt};
-use serde::Serialize;
+use futures::{future, FutureExt};
 
 pub async fn execute_describe_metrics(
     ctx: &DBContext,

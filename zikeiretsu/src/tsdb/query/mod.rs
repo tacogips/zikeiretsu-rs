@@ -4,7 +4,6 @@ pub mod lexer;
 pub mod parser;
 
 use crate::EngineError;
-use context::*;
 pub use context::*;
 pub use eval::*;
 pub use lexer::*;

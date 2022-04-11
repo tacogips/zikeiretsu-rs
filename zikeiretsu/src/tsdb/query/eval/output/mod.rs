@@ -6,13 +6,8 @@ pub use table::*;
 
 use super::Result as EvalResult;
 use crate::tsdb::query::lexer::OutputFormat;
-use crate::tsdb::DataSeriesRefs;
-use async_trait::async_trait;
-use polars::prelude::{DataFrame as PDataFrame, Series as PSeries, *};
+use polars::prelude::DataFrame as PDataFrame;
 use std::io::Write as IoWrite;
-use std::marker::PhantomData;
-
-use chrono::FixedOffset;
 
 pub trait DataSeriesRefsOutput {
     fn output(&mut self, data: &PDataFrame) -> EvalResult<()>;

@@ -1,11 +1,6 @@
 use super::{DataSeriesRefsOutput, EvalResult};
-use crate::tsdb::DataSeriesRefs;
-use crate::tsdb::TimeSeriesDataFrame as ZDataFrame;
-use async_trait::async_trait;
-use chrono::FixedOffset;
-use polars::prelude::{DataFrame as PDataFrame, Series as PSeries, *};
+use polars::prelude::DataFrame as PDataFrame;
 use std::io::Write as IoWrite;
-use std::marker::PhantomData;
 
 pub struct TableDfOutput<Dest: IoWrite>(pub Dest);
 

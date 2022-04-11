@@ -4,20 +4,16 @@ mod r#where;
 mod with;
 
 use crate::tsdb::datapoint::DatapointSearchCondition;
-use crate::tsdb::datetime::DatetimeAccuracy;
 use crate::tsdb::metrics::Metrics;
 pub use crate::tsdb::query::parser::clause::{OutputFormat, WhereClause, WithClause};
 use crate::tsdb::query::parser::*;
 use crate::tsdb::{CacheSetting, CloudStorageSetting};
-use chrono::{DateTime, Duration, FixedOffset, ParseError as ChoronoParseError, TimeZone, Utc};
+use chrono::FixedOffset;
 use either::Either;
 use std::fs;
-use std::io::{Error as IoError, Write as IoWrite};
+use std::io::Error as IoError;
 use std::path::PathBuf;
-
 use std::result::Result as StdResult;
-
-use crate::EngineError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

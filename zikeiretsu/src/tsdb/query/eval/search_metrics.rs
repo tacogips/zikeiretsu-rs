@@ -2,13 +2,11 @@ use super::output::*;
 use super::EvalError;
 
 use crate::tsdb::engine::Engine;
-use crate::tsdb::query::lexer::{InterpretedQueryCondition, OutputCondition, OutputWriter};
+use crate::tsdb::query::lexer::{InterpretedQueryCondition, OutputWriter};
 use crate::tsdb::query::DBContext;
 use crate::tsdb::DBConfig;
-use crate::tsdb::{block_list, Metrics};
-use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs, StringSeriesRef};
-use polars::prelude::{DataFrame as PDataFrame, Series as PSeries};
-use serde::Serialize;
+use crate::tsdb::DataSeriesRefs;
+use polars::prelude::DataFrame as PDataFrame;
 
 pub async fn execute_search_metrics(
     ctx: &DBContext,

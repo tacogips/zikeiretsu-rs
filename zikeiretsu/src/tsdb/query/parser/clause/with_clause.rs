@@ -1,7 +1,6 @@
 use super::super::boolean::parse_bool;
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
-use std::convert::TryFrom;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]

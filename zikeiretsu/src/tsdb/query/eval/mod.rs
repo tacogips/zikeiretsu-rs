@@ -5,9 +5,7 @@ pub mod search_metrics;
 
 use crate::tsdb::data_types::DataSeriesRefsError;
 use crate::tsdb::engine::EngineError;
-use crate::tsdb::lexer::{
-    interpret, InterpretedQuery, InterpretedQueryCondition, LexerError, OutputError,
-};
+use crate::tsdb::lexer::{interpret, InterpretedQuery, LexerError, OutputError};
 use crate::tsdb::query::parser::{parse_query, ParserError};
 use crate::tsdb::query::QuerySetting;
 use crate::tsdb::{DBConfig, DBContext};

@@ -1,10 +1,9 @@
 use super::{clock_parser, duration_parser};
-use once_cell::sync::OnceCell;
 use pest::iterators::Pair;
 
 use crate::tsdb::datetime::{parse_datetime_str, today, tomorrow, yesterday, TimestampNano};
 use crate::tsdb::query::parser::*;
-use chrono::{format as chrono_format, DateTime, Duration, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 
 #[derive(Debug, PartialEq)]
 pub enum DatetimeFilter<'q> {

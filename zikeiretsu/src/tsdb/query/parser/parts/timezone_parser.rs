@@ -1,7 +1,7 @@
 use super::clock_parser::time_sec_from_clock_str;
 use crate::tsdb::query::parser::*;
 use chrono::FixedOffset;
-use pest::{iterators::Pair, ParserState};
+use pest::iterators::Pair;
 
 pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::TIMEZONE_OFFSET_VAL {

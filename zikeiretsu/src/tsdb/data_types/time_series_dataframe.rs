@@ -4,14 +4,12 @@ use super::dataseries_ref::*;
 use super::field::*;
 use super::{datapoint::DataPoint, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
-use crate::tsdb::util::{trim_values, VecOpeError};
-use polars::prelude::PolarsError;
+use crate::tsdb::util::trim_values;
 
 use std::cmp::Ordering;
 
 use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
-use thiserror::*;
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct TimeSeriesDataFrame {

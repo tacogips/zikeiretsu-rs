@@ -4,9 +4,8 @@ use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::query::DBContext;
 use crate::tsdb::DBConfig;
-use crate::tsdb::{block_list, Metrics};
-use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs, StringSeriesRef};
-use serde::Serialize;
+use crate::tsdb::Metrics;
+use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs};
 
 pub async fn execute_metrics_list(
     ctx: &DBContext,

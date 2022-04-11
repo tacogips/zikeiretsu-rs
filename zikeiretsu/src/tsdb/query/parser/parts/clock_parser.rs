@@ -1,8 +1,7 @@
 use crate::tsdb::query::parser::*;
 
 use super::is_space;
-
-use chrono::{FixedOffset, TimeZone};
+use chrono::FixedOffset;
 use pest::iterators::Pair;
 
 pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {

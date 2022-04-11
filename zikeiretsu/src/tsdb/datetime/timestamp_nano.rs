@@ -5,10 +5,11 @@ use chrono::{Duration, SecondsFormat, TimeZone};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
-use std::ops::Add;
-use std::ops::{Deref, Sub};
+use std::ops::{Add, Deref, Sub};
+
 pub const SEC_IN_NANOSEC: u64 = 1_000_000_000;
-#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
+
+#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize, PartialOrd)]
 pub struct TimestampNano(pub u64);
 impl TimestampNano {
     pub fn new(inner: u64) -> Self {
@@ -119,7 +120,12 @@ impl TryFrom<&str> for TimestampNano {
 
 impl fmt::Display for TimestampNano {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{nano}", nano = self.0)
+        write!(
+            f,
+            "{nano}:({formated_date})",
+            nano = self.0,
+            formated_date = self.as_datetime().to_rfc3339()
+        )
     }
 }
 

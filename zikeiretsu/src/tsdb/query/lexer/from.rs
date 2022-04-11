@@ -6,6 +6,7 @@ use either::Either;
 pub(crate) enum BuildinMetrics {
     ListMetrics,
     DescribeMetrics,
+    DescribeBlockList,
 }
 
 impl BuildinMetrics {
@@ -13,6 +14,7 @@ impl BuildinMetrics {
         match metrics {
             ".metrics" => Some(Self::ListMetrics),
             ".describe" => Some(Self::DescribeMetrics),
+            ".block_list" => Some(Self::DescribeBlockList),
             _ => None,
         }
     }

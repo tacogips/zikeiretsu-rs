@@ -12,8 +12,9 @@ pub enum BinaryRangeSearchType {
 /// - search at most neq 4 from [4,5,6,10] => None
 /// - search at most neq 6 from [4,5,6,10] => 5
 /// - search at least eq 3 from [4,6,10] => 4
-/// - search at least eq 5 from [4,6,10] => 10
-///
+/// - search at least eq 5 from [4,6,10] => 6
+/// - search at least eq 5 from [4,5,6,10] => 5
+/// - search at least eq 11 from [4,5,6,10] => None
 pub fn binary_search_by<T, F>(
     datas: &[T],
     cond: F,
@@ -381,6 +382,60 @@ mod test {
         assert!(result.is_some());
         let result = result.unwrap();
         assert_eq!(result, data_points.len() - 1);
+    }
+
+    #[test]
+    fn binsearch_test_13() {
+        let data_points: Vec<DataPoint> = empty_data_points!(4, 6, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&5),
+            BinaryRangeSearchType::AtLeastEq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn binsearch_test_14() {
+        let data_points: Vec<DataPoint> = empty_data_points!(4, 5, 6, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&5),
+            BinaryRangeSearchType::AtLeastEq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn binsearch_test_15() {
+        let data_points: Vec<DataPoint> = empty_data_points!(4, 6, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&3),
+            BinaryRangeSearchType::AtLeastEq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn binsearch_test_16() {
+        let data_points: Vec<DataPoint> = empty_data_points!(4, 5, 6, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&11),
+            BinaryRangeSearchType::AtLeastEq,
+        );
+        assert!(result.is_none());
     }
 
     #[test]

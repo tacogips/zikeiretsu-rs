@@ -1,5 +1,3 @@
-use crate::tsdb::cloudstorage::CloudStorage;
-
 #[derive(Clone, Debug)]
 pub struct CloudStorageSetting {
     pub update_block_list: bool,
@@ -60,7 +58,7 @@ pub struct CloudStorageSettingBuilder {
 }
 
 impl CloudStorageSettingBuilder {
-    pub fn new_with_sync_when_download(cloud_storage: CloudStorage) -> Self {
+    pub fn new_with_sync_when_download() -> Self {
         CloudStorageSettingBuilder {
             update_block_list: true,
             download_block_list_if_not_exits: true,

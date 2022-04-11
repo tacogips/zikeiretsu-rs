@@ -13,6 +13,8 @@ use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, StorageApiError>;
+
+#[derive(Debug)]
 pub struct CacheSetting {
     pub read_cache: bool,
     pub write_cache: bool,
@@ -136,14 +138,14 @@ pub(crate) fn block_timestamp_to_block_file_path(
 
     let block_path_dir = root_dir.to_path_buf().join(format!(
         "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/",
-        since_sec = block_timestamp.since_sec,
-        until_sec = block_timestamp.until_sec,
+        since_sec = block_timestamp.since_sec.0,
+        until_sec = block_timestamp.until_sec.0,
     ));
 
     let block_path = root_dir.to_path_buf().join(format!(
         "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/block",
-        since_sec = block_timestamp.since_sec,
-        until_sec = block_timestamp.until_sec,
+        since_sec = block_timestamp.since_sec.0,
+        until_sec = block_timestamp.until_sec.0,
     ));
     (block_path_dir, block_path)
 }

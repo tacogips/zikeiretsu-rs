@@ -19,6 +19,10 @@ pub enum DataframeError {
 
     #[error("attempt to merge unmatched series type error. {0}, {1}")]
     UnmatchedSeriesTypeError(String, String),
+
+    #[error("unmatched field number. This might be a by bug. {0}, {1}")]
+    UnmatchedFieldNumError(usize, usize),
+
     #[error("polars error. {0}")]
     PolarsError(#[from] PolarsError),
 }
@@ -38,7 +42,7 @@ impl DataFrame {
     pub fn merge(&mut self, other: &mut Self) -> Result<()> {
         for (idx, data_series) in self.data_serieses.iter_mut().enumerate() {
             match other.get_series_mut(idx) {
-                Some(other_series) => data_series.merge(other_series)?,
+                Some(other_series) => data_series.append(other_series)?,
                 None => return Err(DataframeError::DataSeriesIndexOutOfBound(idx, 0)),
             }
         }

@@ -117,11 +117,26 @@ pub enum BuildinDatetimeFunction {
     Tomorrow,
 }
 
-pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
-    let pairs = QueryGrammer::parse(Rule::QUERY, query)?;
+pub fn parse_query<'q>(query_str: &'q str) -> Result<ParsedQuery<'q>> {
+    let query = QueryGrammer::parse(Rule::QUERY, query_str)?;
+    let query = query
+        .into_iter()
+        .next()
+        .ok_or(ParserError::InvalidGrammer(format!(
+            "invalid query: {}",
+            query_str
+        )))?;
+
+    #[cfg(debug_assertions)]
+    if query.as_rule() != Rule::QUERY {
+        return Err(ParserError::UnexpectedPair(
+            format!("{:?}", Rule::QUERY),
+            format!("{:?}", query.as_rule()),
+        ));
+    }
 
     let mut parsed_query = ParsedQuery::<'q>::empty();
-    for each_pair in pairs.into_iter() {
+    for each_pair in query.into_inner() {
         match each_pair.as_rule() {
             Rule::WITH_CLAUSE => {
                 let with_clause = with_clause::parse(each_pair)?;
@@ -143,7 +158,9 @@ pub fn parse_query<'q>(query: &'q str) -> Result<ParsedQuery<'q>> {
                 let order_or_limit_clause = order_or_limit_clause::parse(each_pair)?;
                 parsed_query.order_or_limit = Some(order_or_limit_clause);
             }
-            Rule::QUERY => { /* do nothing */ }
+
+            Rule::KW_SEMICOLON => { /* do nothing*/ }
+            Rule::EOI => { /* do nothing*/ }
             _ => {
                 let msg = format!(
                     "invalid grammer RULE:{:?} {:?}",

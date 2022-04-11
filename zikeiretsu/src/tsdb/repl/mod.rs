@@ -5,7 +5,6 @@ use crate::tsdb::query::eval::execute_query;
 use crate::EngineError;
 use rustyline::error::ReadlineError;
 use thiserror::Error;
-use validator::*;
 
 use rustyline::Editor;
 
@@ -21,19 +20,22 @@ pub enum ZikeiretsuReplError {
 pub type Result<T> = std::result::Result<T, ZikeiretsuReplError>;
 pub async fn start(ctx: &mut DBContext) -> Result<()> {
     let mut editor = Editor::new();
-    editor.set_helper(Some(validator::InputValidator));
+    editor.set_helper(Some(validator::MultiLineInputValidator));
 
     loop {
-        let readline = editor.readline(">>");
+        println!("");
+        let readline = editor.readline("query>>");
 
         match readline {
             Ok(line) => {
+                log::debug!("qeury:{}", line);
                 if let Err(e) = execute_query(&ctx, &line).await {
-                    eprintln!("erorr: {e}")
+                    eprintln!("query error: {e}")
                 }
             }
 
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
+                println!("bye");
                 return Ok(());
             }
             Err(err) => return Err(ZikeiretsuReplError::from(err)),

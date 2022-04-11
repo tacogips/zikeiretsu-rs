@@ -41,6 +41,7 @@ impl SeriesValues {
         }
     }
 }
+
 impl std::fmt::Display for SeriesValues {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
@@ -57,14 +58,30 @@ impl std::fmt::Display for SeriesValues {
     }
 }
 
+macro_rules! retain_series {
+    ($enum_value:expr,$vs:expr,$retain_start_index:expr, $cut_off_suffix_start_idx:expr) => {{
+        let (droped_prefix, droped_surfix) =
+            trim_values($vs, $retain_start_index, $cut_off_suffix_start_idx)?;
+
+        Ok((
+            DataSeries::new($enum_value(droped_prefix)),
+            DataSeries::new($enum_value(droped_surfix)),
+        ))
+    }};
+}
+
+macro_rules! unmatch_series_error {
+    ($self_value:expr,$other_value:expr) => {{
+        Err(DataframeError::UnmatchedSeriesTypeError(
+            $self_value.to_string(),
+            $other_value.to_string(),
+        ))
+    }};
+}
+
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataSeries {
     pub values: SeriesValues,
-}
-impl From<SeriesValues> for DataSeries {
-    fn from(vs: SeriesValues) -> Self {
-        DataSeries::new(vs)
-    }
 }
 
 impl DataSeries {
@@ -72,28 +89,194 @@ impl DataSeries {
         Self { values }
     }
 
-    pub fn merge(&mut self, other: &mut DataSeries) -> DataframeResult<()> {
+    pub fn insert(&mut self, index: usize, other: &FieldValue) -> DataframeResult<()> {
+        match &mut self.values {
+            SeriesValues::Float64(vs) => match other {
+                FieldValue::Float64(other_value) => {
+                    vs.insert(index, *other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+            SeriesValues::UInt64(vs) => match other {
+                FieldValue::UInt64(other_value) => {
+                    vs.insert(index, *other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::Bool(vs) => match other {
+                FieldValue::Bool(other_value) => {
+                    vs.insert(index, *other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::String(vs) => match other {
+                FieldValue::String(other_value) => {
+                    vs.insert(index, other_value.clone());
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::TimestampNano(vs) => match other {
+                FieldValue::TimestampNano(other_value) => {
+                    vs.insert(index, *other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::TimestampSec(vs) => match other {
+                FieldValue::TimestampSec(other_value) => {
+                    vs.insert(index, *other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::Vacant(len) => {
+                //TODO(tacogips) invalid hwre
+                *len = *len + 1;
+                Ok(())
+            }
+        }
+    }
+
+    pub fn push(&mut self, other: &FieldValue) -> DataframeResult<()> {
+        match &mut self.values {
+            SeriesValues::Float64(vs) => match other {
+                FieldValue::Float64(other_value) => {
+                    vs.push(*other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+            SeriesValues::UInt64(vs) => match other {
+                FieldValue::UInt64(other_value) => {
+                    vs.push(*other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::Bool(vs) => match other {
+                FieldValue::Bool(other_value) => {
+                    vs.push(*other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::String(vs) => match other {
+                FieldValue::String(other_value) => {
+                    vs.push(other_value.clone());
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::TimestampNano(vs) => match other {
+                FieldValue::TimestampNano(other_value) => {
+                    vs.push(*other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::TimestampSec(vs) => match other {
+                FieldValue::TimestampSec(other_value) => {
+                    vs.push(*other_value);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::Vacant(len) => {
+                //TODO(tacogips) invalid hwre
+                *len = *len + 1;
+                Ok(())
+            }
+        }
+    }
+
+    pub fn prepend(&mut self, other: &mut DataSeries) -> DataframeResult<()> {
+        match &mut self.values {
+            SeriesValues::Float64(vs) => match &mut other.values {
+                SeriesValues::Float64(other_vals) => {
+                    prepend(vs, other_vals);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+            SeriesValues::UInt64(vs) => match &mut other.values {
+                SeriesValues::UInt64(other_vals) => {
+                    prepend(vs, other_vals);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::Bool(vs) => match &mut other.values {
+                SeriesValues::Bool(other_vals) => {
+                    prepend(vs, other_vals);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::String(vs) => match &mut other.values {
+                SeriesValues::String(other_vals) => {
+                    prepend(vs, other_vals);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::TimestampNano(vs) => match &mut other.values {
+                SeriesValues::TimestampNano(other_vals) => {
+                    prepend(vs, other_vals);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::TimestampSec(vs) => match &mut other.values {
+                SeriesValues::TimestampSec(other_vals) => {
+                    prepend(vs, other_vals);
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+
+            SeriesValues::Vacant(len) => match &other.values {
+                SeriesValues::Vacant(new_len) => {
+                    *len = *len + *new_len;
+                    Ok(())
+                }
+                invalid => unmatch_series_error!(self.values, invalid),
+            },
+        }
+    }
+
+    pub fn append(&mut self, other: &mut DataSeries) -> DataframeResult<()> {
         match &mut self.values {
             SeriesValues::Float64(vs) => match &mut other.values {
                 SeriesValues::Float64(other_vals) => {
                     vs.append(other_vals);
                     Ok(())
                 }
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
-
             SeriesValues::UInt64(vs) => match &mut other.values {
                 SeriesValues::UInt64(other_vals) => {
                     vs.append(other_vals);
                     Ok(())
                 }
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
 
             SeriesValues::Bool(vs) => match &mut other.values {
@@ -101,10 +284,7 @@ impl DataSeries {
                     vs.append(other_vals);
                     Ok(())
                 }
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
 
             SeriesValues::String(vs) => match &mut other.values {
@@ -112,10 +292,7 @@ impl DataSeries {
                     vs.append(other_vals);
                     Ok(())
                 }
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
 
             SeriesValues::TimestampNano(vs) => match &mut other.values {
@@ -123,10 +300,7 @@ impl DataSeries {
                     vs.append(other_vals);
                     Ok(())
                 }
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
 
             SeriesValues::TimestampSec(vs) => match &mut other.values {
@@ -134,18 +308,12 @@ impl DataSeries {
                     vs.append(other_vals);
                     Ok(())
                 }
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
 
             SeriesValues::Vacant(_) => match &other.values {
                 SeriesValues::Vacant(_) => Ok(()),
-                invalid => Err(DataframeError::UnmatchedSeriesTypeError(
-                    self.values.to_string(),
-                    invalid.to_string(),
-                )),
+                invalid => unmatch_series_error!(self.values, invalid),
             },
         }
     }
@@ -166,7 +334,13 @@ impl DataSeries {
             SeriesValues::String(vs) => vs.get(index).map(|v| FieldValue::String(v.clone())),
             SeriesValues::TimestampNano(vs) => vs.get(index).map(|v| FieldValue::TimestampNano(*v)),
             SeriesValues::TimestampSec(vs) => vs.get(index).map(|v| FieldValue::TimestampSec(*v)),
-            SeriesValues::Vacant(_) => None,
+            SeriesValues::Vacant(len) => {
+                if index >= *len {
+                    None
+                } else {
+                    Some(FieldValue::Vacant)
+                }
+            }
         }
     }
 
@@ -174,20 +348,70 @@ impl DataSeries {
         &mut self,
         retain_start_index: usize,
         cut_off_suffix_start_idx: usize,
-    ) -> DataframeResult<()> {
+    ) -> DataframeResult<(DataSeries, DataSeries)> {
         match &mut self.values {
-            SeriesValues::Float64(vs) => {
-                trim_values(vs, retain_start_index, cut_off_suffix_start_idx)?
-            }
+            SeriesValues::Float64(vs) => retain_series!(
+                SeriesValues::Float64,
+                vs,
+                retain_start_index,
+                cut_off_suffix_start_idx
+            ),
 
-            SeriesValues::Bool(vs) => {
-                trim_values(vs, retain_start_index, cut_off_suffix_start_idx)?
-            }
+            SeriesValues::UInt64(vs) => retain_series!(
+                SeriesValues::UInt64,
+                vs,
+                retain_start_index,
+                cut_off_suffix_start_idx
+            ),
 
-            _ => { /* do nothing */ }
+            SeriesValues::Bool(vs) => retain_series!(
+                SeriesValues::Bool,
+                vs,
+                retain_start_index,
+                cut_off_suffix_start_idx
+            ),
+
+            SeriesValues::TimestampNano(vs) => retain_series!(
+                SeriesValues::TimestampNano,
+                vs,
+                retain_start_index,
+                cut_off_suffix_start_idx
+            ),
+
+            SeriesValues::TimestampSec(vs) => retain_series!(
+                SeriesValues::TimestampSec,
+                vs,
+                retain_start_index,
+                cut_off_suffix_start_idx
+            ),
+
+            SeriesValues::String(vs) => retain_series!(
+                SeriesValues::String,
+                vs,
+                retain_start_index,
+                cut_off_suffix_start_idx
+            ),
+
+            SeriesValues::Vacant(len) => {
+                if retain_start_index > cut_off_suffix_start_idx {
+                    return Err(DataframeError::VecOpeError(VecOpeError::InvalidRange(
+                        retain_start_index,
+                        cut_off_suffix_start_idx,
+                    )));
+                }
+
+                if retain_start_index >= *len {
+                    return Err(DataframeError::VecOpeError(VecOpeError::OutOfRange(
+                        retain_start_index,
+                    )));
+                }
+
+                Ok((
+                    DataSeries::new(SeriesValues::Vacant(retain_start_index)),
+                    DataSeries::new(SeriesValues::Vacant(*len - cut_off_suffix_start_idx - 1)),
+                ))
+            }
         }
-
-        Ok(())
     }
 
     pub fn as_dataseries_ref<'a>(&'a self) -> DataSeriesRef<'a> {
@@ -202,6 +426,12 @@ impl DataSeries {
         };
 
         DataSeriesRef::new(vs)
+    }
+}
+
+impl From<SeriesValues> for DataSeries {
+    fn from(vs: SeriesValues) -> Self {
+        DataSeries::new(vs)
     }
 }
 

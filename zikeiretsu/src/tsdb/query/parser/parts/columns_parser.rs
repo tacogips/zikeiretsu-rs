@@ -24,6 +24,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>, allow_asterisk: bool) -> Result<Vec<Colum
                     return Err(ParserError::InvalidColumnName(column_str.to_string()));
                 }
             } else {
+                validate_column_name(column_str)?;
                 columns.push(Column::ColumnName(ColumnName(
                     each_pair_in_columns.as_str(),
                 )))

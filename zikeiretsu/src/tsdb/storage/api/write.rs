@@ -60,7 +60,7 @@ pub async fn write_datas<P: AsRef<Path>>(
             }
         };
 
-        if let Some((cloud_lock_file_path, cloud_storage, cloud_setting)) = cloud_infos.as_ref() {
+        if let Some((_, cloud_storage, cloud_setting)) = cloud_infos.as_ref() {
             let upload_result = upload_to_cloud(
                 &block_list_file_path,
                 &block_file_path,

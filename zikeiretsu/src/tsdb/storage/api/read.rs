@@ -110,6 +110,9 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Option<TimeSeriesDataFrame>> {
+    log::debug!("search_dataframe. field_selectors: {:?}", field_selectors);
+    log::debug!("search_dataframe. condition: {}", condition);
+
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
@@ -127,50 +130,61 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     let result = match block_timestamps {
         None => Ok(None),
         Some(block_timestamps) => {
-            if !no_block_timestamps_overlapping_nor_unsorted(block_timestamps) {
-                return Err(StorageApiError::UnsupportedStorageStatus("timestamps of datapoints overlapping or unsorted. `zikeiretsu` not supported datas like this yet...".to_string()));
-            }
-
-            let tasks = block_timestamps.iter().map(|block_timestamp| {
-                read_block(
+            let tasks = block_timestamps.iter().map(|block_timestamp| async move {
+                let mut block = read_block(
                     &db_dir,
                     &metrics,
                     field_selectors.clone(),
                     &block_timestamp,
                     cloud_storage_and_setting,
                 )
+                .await?;
+                // cut out partial datas from the dataframe
+                if !condition.contains_whole(
+                    &block_timestamp.since_sec.as_timestamp_nano(),
+                    &(block_timestamp.until_sec + 1).as_timestamp_nano(),
+                ) {
+                    block.retain_matches(&condition).await?;
+                }
+
+                Ok((block, block_timestamp))
             });
 
             let dataframes_of_blocks = join_all(tasks).await;
-            let dataframes_of_blocks: Result<Vec<TimeSeriesDataFrame>> =
-                dataframes_of_blocks.into_iter().collect();
+            let dataframes_of_blocks: Result<
+                Vec<(TimeSeriesDataFrame, &block_list::BlockTimestamp)>,
+            > = dataframes_of_blocks.into_iter().collect();
 
-            let merged_dataframe = dataframes_of_blocks?
-                .into_iter()
-                .reduce(|mut acc, mut each| {
-                    acc.merge(&mut each).unwrap();
-                    acc
-                });
-
-            if let Some(mut df) = merged_dataframe {
-                df.retain(condition).await?;
-                Ok(Some(df))
-            } else {
+            let mut dataframes_of_blocks = dataframes_of_blocks?;
+            if dataframes_of_blocks.is_empty() {
                 Ok(None)
+            } else {
+                let (mut merged_dataframe, mut prev_block_timestamp) =
+                    dataframes_of_blocks.remove(0);
+
+                for (mut each_dataframes_block, each_block_timestamp) in
+                    dataframes_of_blocks.into_iter()
+                {
+                    if prev_block_timestamp.is_before(&each_block_timestamp)
+                        || prev_block_timestamp.adjacent_before_of(&each_block_timestamp)
+                    {
+                        merged_dataframe.append(&mut each_dataframes_block).unwrap();
+                    } else {
+                        merged_dataframe
+                            .merge(&mut each_dataframes_block)
+                            .await
+                            .unwrap();
+                    }
+
+                    prev_block_timestamp = each_block_timestamp;
+                }
+
+                Ok(Some(merged_dataframe))
             }
         }
     };
 
     result
-}
-
-fn no_block_timestamps_overlapping_nor_unsorted(
-    block_timestamps: &[block_list::BlockTimestamp],
-) -> bool {
-    block_timestamps
-        .iter()
-        .zip(block_timestamps[1..].iter())
-        .all(|(l, r)| l.is_before(r) || l == r)
 }
 
 async fn read_block(
@@ -256,16 +270,11 @@ pub(crate) async fn read_block_list<'a>(
         None
     };
 
-    //TODO(tacogips) handle illegal block_list
-    // - duplicate
-    // - not ordered???
-
     let block_list = match block_list {
         Some(bl) => bl,
         None => {
             if !block_list_path.exists() {
-                //
-                //TODO(tacogips) call google cloud hear
+                //TODO(tacogips) fetch from  cloud storage hear??
                 return Err(StorageApiError::NoBlockListFile(metrics.to_string()));
             }
             block_list::read_from_blocklist_file(&metrics, block_list_path)?

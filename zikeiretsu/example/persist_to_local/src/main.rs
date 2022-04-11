@@ -6,18 +6,18 @@ use zikeiretsu::*;
 const PRICES_DATA: &[u8] = include_bytes!("resources/prices.json");
 
 #[derive(Deserialize, Debug)]
-struct Price {
+struct Trade {
     pub side: String,
     pub price: f64,
     pub size: f64,
     pub exec_date: String,
 }
 
-impl Price {
-    fn to_rec(self) -> PriceRec {
+impl Trade {
+    fn to_rec(self) -> TradeRec {
         let ts = DateTime::parse_from_rfc3339(&self.exec_date).unwrap();
 
-        PriceRec {
+        TradeRec {
             ts: ts.into(),
             is_buy: self.side == "BUY",
             price: self.price,
@@ -27,14 +27,14 @@ impl Price {
 }
 
 #[derive(Debug)]
-struct PriceRec {
+struct TradeRec {
     ts: TimestampNano,
     is_buy: bool,
     price: f64,
     size: f64,
 }
 
-impl PriceRec {
+impl TradeRec {
     fn into_datapoint(self) -> DataPoint {
         DataPoint {
             timestamp_nano: self.ts,
@@ -54,7 +54,7 @@ impl PriceRec {
 
 #[tokio::main]
 async fn main() {
-    let prices: Vec<Price> = serde_json::from_slice(PRICES_DATA).unwrap();
+    let prices: Vec<Trade> = serde_json::from_slice(PRICES_DATA).unwrap();
     let prices: Vec<DataPoint> = prices
         .into_iter()
         .map(|e| e.to_rec().into_datapoint())

@@ -77,7 +77,7 @@ async fn persist_to_cloud(cloud_dir: &str) {
         Some(cloud_storage_setting),
     );
 
-    let wr = Zikeiretsu::writable_store_builder("price", fields.clone())
+    let wr = Engine::writable_store_builder("price", fields.clone())
         .persistence(persistence)
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {
             if lhs.timestamp_nano == rhs.timestamp_nano {
@@ -108,7 +108,7 @@ async fn persist_to_cloud(cloud_dir: &str) {
         datapoint_search_condition: DatapointSearchCondition::all(),
         remove_from_store_after_persisted: true,
     };
-    wr.lock().await.persist(condition).await.unwrap();
+    wEngine.lock().await.persist(condition).await.unwrap();
 }
 
 async fn load_from_cloud(cloud_dir: &str) {

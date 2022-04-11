@@ -51,23 +51,34 @@ pub enum OutputError {
     InvalidPath(String),
 }
 
+#[derive(Debug)]
+pub enum InterpretedQuery {
+    ListMetrics(OutputCondition, QuerySetting),
+    DescribeMetrics(DescribeMetrics, QuerySetting),
+    DescribeBlockList(DescribeBlockList, QuerySetting),
+    SearchMetrics(InterpretedQueryCondition, QuerySetting),
+}
+
+#[derive(Debug)]
 pub struct QuerySetting {
     pub cache_setting: CacheSetting,
     pub cloud_setting: CloudStorageSetting,
 }
 
-pub enum InterpretedQuery {
-    ListMetrics(OutputCondition, QuerySetting),
-    DescribeMetrics(DescribeMetrics, QuerySetting),
-    SearchMetrics(InterpretedQueryCondition, QuerySetting),
-}
-
+#[derive(Debug)]
 pub struct OutputCondition {
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
 }
 
+#[derive(Debug)]
 pub struct DescribeMetrics {
+    pub output_condition: OutputCondition,
+    pub metrics_filter: Option<Metrics>,
+}
+
+#[derive(Debug)]
+pub struct DescribeBlockList {
     pub output_condition: OutputCondition,
     pub metrics_filter: Option<Metrics>,
 }
@@ -96,6 +107,7 @@ impl OutputCondition {
     }
 }
 
+#[derive(Debug)]
 pub struct InterpretedQueryCondition {
     pub metrics: Metrics,
     pub field_selectors: Option<Vec<usize>>,
@@ -105,48 +117,19 @@ pub struct InterpretedQueryCondition {
     pub timezone: FixedOffset,
 }
 
-pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
+pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
+    let metrics = match from::parse_from(parsed_query.from.as_ref())? {
+        Either::Right(buildin_metrics) => {
+            return interpret_buildin_metrics(parsed_query, buildin_metrics)
+        }
+        Either::Left(parsed_metrics) => parsed_metrics,
+    };
+
     let with = with::interpret_with(parsed_query.with)?;
 
     let query_setting = QuerySetting {
         cache_setting: with.cache_setting,
         cloud_setting: with.cloud_setting,
-    };
-
-    let metrics = match from::parse_from(parsed_query.from.as_ref())? {
-        Either::Right(buildin_metrics) => match buildin_metrics {
-            from::BuildinMetrics::ListMetrics => {
-                invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
-                return Ok(InterpretedQuery::ListMetrics(
-                    OutputCondition {
-                        output_format: with.output_format,
-                        output_file_path: with.output_file_path,
-                    },
-                    query_setting,
-                ));
-            }
-
-            from::BuildinMetrics::DescribeMetrics => {
-                let output_condition = OutputCondition {
-                    output_format: with.output_format,
-                    output_file_path: with.output_file_path,
-                };
-
-                let metrics_filter = match parsed_query.r#where {
-                    Some(where_clause) => where_clause.metrics_filter,
-                    None => None,
-                };
-
-                return Ok(InterpretedQuery::DescribeMetrics(
-                    DescribeMetrics {
-                        output_condition,
-                        metrics_filter,
-                    },
-                    query_setting,
-                ));
-            }
-        },
-        Either::Left(parsed_metrics) => parsed_metrics,
     };
 
     // select columns
@@ -184,11 +167,76 @@ pub fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> 
     ))
 }
 
+pub(crate) fn interpret_buildin_metrics<'q>(
+    parsed_query: ParsedQuery<'q>,
+    buildin_metrics: from::BuildinMetrics,
+) -> Result<InterpretedQuery> {
+    let with = with::interpret_with(parsed_query.with)?;
+
+    let query_setting = QuerySetting {
+        cache_setting: with.cache_setting,
+        cloud_setting: with.cloud_setting,
+    };
+
+    match buildin_metrics {
+        from::BuildinMetrics::ListMetrics => {
+            invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
+            Ok(InterpretedQuery::ListMetrics(
+                OutputCondition {
+                    output_format: with.output_format,
+                    output_file_path: with.output_file_path,
+                },
+                query_setting,
+            ))
+        }
+
+        from::BuildinMetrics::DescribeMetrics => {
+            let output_condition = OutputCondition {
+                output_format: with.output_format,
+                output_file_path: with.output_file_path,
+            };
+
+            let metrics_filter = match parsed_query.r#where {
+                Some(where_clause) => where_clause.metrics_filter,
+                None => None,
+            };
+
+            Ok(InterpretedQuery::DescribeMetrics(
+                DescribeMetrics {
+                    output_condition,
+                    metrics_filter,
+                },
+                query_setting,
+            ))
+        }
+
+        from::BuildinMetrics::DescribeBlockList => {
+            let output_condition = OutputCondition {
+                output_format: with.output_format,
+                output_file_path: with.output_file_path,
+            };
+
+            let metrics_filter = match parsed_query.r#where {
+                Some(where_clause) => where_clause.metrics_filter,
+                None => None,
+            };
+
+            Ok(InterpretedQuery::DescribeBlockList(
+                DescribeBlockList {
+                    output_condition,
+                    metrics_filter,
+                },
+                query_setting,
+            ))
+        }
+    }
+}
+
 fn invalid_if_metrics_filter_exists(where_clause: Option<&WhereClause<'_>>) -> Result<()> {
     if let Some(where_clause) = where_clause {
         if where_clause.metrics_filter.is_some() {
             return Err(LexerError::MetricsFilterIsNotSupported(
-                "allowed only on '.describe'".to_string(),
+                "allowed only on '.describe', '.block_list'".to_string(),
             ));
         }
     }

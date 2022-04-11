@@ -1,3 +1,4 @@
+use super::TimestampNano;
 use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -32,6 +33,10 @@ impl TimestampSec {
         }
     }
 
+    pub fn as_timestamp_nano(&self) -> TimestampNano {
+        TimestampNano::new(self.0 * 1_000_000_000)
+    }
+
     pub fn as_datetime(&self) -> DateTime<Utc> {
         let ndt = NaiveDateTime::from_timestamp(self.0 as i64, 0);
         DateTime::from_utc(ndt, Utc)
@@ -51,12 +56,6 @@ impl TimestampSec {
 
     pub fn is_zero(&self) -> bool {
         self.0 == 0
-    }
-}
-
-impl fmt::Display for TimestampSec {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{timestamp}", timestamp = self.0)
     }
 }
 
@@ -102,13 +101,13 @@ impl Add<u64> for TimestampSec {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    #[test]
-    fn test_display() {
-        let ts = TimestampSec::new(1638257405);
-
-        assert_eq!("1638257405", format!("{ts}"))
+impl fmt::Display for TimestampSec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{nano} ({formated_date})",
+            nano = self.0,
+            formated_date = self.as_datetime().to_rfc3339()
+        )
     }
 }

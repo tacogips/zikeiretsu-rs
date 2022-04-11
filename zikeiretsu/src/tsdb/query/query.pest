@@ -1,6 +1,6 @@
 
 // === silents =================
-WHITESPACE = _{ " " | "\t" | NEWLINE }
+WHITESPACE = _{ " " | "\t" | "\\" | NEWLINE }
 COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
 
 // === primitive =================
@@ -49,6 +49,8 @@ KW_YEAR  			= @{ ^"YEAR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 
 KW_JSON  			= @{ ^"JSON"  ~ !ASCII_ALPHANUMERIC }
 KW_DATAFRAME  = @{ ^"DF" ~ !ASCII_ALPHANUMERIC }
+
+KW_SEMICOLON  = @{ ^";" ~ !ASCII_ALPHANUMERIC }
 
 BOOLEAN_VALUE = { KW_TRUE | KW_FALSE }
 
@@ -170,5 +172,6 @@ QUERY = {
 	~ FROM_CLAUSE
 	~ WHERE_CLAUSE?
 	~ ORDER_OR_LIMIT_CLAUSE*
+	~ KW_SEMICOLON?
 	~ EOI }
 

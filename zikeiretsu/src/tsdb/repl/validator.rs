@@ -1,9 +1,7 @@
 use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 
-use rustyline::validate::{
-    MatchingBracketValidator, ValidationContext, ValidationResult, Validator,
-};
+use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use rustyline::Result;
 use rustyline_derive::{Completer, Helper, Highlighter, Hinter};
 
@@ -13,8 +11,8 @@ lazy_static! {
 }
 
 #[derive(Completer, Helper, Highlighter, Hinter)]
-pub struct InputValidator;
-impl Validator for InputValidator {
+pub struct MultiLineInputValidator;
+impl Validator for MultiLineInputValidator {
     fn validate(&self, ctx: &mut ValidationContext) -> Result<ValidationResult> {
         Ok(validate_multiline(ctx.input()))
     }

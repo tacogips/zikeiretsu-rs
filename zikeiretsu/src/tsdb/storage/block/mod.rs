@@ -300,7 +300,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -319,7 +319,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -338,7 +338,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -356,7 +356,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -375,7 +375,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -394,7 +394,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -412,7 +412,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -430,7 +430,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();
@@ -482,7 +482,7 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let read_data = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
         assert!(read_data.is_ok());
         let read_data = read_data.unwrap();

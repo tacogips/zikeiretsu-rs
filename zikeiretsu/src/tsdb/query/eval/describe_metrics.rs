@@ -8,13 +8,14 @@ use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{
     DataFrame, DataSeries, DataSeriesRefs, SeriesValues, TimestampNano, TimestampSec,
 };
-use futures::{future, FutureExt};
+use futures::future;
 
 pub async fn execute_describe_metrics(
     ctx: &DBContext,
     db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
     output_condition: Option<OutputCondition>,
+    show_block_list: bool,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
     let db_dir = match &ctx.db_dir {
         Some(db_dir) => db_dir,
@@ -40,18 +41,12 @@ pub async fn execute_describe_metrics(
     }
 
     let describes = load_metrics_describes(&ctx, &db_config, metricses).await?;
-    let df = describes_to_dataframe(describes.as_slice())?;
-    let p_df = df
-        .as_polar_dataframes(
-            Some(vec![
-                "metrics".to_string(),
-                "updated_at".to_string(),
-                "from".to_string(),
-                "end".to_string(),
-            ]),
-            None,
-        )
-        .await?;
+    let (df, column_names) = if show_block_list {
+        describes_to_dataframe_with_block_list(describes.as_slice())?
+    } else {
+        describes_to_dataframe(describes.as_slice())?
+    };
+    let p_df = df.as_polar_dataframes(Some(column_names), None).await?;
 
     if let Some(output_condition) = output_condition {
         output_with_condition!(output_condition, p_df);
@@ -87,16 +82,25 @@ async fn load_metrics_describes(
     Ok(describes)
 }
 
+pub struct MetricsDescribe {
+    metrics: Metrics,
+    block_list: block_list::BlockList,
+}
+
 //TODO(tacogips) return DataFrameRef instead
-fn describes_to_dataframe<'a>(describes: &[MetricsDescribe]) -> Result<DataFrame, EvalError> {
+fn describes_to_dataframe(
+    describes: &[MetricsDescribe],
+) -> Result<(DataFrame, Vec<String>), EvalError> {
     let mut metrics_names = Vec::<String>::new();
     let mut update_ats = Vec::<TimestampNano>::new();
+    let mut block_num = Vec::<u64>::new();
     let mut data_range_starts = Vec::<TimestampSec>::new();
     let mut data_range_ends = Vec::<TimestampSec>::new();
 
     for each_descirbe in describes.into_iter() {
         metrics_names.push(each_descirbe.metrics.to_string());
         update_ats.push(each_descirbe.block_list.updated_timestamp_sec);
+        block_num.push(each_descirbe.block_list.block_num() as u64);
         match each_descirbe.block_list.range() {
             Some((start, end)) => {
                 data_range_starts.push(start.clone());
@@ -111,59 +115,67 @@ fn describes_to_dataframe<'a>(describes: &[MetricsDescribe]) -> Result<DataFrame
 
     let mut data_serieses: Vec<DataSeries> = vec![];
 
-    //    "metrics"
-    //    "updated_at"
-    //    "from"
-    //    "end"
     data_serieses.push(SeriesValues::String(metrics_names).into());
     data_serieses.push(SeriesValues::TimestampNano(update_ats).into());
+    data_serieses.push(SeriesValues::UInt64(block_num).into());
     data_serieses.push(SeriesValues::TimestampSec(data_range_starts).into());
     data_serieses.push(SeriesValues::TimestampSec(data_range_ends).into());
 
-    Ok(DataFrame::new(data_serieses))
+    Ok((
+        DataFrame::new(data_serieses),
+        vec![
+            "metrics".to_string(),
+            "updated_at".to_string(),
+            "block_num".to_string(),
+            "from".to_string(),
+            "end".to_string(),
+        ],
+    ))
 }
 
-//pub async fn execute(describe_database_condition: DescribeDatabaseCondition) -> Result<()> {
-//    let metricses = Zikeiretsu::list_metrics(
-//        Some(describe_database_condition.db_dir.clone()),
-//        &describe_database_condition.setting,
-//    )
-//    .await?;
-//
-//    let mut describes = Vec::<DatabaseDescribe>::new();
-//    for metrics in metricses.into_iter() {
-//        let block_list = Zikeiretsu::block_list_data(
-//            &describe_database_condition.db_dir,
-//            &metrics,
-//            &describe_database_condition.setting,
-//        )
-//        .await?;
-//
-//        describes.push(DatabaseDescribe {
-//            metrics,
-//            block_list,
-//        });
-//    }
-//
-//    match describe_database_condition.output_setting.format {
-//        output::OutputFormat::Json => {
-//            let json_str = serde_json::to_string(&describes)
-//                .map_err(|e| output::OutputError::SerdeJsonError(e))?;
-//            describe_database_condition
-//                .output_setting
-//                .destination
-//                .write(vec![json_str])?
-//        }
-//        output::OutputFormat::Tsv => describe_database_condition
-//            .output_setting
-//            .destination
-//            .write(DatabaseDescribe::to_strs(describes))?,
-//    };
-//    Ok(())
-//}
-//
+//TODO(tacogips) return DataFrameRef instead
+fn describes_to_dataframe_with_block_list(
+    describes: &[MetricsDescribe],
+) -> Result<(DataFrame, Vec<String>), EvalError> {
+    let mut metrics_names = Vec::<String>::new();
+    let mut update_ats = Vec::<TimestampNano>::new();
+    let mut block_num = Vec::<u64>::new();
 
-pub struct MetricsDescribe {
-    metrics: Metrics,
-    block_list: block_list::BlockList,
+    let mut seq = Vec::<u64>::new();
+    let mut block_list_start = Vec::<TimestampSec>::new();
+    let mut block_list_end = Vec::<TimestampSec>::new();
+
+    for each_descirbe in describes.into_iter() {
+        for (idx, each_block_time_stamp) in
+            each_descirbe.block_list.block_timestamps.iter().enumerate()
+        {
+            metrics_names.push(each_descirbe.metrics.to_string());
+            update_ats.push(each_descirbe.block_list.updated_timestamp_sec);
+            block_num.push(each_descirbe.block_list.block_num() as u64);
+            seq.push(idx as u64 + 1);
+            block_list_start.push(each_block_time_stamp.since_sec);
+            block_list_end.push(each_block_time_stamp.until_sec);
+        }
+    }
+
+    let mut data_serieses: Vec<DataSeries> = vec![];
+
+    data_serieses.push(SeriesValues::String(metrics_names).into());
+    data_serieses.push(SeriesValues::TimestampNano(update_ats).into());
+    data_serieses.push(SeriesValues::UInt64(block_num).into());
+    data_serieses.push(SeriesValues::UInt64(seq).into());
+    data_serieses.push(SeriesValues::TimestampSec(block_list_start).into());
+    data_serieses.push(SeriesValues::TimestampSec(block_list_end).into());
+
+    Ok((
+        DataFrame::new(data_serieses),
+        vec![
+            "metrics".to_string(),
+            "updated_at".to_string(),
+            "block_num".to_string(),
+            "seq".to_string(),
+            "block_list_start".to_string(),
+            "block_list_end".to_string(),
+        ],
+    ))
 }

@@ -8,11 +8,14 @@
 ///  (5) timestamp second head (untile)(v byte)
 ///  (6) timestamp second (until)(v byte)
 ///
+mod block_timestamp;
+
 use crate::tsdb::search::*;
 use crate::tsdb::{metrics::Metrics, timestamp_nano::*, timestamp_sec::*};
 use crate::FieldError;
 use base_128_variants;
 use bits_ope::*;
+pub use block_timestamp::*;
 use memmap2::MmapOptions;
 use serde::{Deserialize, Serialize};
 use simple8b_rle;
@@ -123,25 +126,31 @@ impl BlockList {
         }
     }
 
+    pub fn block_num(&self) -> usize {
+        self.block_timestamps.len()
+    }
+
     pub fn range(&self) -> Option<(&TimestampSec, &TimestampSec)> {
         let mut min: Option<&TimestampSec> = None;
         let mut max: Option<&TimestampSec> = None;
 
         for each in self.block_timestamps.iter() {
-            if let Some(current_min) = min.take() {
-                if each.since_sec < *current_min {
-                    min = Some(&each.since_sec)
+            match min {
+                Some(current_min) => {
+                    if each.since_sec < *current_min {
+                        min = Some(&each.since_sec)
+                    }
                 }
-            } else {
-                min = Some(&each.since_sec)
+                None => min = Some(&each.since_sec),
             }
 
-            if let Some(current_max) = max.take() {
-                if each.until_sec > *current_max {
-                    min = Some(&each.until_sec)
+            match max {
+                Some(current_max) => {
+                    if each.until_sec > *current_max {
+                        max = Some(&each.until_sec)
+                    }
                 }
-            } else {
-                max = Some(&each.until_sec)
+                None => max = Some(&each.until_sec),
             }
         }
         match (min, max) {
@@ -276,74 +285,6 @@ impl BlockList {
                 }
             }
         }
-    }
-}
-
-#[derive(Copy, Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct BlockTimestamp {
-    pub since_sec: TimestampSec,
-    pub until_sec: TimestampSec,
-}
-
-impl BlockTimestamp {
-    #[allow(dead_code)]
-    pub fn new(since_sec: TimestampSec, until_sec: TimestampSec) -> Self {
-        Self {
-            since_sec,
-            until_sec,
-        }
-    }
-
-    pub fn is_before(&self, other: &Self) -> bool {
-        self.until_sec <= other.since_sec
-    }
-
-    #[allow(dead_code)]
-    pub fn is_after(&self, other: &Self) -> bool {
-        other.until_sec <= self.since_sec
-    }
-
-    #[allow(dead_code)]
-    fn is_valid(&self) -> bool {
-        self.since_sec <= self.until_sec
-    }
-    fn from_splited_timestamps(
-        since_secs: Vec<TimestampSec>,
-        until_secs: Vec<TimestampSec>,
-    ) -> Vec<BlockTimestamp> {
-        debug_assert_eq!(since_secs.len(), until_secs.len());
-        let timestamp_pairs: Vec<(TimestampSec, TimestampSec)> =
-            since_secs.into_iter().zip(until_secs.into_iter()).collect();
-        Self::from_timestamp_pairs(timestamp_pairs)
-    }
-
-    fn from_timestamp_pairs(timestamps: Vec<(TimestampSec, TimestampSec)>) -> Vec<BlockTimestamp> {
-        timestamps
-            .into_iter()
-            .map(|(since_sec, until_sec)| BlockTimestamp {
-                since_sec,
-                until_sec,
-            })
-            .collect()
-    }
-
-    #[allow(dead_code)]
-    fn insert(block_timestamps: &mut Vec<BlockTimestamp>, new_block: BlockTimestamp) -> Result<()> {
-        let insert_idx = match binary_search_by(
-            block_timestamps.as_slice(),
-            |block_timestamp| block_timestamp.since_sec.cmp(&new_block.since_sec),
-            BinaryRangeSearchType::AtMostEq,
-        ) {
-            Some(idx) => idx + 1,
-            None => block_timestamps.len(),
-        };
-        if insert_idx >= block_timestamps.len() {
-            block_timestamps.push(new_block);
-        } else {
-            block_timestamps.insert(insert_idx, new_block);
-        }
-
-        Ok(())
     }
 }
 
@@ -563,8 +504,7 @@ mod test {
     #[test]
     fn test_block_timestamps_insert_1() {
         let mut block_timestamps = block_timestamps!({10,20},{10,20}, {21,30});
-        let result = BlockTimestamp::insert(&mut block_timestamps, blts!(10, 15));
-        assert!(result.is_ok());
+        BlockTimestamp::insert(&mut block_timestamps, blts!(10, 15));
         assert_eq!(
             block_timestamps,
             block_timestamps!({10,20},{10,20}, {10,15},{21,30})
@@ -574,8 +514,7 @@ mod test {
     #[test]
     fn test_block_timestamps_insert_2() {
         let mut block_timestamps = block_timestamps!({10,20},{10,20}, {21,30});
-        let result = BlockTimestamp::insert(&mut block_timestamps, blts!(22, 50));
-        assert!(result.is_ok());
+        BlockTimestamp::insert(&mut block_timestamps, blts!(22, 50));
         assert_eq!(
             block_timestamps,
             block_timestamps!({10,20},{10,20}, {21,30},{22,50})

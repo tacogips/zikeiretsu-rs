@@ -2,6 +2,7 @@ use super::field::*;
 use crate::tsdb::datetime::*;
 use std::cmp::Ordering;
 use std::convert::TryFrom;
+use std::fmt;
 
 use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
@@ -127,6 +128,21 @@ impl DatapointSearchCondition {
         self
     }
 
+    pub fn contains_whole(&self, since: &TimestampNano, until: &TimestampNano) -> bool {
+        if let Some(since_eq) = self.inner_since_eq {
+            if since < &since_eq {
+                return false;
+            }
+        }
+
+        if let Some(until_neq) = self.inner_until_neq {
+            if until >= &until_neq {
+                return false;
+            }
+        }
+        true
+    }
+
     pub fn from_str_opts(
         since: Option<&String>,
         until: Option<&String>,
@@ -145,5 +161,60 @@ impl DatapointSearchCondition {
             inner_since_eq: inner_since,
             inner_until_neq: inner_until,
         })
+    }
+}
+
+impl fmt::Display for DatapointSearchCondition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "({:?}, {:?})",
+            self.inner_since_eq.map(|s| s.to_string()),
+            self.inner_until_neq.map(|s| s.to_string()),
+        )
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_contain_whole() {
+        assert!(DatapointSearchCondition::all()
+            .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
+
+        assert!(!DatapointSearchCondition::new(
+            Some(TimestampNano::new(10)),
+            Some(TimestampNano::new(20))
+        )
+        .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
+
+        assert!(
+            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None)
+                .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
+        );
+
+        assert!(
+            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None)
+                .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
+        );
+
+        assert!(DatapointSearchCondition::new(
+            Some(TimestampNano::new(10)),
+            Some(TimestampNano::new(21))
+        )
+        .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
+
+        assert!(!DatapointSearchCondition::new(
+            Some(TimestampNano::new(10)),
+            Some(TimestampNano::new(21))
+        )
+        .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20)));
+
+        assert!(
+            DatapointSearchCondition::new(None, Some(TimestampNano::new(21)))
+                .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20))
+        );
     }
 }

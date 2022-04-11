@@ -1,6 +1,6 @@
 [package]
 name = "zikeiretsu"
-version = "0.1.7"
+version = "0.0.1"
 edition = "2021"
 rust-version = "1.58.1"
 
@@ -21,7 +21,7 @@ xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
 base-128-variants = { path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.9" }
-polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" ,features= ["dtype-full","serde"]}
+polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" ,features= ["dtype-full", "serde", "fmt"]}
 
 chrono = "0.4"
 chrono-tz = "0.4"
@@ -49,7 +49,11 @@ pest = "2.1"
 pest_derive = "2.1"
 once_cell = "1.9"
 either = "1.6"
-clap = {vesion = "3.1" , features= ["derive","env"]}
+clap = {version = "3.1" , features= ["derive","env"]}
+
+tracing = "0.1"
+tracing-subscriber = {version = "0.2", features = ["env-filter"]}
+tracing-log = "0.1"
 
 [dev-dependencies]
 tempfile = "3.2"

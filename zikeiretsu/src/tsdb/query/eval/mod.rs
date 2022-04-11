@@ -65,9 +65,23 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
                 &db_config,
                 describe_condition.metrics_filter,
                 Some(describe_condition.output_condition),
+                false,
             )
             .await?;
         }
+
+        InterpretedQuery::DescribeBlockList(describe_condition, query_setting) => {
+            let db_config = to_db_config(&ctx, query_setting);
+            describe_metrics::execute_describe_metrics(
+                ctx,
+                &db_config,
+                describe_condition.metrics_filter,
+                Some(describe_condition.output_condition),
+                true,
+            )
+            .await?;
+        }
+
         InterpretedQuery::SearchMetrics(query_condition, query_setting) => {
             let db_config = to_db_config(&ctx, query_setting);
             search_metrics::execute_search_metrics(ctx, &db_config, query_condition).await?;

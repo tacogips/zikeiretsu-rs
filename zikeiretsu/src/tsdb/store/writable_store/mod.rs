@@ -345,7 +345,7 @@ mod test {
             {1629745451_715066000, vec![600f64,36f64]}
         );
 
-        remove_range(&mut datapoints, (1, 3));
+        remove_range(&mut datapoints, (1, 3)).unwrap();
 
         let expected = float_data_points!(
             {1629745451_715062000, vec![200f64,12f64]},

@@ -1,4 +1,6 @@
+use std::ptr;
 use thiserror::*;
+
 type Result<T> = std::result::Result<T, VecOpeError>;
 
 #[derive(Error, Debug)]
@@ -10,9 +12,10 @@ pub enum VecOpeError {
     InvalidRange(usize, usize),
 }
 
-pub fn remove_range<T>(datapoints: &mut Vec<T>, range: (usize, usize)) -> Result<()> {
-    datapoints.drain(range.0..range.1 + 1);
-    Ok(())
+//
+pub fn remove_range<T>(datas: &mut Vec<T>, range: (usize, usize)) -> Result<Vec<T>> {
+    let drained = datas.drain(range.0..range.1 + 1);
+    Ok(drained.collect())
     // TODO same code as below causes memory leak somehow..
     //let orig_len = datapoints.len();
     //let (start, end) = range;
@@ -46,13 +49,29 @@ pub fn remove_range<T>(datapoints: &mut Vec<T>, range: (usize, usize)) -> Result
     //}
 }
 
+pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut Vec<T>) {
+    let orig_len = datas.len();
+    let new_data_len = new_datas.len();
+    datas.reserve(new_data_len);
+
+    unsafe {
+        ptr::copy(
+            datas.as_ptr(),
+            datas.as_mut_ptr().offset((new_data_len) as isize),
+            orig_len,
+        );
+        ptr::copy(new_datas.as_ptr(), datas.as_mut_ptr(), new_data_len);
+        datas.set_len(orig_len + new_data_len);
+    }
+}
+
 /// [0,1,2,3,4].trim(1,2) -> [1]
 /// [0,1,2,3,4].trim(1,3) -> [1,2]
 pub fn trim_values<V>(
     values: &mut Vec<V>,
     retain_start_index: usize,
     cut_off_suffix_start_idx: usize,
-) -> Result<()> {
+) -> Result<(Vec<V>, Vec<V>)> {
     if retain_start_index > cut_off_suffix_start_idx {
         return Err(VecOpeError::InvalidRange(
             retain_start_index,
@@ -71,12 +90,14 @@ pub fn trim_values<V>(
     };
 
     let remaining_size = cut_off_suffix_start_idx - retain_start_index;
+    let mut removed_prefix = vec![];
     if let Some(end) = prefix_remove_until_index {
-        remove_range(values, (0, end))?;
+        removed_prefix = remove_range(values, (0, end))?;
     }
 
-    values.truncate(remaining_size);
-    Ok(())
+    //values.truncate(remaining_size);
+    let removed_surfix = remove_range(values, (remaining_size, values.len() - 1))?;
+    Ok((removed_prefix, removed_surfix))
 }
 
 #[cfg(test)]
@@ -218,45 +239,57 @@ mod test {
     async fn trim_value_1() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        trim_values(&mut data, 0, 0).unwrap();
+        let (head, tail) = trim_values(&mut data, 0, 0).unwrap();
 
         assert_eq!(Vec::<i32>::new(), data);
+        assert_eq!(head, Vec::<i32>::new());
+        assert_eq!(tail, vec![1, 2, 3, 4, 5, 6]);
     }
 
     #[tokio::test]
     async fn trim_value_2() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        trim_values(&mut data, 1, 3).unwrap();
+        let (head, tail) = trim_values(&mut data, 1, 3).unwrap();
 
         assert_eq!(vec![2, 3], data);
+        assert_eq!(vec![1], head);
+        assert_eq!(vec![4, 5, 6], tail);
     }
 
     #[tokio::test]
     async fn trim_value_3() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        trim_values(&mut data, 0, 6).unwrap();
+        let (head, tail) = trim_values(&mut data, 0, 6).unwrap();
 
         assert_eq!(vec![1, 2, 3, 4, 5, 6], data);
+        assert_eq!(Vec::<i32>::new(), head);
+        assert_eq!(Vec::<i32>::new(), tail);
     }
 
     #[tokio::test]
     async fn trim_value_4() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        trim_values(&mut data, 5, 6).unwrap();
+        let (head, tail) = trim_values(&mut data, 5, 6).unwrap();
 
         assert_eq!(vec![6], data);
+
+        assert_eq!(vec![1, 2, 3, 4, 5], head);
+        assert_eq!(Vec::<i32>::new(), tail);
     }
 
     #[tokio::test]
     async fn trim_value_5() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        trim_values(&mut data, 5, 5).unwrap();
+        let (head, tail) = trim_values(&mut data, 5, 5).unwrap();
 
         assert_eq!(Vec::<i32>::new(), data);
+
+        assert_eq!(vec![1, 2, 3, 4, 5], head);
+        assert_eq!(vec![6], tail);
     }
 
     #[tokio::test]
@@ -270,8 +303,39 @@ mod test {
     async fn trim_value_7() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        trim_values(&mut data, 0, 6).unwrap();
+        let (head, tail) = trim_values(&mut data, 0, 6).unwrap();
 
         assert_eq!(vec![1, 2, 3, 4, 5, 6], data);
+        assert_eq!(head, Vec::<i32>::new());
+        assert_eq!(tail, Vec::<i32>::new());
+    }
+
+    #[tokio::test]
+    async fn prepend_1() {
+        let mut datas = vec![7, 8];
+        let mut new_datas = vec![1, 2, 3, 4, 5, 6];
+
+        prepend(&mut datas, &mut new_datas);
+
+        assert_eq!(vec![1, 2, 3, 4, 5, 6, 7, 8], datas);
+    }
+
+    fn to_s(v: i32) -> String {
+        v.to_string()
+    }
+    #[tokio::test]
+    async fn prepend_2() {
+        let mut datas: Vec<String> = vec![7, 8].into_iter().map(to_s).collect();
+        let mut new_datas: Vec<String> = vec![1, 2, 3, 4, 5, 6].into_iter().map(to_s).collect();
+
+        prepend(&mut datas, &mut new_datas);
+
+        assert_eq!(
+            vec![1, 2, 3, 4, 5, 6, 7, 8]
+                .into_iter()
+                .map(to_s)
+                .collect::<Vec<String>>(),
+            datas
+        );
     }
 }

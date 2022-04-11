@@ -6,7 +6,7 @@ pub struct TableDfOutput<Dest: IoWrite>(pub Dest);
 
 impl<Dest: IoWrite> DataSeriesRefsOutput for TableDfOutput<Dest> {
     fn output(&mut self, df: &PDataFrame) -> EvalResult<()> {
-        write!(self.0, "{:?}", df)?;
+        write!(self.0, "{}", df)?;
         Ok(())
     }
 }

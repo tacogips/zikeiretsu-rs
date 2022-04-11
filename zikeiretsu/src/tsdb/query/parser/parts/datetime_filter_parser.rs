@@ -24,9 +24,18 @@ impl<'q> DatetimeFilter<'q> {
     ) -> Result<DatetimeFilter<'q>> {
         match ope.to_uppercase().as_str() {
             "IN" => match datetime_2 {
-                None => Err(ParserError::InvalidGrammer(format!(
-                    "'in' needs datetime range  "
-                ))),
+                None => {
+                    if let DatetimeFilterValue::Function(build_in_func, tz) = datetime_1 {
+                        Ok(DatetimeFilter::Equal(
+                            column_name,
+                            DatetimeFilterValue::Function(build_in_func, tz),
+                        ))
+                    } else {
+                        Err(ParserError::InvalidGrammer(format!(
+                            "'in' needs datetime range or buildin function "
+                        )))
+                    }
+                }
                 Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
             },
             ">=" => Ok(DatetimeFilter::Gte(column_name, datetime_1)),

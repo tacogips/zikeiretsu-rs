@@ -33,6 +33,7 @@ pub enum FieldValue {
     UInt64(u64),
     String(String),
     Bool(bool),
+    Vacant,
 }
 
 impl FieldValue {
@@ -64,6 +65,7 @@ impl FieldValue {
             Self::TimestampSec(_) => FieldType::TimestampSec,
             Self::Bool(_) => FieldType::Bool,
             Self::String(_) => FieldType::String,
+            Self::Vacant => FieldType::Vacant,
         }
     }
 }
@@ -77,6 +79,7 @@ impl fmt::Display for FieldValue {
             FieldValue::TimestampSec(v) => write!(f, "{v:?}"),
             FieldValue::Bool(v) => write!(f, "{v:?}"),
             FieldValue::String(v) => write!(f, "{v:?}"),
+            FieldValue::Vacant => write!(f, "[vacant]"),
         }
     }
 }
@@ -98,6 +101,7 @@ pub enum FieldType {
     TimestampNano,
     TimestampSec,
     String,
+    Vacant,
 }
 
 impl fmt::Display for FieldType {
@@ -109,6 +113,7 @@ impl fmt::Display for FieldType {
             FieldType::TimestampNano => "TimestampNano",
             FieldType::TimestampSec => "TimestampSec",
             FieldType::Bool => "Bool",
+            FieldType::Vacant => "Vacant",
         };
 
         write!(f, "{name}")

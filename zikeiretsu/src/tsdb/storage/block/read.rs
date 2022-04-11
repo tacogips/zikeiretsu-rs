@@ -4,10 +4,6 @@ use crate::tsdb::*;
 use bits_ope::*;
 use std::collections::HashMap;
 
-pub(crate) fn read_from_block(block_data: &[u8]) -> Result<TimeSeriesDataFrame> {
-    read_from_block_with_specific_fields(block_data, None)
-}
-
 pub(crate) fn read_from_block_with_specific_fields(
     block_data: &[u8],
     field_selectors: Option<&[usize]>,

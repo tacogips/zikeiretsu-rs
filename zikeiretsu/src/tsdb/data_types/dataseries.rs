@@ -60,12 +60,12 @@ impl std::fmt::Display for SeriesValues {
 
 macro_rules! retain_series {
     ($enum_value:expr,$vs:expr,$retain_start_index:expr, $cut_off_suffix_start_idx:expr) => {{
-        let (droped_prefix, droped_surfix) =
+        let (droped_prefix, droped_suffix) =
             trim_values($vs, $retain_start_index, $cut_off_suffix_start_idx)?;
 
         Ok((
             DataSeries::new($enum_value(droped_prefix)),
-            DataSeries::new($enum_value(droped_surfix)),
+            DataSeries::new($enum_value(droped_suffix)),
         ))
     }};
 }

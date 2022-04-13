@@ -119,7 +119,7 @@ impl TimeSeriesDataFrame {
             Some(fist_timestamp.clone()),
             Some(last_timestamp.clone()),
         );
-        let (mut prefix_data_frames, mut surfix_data_frames) =
+        let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
 
         //  Insert rows into middle of self dataframes
@@ -131,8 +131,8 @@ impl TimeSeriesDataFrame {
             }
         }
         drop(other);
-        if !surfix_data_frames.is_empty() {
-            self.append(&mut surfix_data_frames)?;
+        if !suffix_data_frames.is_empty() {
+            self.append(&mut suffix_data_frames)?;
         }
 
         if !prefix_data_frames.is_empty() {
@@ -205,22 +205,22 @@ impl TimeSeriesDataFrame {
             Some((_, indices)) => {
                 let (start, end) = indices;
 
-                let (timestamps_prefix, timestamps_surfix) =
+                let (timestamps_prefix, timestamps_suffix) =
                     trim_values(&mut self.timestamp_nanos, start, end + 1)?;
 
                 let mut prefix_data_serieses = Vec::<DataSeries>::new();
                 let mut sufix_data_serieses = Vec::<DataSeries>::new();
 
                 for each_series in self.columns.iter_mut() {
-                    let (each_prefix_data_series, each_surfix_data_series) =
+                    let (each_prefix_data_series, each_suffix_data_series) =
                         each_series.retain(start, end + 1)?;
 
                     prefix_data_serieses.push(each_prefix_data_series);
-                    sufix_data_serieses.push(each_surfix_data_series);
+                    sufix_data_serieses.push(each_suffix_data_series);
                 }
                 Ok((
                     TimeSeriesDataFrame::new(timestamps_prefix, prefix_data_serieses),
-                    TimeSeriesDataFrame::new(timestamps_surfix, sufix_data_serieses),
+                    TimeSeriesDataFrame::new(timestamps_suffix, sufix_data_serieses),
                 ))
             }
         }

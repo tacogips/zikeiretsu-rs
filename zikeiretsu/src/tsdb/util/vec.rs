@@ -96,8 +96,8 @@ pub fn trim_values<V>(
     }
 
     //values.truncate(remaining_size);
-    let removed_surfix = remove_range(values, (remaining_size, values.len() - 1))?;
-    Ok((removed_prefix, removed_surfix))
+    let removed_suffix = remove_range(values, (remaining_size, values.len() - 1))?;
+    Ok((removed_prefix, removed_suffix))
 }
 
 #[cfg(test)]

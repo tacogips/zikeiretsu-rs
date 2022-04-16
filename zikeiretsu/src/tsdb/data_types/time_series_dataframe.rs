@@ -731,6 +731,70 @@ mod test {
     }
 
     #[tokio::test]
+    async fn dataframe_merge_5() {
+        let mut df_1 = dataframe!([(4, 44), (5, 55), (6, 66), (8, 88), (10, 1010)]);
+        let mut df_2 = dataframe!([(2, 22), (12, 1212), (13, 1313)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = dataframe!([
+            (2, 22),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (8, 88),
+            (10, 1010),
+            (12, 1212),
+            (13, 1313)
+        ]);
+
+        assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_6_inefficient_though() {
+        let mut df_1 = dataframe!([(4, 44), (5, 55), (6, 66), (8, 88), (10, 1010)]);
+        let mut df_2 = dataframe!([(2, 22), (3, 33)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (8, 88),
+            (10, 1010),
+        ]);
+
+        assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_7_inefficient_though_use_append_instead() {
+        let mut df_1 = dataframe!([(4, 44), (5, 55), (6, 66), (8, 88), (10, 1010)]);
+        let mut df_2 = dataframe!([(11, 1111), (12, 1212)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = dataframe!([
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (8, 88),
+            (10, 1010),
+            (11, 1111),
+            (12, 1212),
+        ]);
+
+        assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
     async fn retain_matches_1() {
         let mut df = dataframe!([
             (2, 22),

@@ -770,7 +770,10 @@ mod test {
         let cond = DatapointSearchCondition::new(some_ts!(0), some_ts!(3));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
-        assert_eq!(prefix, TimeSeriesDataFrame::empty());
+        assert_eq!(
+            prefix,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
 
         assert_eq!(df, dataframe!([(2, 22)]));
 

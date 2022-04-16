@@ -117,10 +117,15 @@ impl TimeSeriesDataFrame {
             Some(fist_timestamp.clone()),
             Some(last_timestamp.clone()),
         );
+
+        println!("==== {:?}", other);
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
 
         //TODO(tacogips) for debugging
+
+        println!("==== {:?}", self_time_range);
+        println!("==== {:?}", other);
         println!("==== {:?}", prefix_data_frames);
         println!("==== {:?}", suffix_data_frames);
 
@@ -198,34 +203,54 @@ impl TimeSeriesDataFrame {
         &mut self,
         cond: &DatapointSearchCondition,
     ) -> Result<(TimeSeriesDataFrame, TimeSeriesDataFrame)> {
-        match self.search_with_indices(cond).await {
+        let (start, end) = match self.search_with_indices(cond).await {
             None => {
-                self.timestamp_nanos.clear();
-                self.columns.clear();
-                Ok((TimeSeriesDataFrame::empty(), TimeSeriesDataFrame::empty()))
-            }
-            Some((_, indices)) => {
-                let (start, end) = indices;
+                match cond.as_ref() {
+                    (Some(since), Some(until_ne)) => {
+                        let fist_timestamp = self.timestamp_nanos.first().unwrap();
+                        if until_ne <= fist_timestamp {
+                            // all tobe  prefix
+                            (self.len() - 1, self.len() - 1)
+                        } else {
+                            // all tobe  suffix
+                            (0, 0)
+                        }
+                    }
+                    (_, Some(_)) => {
+                        // all tobe  suffix
+                        (0, 0)
+                    }
+                    (Some(_), _) => {
+                        // all tobe  prefix
+                        (self.len() - 1, self.len() - 1)
+                    }
 
-                let (timestamps_prefix, timestamps_suffix) =
-                    trim_values(&mut self.timestamp_nanos, start, end + 1)?;
-
-                let mut prefix_data_serieses = Vec::<DataSeries>::new();
-                let mut sufix_data_serieses = Vec::<DataSeries>::new();
-
-                for each_series in self.columns.iter_mut() {
-                    let (each_prefix_data_series, each_suffix_data_series) =
-                        each_series.retain(start, end + 1)?;
-
-                    prefix_data_serieses.push(each_prefix_data_series);
-                    sufix_data_serieses.push(each_suffix_data_series);
+                    (None, None) => {
+                        //self  must be empty here
+                        return Ok((TimeSeriesDataFrame::empty(), TimeSeriesDataFrame::empty()));
+                    }
                 }
-                Ok((
-                    TimeSeriesDataFrame::new(timestamps_prefix, prefix_data_serieses),
-                    TimeSeriesDataFrame::new(timestamps_suffix, sufix_data_serieses),
-                ))
             }
+            Some((_, indices)) => indices,
+        };
+
+        let (timestamps_prefix, timestamps_suffix) =
+            trim_values(&mut self.timestamp_nanos, start, end + 1)?;
+
+        let mut prefix_data_serieses = Vec::<DataSeries>::new();
+        let mut sufix_data_serieses = Vec::<DataSeries>::new();
+
+        for each_series in self.columns.iter_mut() {
+            let (each_prefix_data_series, each_suffix_data_series) =
+                each_series.retain(start, end + 1)?;
+
+            prefix_data_serieses.push(each_prefix_data_series);
+            sufix_data_serieses.push(each_suffix_data_series);
         }
+        Ok((
+            TimeSeriesDataFrame::new(timestamps_prefix, prefix_data_serieses),
+            TimeSeriesDataFrame::new(timestamps_suffix, sufix_data_serieses),
+        ))
     }
 
     pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
@@ -388,6 +413,11 @@ mod test {
 
     use super::*;
 
+    macro_rules! ts {
+        ($v:expr) => {
+            TimestampNano::new($v)
+        };
+    }
     macro_rules! dataframe {
         ($ts:expr) => {{
             let mut timestamp_nanos = Vec::<TimestampNano>::new();
@@ -423,9 +453,9 @@ mod test {
         }};
     }
 
-    macro_rules! ts {
+    macro_rules! some_ts {
         ($v:expr) => {
-            TimestampNano::new($v)
+            Some(TimestampNano::new($v))
         };
     }
 
@@ -665,5 +695,88 @@ mod test {
         ]);
 
         assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
+    async fn retain_matches_1() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        //let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
+        let cond = DatapointSearchCondition::new(some_ts!(4), some_ts!(8));
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(prefix, dataframe!([(2, 22), (3, 33)]));
+
+        assert_eq!(df, dataframe!([(4, 44), (5, 55), (6, 66), (7, 77)]));
+
+        assert_eq!(suffix, dataframe!([(8, 88), (10, 1010)]));
+    }
+
+    #[tokio::test]
+    async fn retain_matches_2() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        //let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
+        let cond = DatapointSearchCondition::new(some_ts!(0), some_ts!(3));
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(prefix, TimeSeriesDataFrame::empty());
+
+        assert_eq!(df, dataframe!([(2, 22)]));
+
+        assert_eq!(
+            suffix,
+            dataframe!([
+                (3, 33),
+                (4, 44),
+                (5, 55),
+                (6, 66),
+                (7, 77),
+                (8, 88),
+                (10, 1010)
+            ])
+        );
+    }
+
+    #[tokio::test]
+    async fn retain_matches_3() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        //let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
+        let cond = DatapointSearchCondition::new(some_ts!(8), some_ts!(13));
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(
+            prefix,
+            dataframe!([(2, 22), (3, 33), (4, 44), (5, 55), (6, 66), (7, 77)])
+        );
+
+        assert_eq!(df, dataframe!([(8, 88), (10, 1010)]));
+
+        assert_eq!(suffix, TimeSeriesDataFrame::empty());
     }
 }

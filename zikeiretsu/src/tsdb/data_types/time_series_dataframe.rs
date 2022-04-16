@@ -121,13 +121,6 @@ impl TimeSeriesDataFrame {
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
 
-        //TODO(tacogips) for debugging
-
-        println!("==== {:?}", self_time_range);
-        println!("==== {:?}", other);
-        println!("==== {:?}", prefix_data_frames);
-        println!("==== {:?}", suffix_data_frames);
-
         //  Insert rows into middle of self dataframes
         //  This may be inefficient process
         if !other.is_empty() {
@@ -202,7 +195,7 @@ impl TimeSeriesDataFrame {
         &mut self,
         cond: &DatapointSearchCondition,
     ) -> Result<(TimeSeriesDataFrame, TimeSeriesDataFrame)> {
-        let (retain_start_index, mut cutoff_start_index) = match self
+        let (match_start_idx, match_end_index, retain_data) = match self
             .search_with_indices(cond)
             .await
         {
@@ -215,32 +208,38 @@ impl TimeSeriesDataFrame {
 
                     (None, Some(_)) => {
                         // all data toe suffix
-                        (0, 0)
+                        (0, 0, false)
                     }
 
                     (Some(_), None) => {
                         // all data tobe prefix
-                        (self.len(), self.len())
+                        (self.len(), self.len(), false)
                     }
 
                     (Some(cond_since), Some(_)) => {
                         let last_timestamp = self.timestamp_nanos.last().unwrap();
                         if cond_since > last_timestamp {
                             // all data tobe prefix
-                            (self.len(), self.len())
+                            (self.len(), self.len(), false)
                         } else {
                             // all data tobe suffix
-                            (0, 0)
+                            (0, 0, false)
                         }
                     }
                 }
             }
-            Some((_, indices)) => indices,
+            Some((_, indices)) => {
+                let (start, end) = indices;
+
+                (start, end, true)
+            }
         };
 
-        if retain_start_index != cutoff_start_index {
-            cutoff_start_index = cutoff_start_index + 1
-        }
+        let (retain_start_index, cutoff_start_index) = if retain_data {
+            (match_start_idx, match_end_index + 1)
+        } else {
+            (match_start_idx, match_end_index)
+        };
 
         let (timestamps_prefix, timestamps_suffix) = trim_values(
             &mut self.timestamp_nanos,
@@ -743,7 +742,6 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        //let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
         let cond = DatapointSearchCondition::new(some_ts!(4), some_ts!(8));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
@@ -803,7 +801,6 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        //let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
         let cond = DatapointSearchCondition::new(some_ts!(8), some_ts!(13));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
@@ -814,6 +811,9 @@ mod test {
 
         assert_eq!(df, dataframe!([(8, 88), (10, 1010)]));
 
-        assert_eq!(suffix, TimeSeriesDataFrame::empty());
+        assert_eq!(
+            suffix,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
     }
 }

@@ -69,7 +69,7 @@ impl TimeSeriesDataFrame {
                 self.timestamp_nanos.push(timestamp_nano_to_insert);
                 for (column_idx, each_column_series) in self.columns.iter_mut().enumerate() {
                     match row_to_insert.get(column_idx) {
-                        Some(field_to_insert) => each_column_series.push(&field_to_insert)?,
+                        Some(column_to_insert) => each_column_series.push(&column_to_insert)?,
                         None => {
                             return Err(DataframeError::UnmatchedFieldNumError(
                                 column_len,
@@ -78,8 +78,6 @@ impl TimeSeriesDataFrame {
                         }
                     }
                 }
-
-                //TODO()
             }
         };
 
@@ -402,6 +400,25 @@ mod test {
         }};
     }
 
+    macro_rules! multi_dataframe {
+        ($ts:expr) => {{
+            let mut timestamp_nanos = Vec::<TimestampNano>::new();
+            let mut values1 = Vec::<f64>::new();
+            let mut values2 = Vec::<bool>::new();
+            for (ts, val1, val2) in $ts {
+                timestamp_nanos.push(TimestampNano::new(ts));
+                values1.push(val1 as f64);
+                values2.push(val2 as bool);
+            }
+
+            TimeSeriesDataFrame::new(
+                timestamp_nanos,
+                vec![DataSeries::new(SeriesValues::Float64(values))],
+                vec![DataSeries::new(SeriesValues::Bool(values))],
+            )
+        }};
+    }
+
     macro_rules! ts {
         ($v:expr) => {
             TimestampNano::new($v)
@@ -525,5 +542,124 @@ mod test {
             df,
             dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (20, 5), (20, 6), (30, 7),])
         );
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_1() {
+        let df_1 = dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (50, 10), (51, 11)]);
+
+        let df_2 = dataframe!([(8, 1), (10, 2222), (11, 3), (52, 4), (53, 5)]);
+
+        {
+            let mut df_1_clone = df_1.clone();
+            let mut df_2_clone = df_2.clone();
+            let result = df_1_clone.merge(&mut df_2_clone).await;
+            assert!(result.is_ok());
+
+            let expected = dataframe!([
+                (8, 1),
+                (9, 1),
+                (10, 2222),
+                (10, 2),
+                (11, 3),
+                (19, 3),
+                (20, 4),
+                (50, 10),
+                (51, 11),
+                (52, 4),
+                (53, 5)
+            ]);
+
+            assert_eq!(df_1_clone, expected);
+        }
+
+        {
+            let mut df_1_clone = df_1.clone();
+            let mut df_2_clone = df_2.clone();
+
+            let result = df_2_clone.merge(&mut df_1_clone).await;
+            assert!(result.is_ok());
+
+            let expected = dataframe!([
+                (8, 1),
+                (9, 1),
+                (10, 2),
+                (10, 2222),
+                (11, 3),
+                (19, 3),
+                (20, 4),
+                (50, 10),
+                (51, 11),
+                (52, 4),
+                (53, 5)
+            ]);
+
+            assert_eq!(df_2_clone, expected);
+        }
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_2() {
+        let mut df_1 = dataframe!([(2, 22), (4, 44), (5, 55), (6, 66), (8, 88), (10, 1010)]);
+        let mut df_2 = dataframe!([(9, 99)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = dataframe!([
+            (2, 22),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (8, 88),
+            (9, 99),
+            (10, 1010)
+        ]);
+
+        assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_3() {
+        let mut df_1 = dataframe!([(2, 22), (4, 44), (5, 55), (6, 66), (8, 88), (10, 1010)]);
+        let mut df_2 = dataframe!([(1, 11), (11, 1111)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = dataframe!([
+            (1, 11),
+            (2, 22),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (8, 88),
+            (10, 1010),
+            (11, 1111)
+        ]);
+
+        assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_4() {
+        let mut df_1 = dataframe!([(2, 22), (4, 44), (5, 55), (6, 66), (8, 88), (10, 1010)]);
+        let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = dataframe!([
+            (2, 22),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (8, 88),
+            (10, 1010),
+            (12, 1212),
+            (13, 1313)
+        ]);
+
+        assert_eq!(df_1, expected);
     }
 }

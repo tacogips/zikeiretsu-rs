@@ -23,10 +23,12 @@ impl BlockTimestamp {
         self.until_sec == other.since_sec
     }
 
+    //TODO(tacogipa)  implment  PartialOrd
     pub fn is_before(&self, other: &Self) -> bool {
         self.until_sec <= other.since_sec
     }
 
+    //TODO(tacogipa)  implment  PartialOrd
     #[allow(dead_code)]
     pub fn is_after(&self, other: &Self) -> bool {
         other.until_sec <= self.since_sec

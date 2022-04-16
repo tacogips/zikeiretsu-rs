@@ -12,7 +12,7 @@ pub enum VecOpeError {
     InvalidRange(usize, usize),
 }
 
-//
+// remove_range([2,3,4,5,6],(0,1)) => [4,5,6] retuens:Ok([2,3])
 pub fn remove_range<T>(datas: &mut Vec<T>, range: (usize, usize)) -> Result<Vec<T>> {
     let drained = datas.drain(range.0..range.1 + 1);
     Ok(drained.collect())
@@ -80,7 +80,8 @@ pub fn trim_values<V>(
     }
 
     if retain_start_index >= values.len() {
-        return Err(VecOpeError::OutOfRange(retain_start_index));
+        let removed = remove_range(values, (0, values.len() - 1))?;
+        return Ok((removed, vec![]));
     }
 
     let prefix_remove_until_index = if retain_start_index == 0 {
@@ -129,7 +130,7 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
 
-        remove_range(&mut datapoints, (2, 3)).unwrap();
+        let removed = remove_range(&mut datapoints, (2, 3)).unwrap();
 
         let expected_datapoints = float_data_points!(
             {1629745451_715062000, vec![100f64,12f64]},
@@ -137,7 +138,13 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
 
+        let expected_removed = float_data_points!(
+            {1629745451_715064000, vec![200f64,36f64]},
+            {1629745451_715065000, vec![300f64,36f64]}
+        );
+
         assert_eq!(*datapoints, expected_datapoints);
+        assert_eq!(removed, expected_removed);
     }
 
     #[tokio::test]
@@ -296,7 +303,12 @@ mod test {
     async fn trim_value_6() {
         let mut data = vec![1, 2, 3, 4, 5, 6];
 
-        assert!(trim_values(&mut data, 6, 6).is_err());
+        let (head, tail) = trim_values(&mut data, 6, 6).unwrap();
+
+        assert_eq!(Vec::<i32>::new(), data);
+
+        assert_eq!(vec![1, 2, 3, 4, 5, 6], head);
+        assert_eq!(Vec::<i32>::new(), tail);
     }
 
     #[tokio::test]
@@ -323,6 +335,7 @@ mod test {
     fn to_s(v: i32) -> String {
         v.to_string()
     }
+
     #[tokio::test]
     async fn prepend_2() {
         let mut datas: Vec<String> = vec![7, 8].into_iter().map(to_s).collect();

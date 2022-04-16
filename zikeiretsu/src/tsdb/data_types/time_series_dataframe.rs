@@ -296,39 +296,11 @@ impl TimeSeriesDataFrame {
         {
             None => None,
             Some((tss, (start_idx, finish_idx))) => {
-                let data_range = start_idx..=finish_idx;
                 let selected_series = TimeSeriesDataFrameRef::new(
                     tss,
                     self.columns
                         .iter()
-                        .map(|series| match &series.values {
-                            SeriesValues::Vacant(_) => {
-                                DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
-                            }
-                            SeriesValues::Float64(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::Float64(&vs[data_range.clone()]),
-                            ),
-
-                            SeriesValues::UInt64(vs) => {
-                                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range.clone()]))
-                            }
-
-                            SeriesValues::String(vs) => {
-                                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range.clone()]))
-                            }
-
-                            SeriesValues::TimestampNano(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::TimestampNano(&vs[data_range.clone()]),
-                            ),
-
-                            SeriesValues::TimestampSec(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::TimestampSec(&vs[data_range.clone()]),
-                            ),
-
-                            SeriesValues::Bool(vs) => {
-                                DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range.clone()]))
-                            }
-                        })
+                        .map(|series| series.as_sub_dataseries(start_idx, finish_idx))
                         .collect(),
                 );
                 Some((selected_series, (start_idx, finish_idx)))

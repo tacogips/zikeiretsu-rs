@@ -89,6 +89,39 @@ impl DataSeries {
         Self { values }
     }
 
+    pub fn as_sub_dataseries(&self, start_idx: usize, finish_idx: usize) -> DataSeriesRef {
+        let data_range = start_idx..=finish_idx;
+        match &self.values {
+            //TODO(tacogips) move this branch into DataSeries or SeriesValues
+            SeriesValues::Vacant(_) => {
+                DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
+            }
+            SeriesValues::Float64(vs) => {
+                DataSeriesRef::new(SeriesValuesRef::Float64(&vs[data_range.clone()]))
+            }
+
+            SeriesValues::UInt64(vs) => {
+                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range.clone()]))
+            }
+
+            SeriesValues::String(vs) => {
+                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range.clone()]))
+            }
+
+            SeriesValues::TimestampNano(vs) => {
+                DataSeriesRef::new(SeriesValuesRef::TimestampNano(&vs[data_range.clone()]))
+            }
+
+            SeriesValues::TimestampSec(vs) => {
+                DataSeriesRef::new(SeriesValuesRef::TimestampSec(&vs[data_range.clone()]))
+            }
+
+            SeriesValues::Bool(vs) => {
+                DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range.clone()]))
+            }
+        }
+    }
+
     pub fn insert(&mut self, index: usize, other: &FieldValue) -> DataframeResult<()> {
         match &mut self.values {
             SeriesValues::Float64(vs) => match other {

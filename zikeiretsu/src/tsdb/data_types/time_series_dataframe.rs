@@ -816,4 +816,162 @@ mod test {
             TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
         );
     }
+
+    #[tokio::test]
+    async fn retain_matches_4() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        let cond = DatapointSearchCondition::new(some_ts!(11), None);
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(
+            prefix,
+            dataframe!([
+                (2, 22),
+                (3, 33),
+                (4, 44),
+                (5, 55),
+                (6, 66),
+                (7, 77),
+                (8, 88),
+                (10, 1010)
+            ])
+        );
+
+        assert_eq!(
+            df,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+
+        assert_eq!(
+            suffix,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+    }
+
+    #[tokio::test]
+    async fn retain_matches_5() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        let cond = DatapointSearchCondition::new(None, some_ts!(2));
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(
+            prefix,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+        assert_eq!(
+            suffix,
+            dataframe!([
+                (2, 22),
+                (3, 33),
+                (4, 44),
+                (5, 55),
+                (6, 66),
+                (7, 77),
+                (8, 88),
+                (10, 1010)
+            ])
+        );
+
+        assert_eq!(
+            df,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+    }
+
+    #[tokio::test]
+    async fn retain_matches_6() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        let cond = DatapointSearchCondition::new(some_ts!(1), some_ts!(2));
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(
+            prefix,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+        assert_eq!(
+            suffix,
+            dataframe!([
+                (2, 22),
+                (3, 33),
+                (4, 44),
+                (5, 55),
+                (6, 66),
+                (7, 77),
+                (8, 88),
+                (10, 1010)
+            ])
+        );
+
+        assert_eq!(
+            df,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+    }
+
+    #[tokio::test]
+    async fn retain_matches_7() {
+        let mut df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        let cond = DatapointSearchCondition::new(some_ts!(11), some_ts!(12));
+        let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
+
+        assert_eq!(
+            prefix,
+            dataframe!([
+                (2, 22),
+                (3, 33),
+                (4, 44),
+                (5, 55),
+                (6, 66),
+                (7, 77),
+                (8, 88),
+                (10, 1010)
+            ])
+        );
+
+        assert_eq!(
+            df,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+
+        assert_eq!(
+            suffix,
+            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+        );
+    }
 }

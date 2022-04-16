@@ -131,16 +131,17 @@ where
         0
     };
 
+    let last_index = datas.len() - 1;
     let end_idx = if let Some(condition_at_most) = condition_at_most_neq {
         match binary_search_by(datas, condition_at_most, BinaryRangeSearchType::AtMostNeq) {
             Some(idx) => idx,
             None => return None,
         }
     } else {
-        datas.len() - 1
+        last_index
     };
 
-    Some((&datas[start_idx..end_idx + 1], (start_idx, end_idx)))
+    Some((&datas[start_idx..=end_idx], (start_idx, end_idx)))
 }
 
 #[derive(Eq, PartialEq)]
@@ -197,7 +198,7 @@ where
     let indices: Vec<usize> = if search_direction == LinearSearchDirection::Asc {
         (start_idx..datas.len()).collect()
     } else {
-        (0..(start_idx + 1)).rev().collect()
+        (0..=start_idx).rev().collect()
     };
 
     for idx in indices {
@@ -219,6 +220,20 @@ mod test {
             vec![
             $(DataPoint::new(TimestampNano::new($timestamp),vec![])),*
             ]
+        };
+    }
+
+    macro_rules! tss {
+        ($($timestamp:expr),*) => {
+            vec![
+            $(TimestampNano::new($timestamp)),*
+            ]
+        };
+    }
+
+    macro_rules! ts {
+        ($v:expr) => {
+            TimestampNano::new($v)
         };
     }
 
@@ -439,6 +454,20 @@ mod test {
     }
 
     #[test]
+    fn binsearch_test_17() {
+        let data_points: Vec<DataPoint> = empty_data_points!(2, 3, 4, 5, 6, 7, 8, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&3),
+            BinaryRangeSearchType::AtMostNeq,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 0);
+    }
+
+    #[test]
     fn linear_search_same_timestamp_1() {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30);
 
@@ -596,5 +625,138 @@ mod test {
             );
             assert!(result.is_none());
         }
+    }
+
+    #[test]
+    fn binary_search_range_1() {
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(20)));
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(40)));
+
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let result = binary_search_range_by(&datapoints, since_eq_cond, until_neq_cond);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(20, 20, 20, 30, 30));
+    }
+
+    #[test]
+    fn binary_search_range_2() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let empty_cond1: Option<Box<dyn Fn(&TimestampNano) -> Ordering>> = None;
+        let empty_cond2: Option<Box<dyn Fn(&TimestampNano) -> Ordering>> = None;
+        let result = binary_search_range_by(&datapoints, empty_cond1, empty_cond2);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(10, 20, 20, 20, 30, 30, 40));
+    }
+
+    #[test]
+    fn binary_search_range_3() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(30)));
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(60)));
+        let result = binary_search_range_by(&datapoints, since_eq_cond, until_neq_cond);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(30, 30, 40));
+    }
+
+    #[test]
+    fn binary_search_range_4() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(0)));
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(20)));
+        let result = binary_search_range_by(&datapoints, since_eq_cond, until_neq_cond);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(10));
+    }
+
+    #[test]
+    fn binary_search_range_5() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let empty_cond1: Option<Box<dyn Fn(&TimestampNano) -> Ordering>> = None;
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(30)));
+        let result = binary_search_range_by(&datapoints, empty_cond1, until_neq_cond);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(10, 20, 20, 20));
+    }
+
+    #[test]
+    fn binary_search_range_6() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(20)));
+        let empty_cond2: Option<Box<dyn Fn(&TimestampNano) -> Ordering>> = None;
+        let result = binary_search_range_by(&datapoints, since_eq_cond, empty_cond2);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(20, 20, 20, 30, 30, 40));
+    }
+
+    #[test]
+    fn binary_search_range_7() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(2)));
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(10)));
+        let result = binary_search_range_by(&datapoints, since_eq_cond, until_neq_cond);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn binary_search_range_8() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let empty_cond1: Option<Box<dyn Fn(&TimestampNano) -> Ordering>> = None;
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(10)));
+        let result = binary_search_range_by(&datapoints, empty_cond1, until_neq_cond);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn binary_search_range_9() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(41)));
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(42)));
+        let result = binary_search_range_by(&datapoints, since_eq_cond, until_neq_cond);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn binary_search_range_10() {
+        let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(41)));
+        let empty_cond1: Option<Box<dyn Fn(&TimestampNano) -> Ordering>> = None;
+        let result = binary_search_range_by(&datapoints, since_eq_cond, empty_cond1);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn binary_search_range_11() {
+        let datapoints = tss!(2, 3, 4, 5, 6, 7, 8, 10);
+
+        let since_eq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(0)));
+        let until_neq_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(3)));
+        let result = binary_search_range_by(&datapoints, since_eq_cond, until_neq_cond);
+
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        assert_eq!(result, tss!(2));
     }
 }

@@ -111,14 +111,13 @@ impl TimeSeriesDataFrame {
             return self.append(other);
         }
 
-        let fist_timestamp = self.timestamp_nanos.first().unwrap();
+        let first_timestamp = self.timestamp_nanos.first().unwrap();
         let last_timestamp = self.timestamp_nanos.last().unwrap();
         let self_time_range = DatapointSearchCondition::new(
-            Some(fist_timestamp.clone()),
+            Some(first_timestamp.clone()),
             Some(last_timestamp.clone()),
         );
 
-        println!("==== {:?}", other);
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
 
@@ -203,53 +202,65 @@ impl TimeSeriesDataFrame {
         &mut self,
         cond: &DatapointSearchCondition,
     ) -> Result<(TimeSeriesDataFrame, TimeSeriesDataFrame)> {
-        let (start, end) = match self.search_with_indices(cond).await {
+        let (retain_start_index, mut cutoff_start_index) = match self
+            .search_with_indices(cond)
+            .await
+        {
             None => {
                 match cond.as_ref() {
-                    (Some(since), Some(until_ne)) => {
-                        let fist_timestamp = self.timestamp_nanos.first().unwrap();
-                        if until_ne <= fist_timestamp {
-                            // all tobe  prefix
-                            (self.len() - 1, self.len() - 1)
-                        } else {
-                            // all tobe  suffix
-                            (0, 0)
-                        }
-                    }
-                    (_, Some(_)) => {
-                        // all tobe  suffix
-                        (0, 0)
-                    }
-                    (Some(_), _) => {
-                        // all tobe  prefix
-                        (self.len() - 1, self.len() - 1)
-                    }
-
                     (None, None) => {
                         //self  must be empty here
                         return Ok((TimeSeriesDataFrame::empty(), TimeSeriesDataFrame::empty()));
+                    }
+
+                    (None, Some(_)) => {
+                        // all data toe suffix
+                        (0, 0)
+                    }
+
+                    (Some(_), None) => {
+                        // all data tobe prefix
+                        (self.len(), self.len())
+                    }
+
+                    (Some(cond_since), Some(_)) => {
+                        let last_timestamp = self.timestamp_nanos.last().unwrap();
+                        if cond_since > last_timestamp {
+                            // all data tobe prefix
+                            (self.len(), self.len())
+                        } else {
+                            // all data tobe suffix
+                            (0, 0)
+                        }
                     }
                 }
             }
             Some((_, indices)) => indices,
         };
 
-        let (timestamps_prefix, timestamps_suffix) =
-            trim_values(&mut self.timestamp_nanos, start, end + 1)?;
+        if retain_start_index != cutoff_start_index {
+            cutoff_start_index = cutoff_start_index + 1
+        }
+
+        let (timestamps_prefix, timestamps_suffix) = trim_values(
+            &mut self.timestamp_nanos,
+            retain_start_index,
+            cutoff_start_index,
+        )?;
 
         let mut prefix_data_serieses = Vec::<DataSeries>::new();
-        let mut sufix_data_serieses = Vec::<DataSeries>::new();
+        let mut suffix_data_serieses = Vec::<DataSeries>::new();
 
         for each_series in self.columns.iter_mut() {
             let (each_prefix_data_series, each_suffix_data_series) =
-                each_series.retain(start, end + 1)?;
+                each_series.retain(retain_start_index, cutoff_start_index)?;
 
             prefix_data_serieses.push(each_prefix_data_series);
-            sufix_data_serieses.push(each_suffix_data_series);
+            suffix_data_serieses.push(each_suffix_data_series);
         }
         Ok((
             TimeSeriesDataFrame::new(timestamps_prefix, prefix_data_serieses),
-            TimeSeriesDataFrame::new(timestamps_suffix, sufix_data_serieses),
+            TimeSeriesDataFrame::new(timestamps_suffix, suffix_data_serieses),
         ))
     }
 
@@ -286,6 +297,7 @@ impl TimeSeriesDataFrame {
         {
             None => None,
             Some((tss, (start_idx, finish_idx))) => {
+                let data_range = start_idx..=finish_idx;
                 let selected_series = TimeSeriesDataFrameRef::new(
                     tss,
                     self.columns
@@ -295,28 +307,28 @@ impl TimeSeriesDataFrame {
                                 DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
                             }
                             SeriesValues::Float64(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::Float64(&vs[start_idx..finish_idx + 1]),
+                                SeriesValuesRef::Float64(&vs[data_range.clone()]),
                             ),
 
-                            SeriesValues::UInt64(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::UInt64(&vs[start_idx..finish_idx + 1]),
-                            ),
+                            SeriesValues::UInt64(vs) => {
+                                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range.clone()]))
+                            }
 
-                            SeriesValues::String(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::String(&vs[start_idx..finish_idx + 1]),
-                            ),
+                            SeriesValues::String(vs) => {
+                                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range.clone()]))
+                            }
 
                             SeriesValues::TimestampNano(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::TimestampNano(&vs[start_idx..finish_idx + 1]),
+                                SeriesValuesRef::TimestampNano(&vs[data_range.clone()]),
                             ),
 
                             SeriesValues::TimestampSec(vs) => DataSeriesRef::new(
-                                SeriesValuesRef::TimestampSec(&vs[start_idx..finish_idx + 1]),
+                                SeriesValuesRef::TimestampSec(&vs[data_range.clone()]),
                             ),
 
-                            SeriesValues::Bool(vs) => DataSeriesRef::new(SeriesValuesRef::Bool(
-                                &vs[start_idx..finish_idx + 1],
-                            )),
+                            SeriesValues::Bool(vs) => {
+                                DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range.clone()]))
+                            }
                         })
                         .collect(),
                 );
@@ -579,6 +591,28 @@ mod test {
     }
 
     #[tokio::test]
+    async fn dataframe_binsearch_test_4() {
+        let df = dataframe!([
+            (2, 22),
+            (3, 33),
+            (4, 44),
+            (5, 55),
+            (6, 66),
+            (7, 77),
+            (8, 88),
+            (10, 1010)
+        ]);
+        let condition = DatapointSearchCondition::new(some_ts!(0), some_ts!(3));
+
+        let result = df.search(&condition).await;
+        assert!(result.is_some());
+        let result = result.unwrap();
+
+        let result: TimeSeriesDataFrame = result.into();
+        assert_eq!(result, dataframe!([(2, 22)]));
+    }
+
+    #[tokio::test]
     async fn dataframe_merge_1() {
         let df_1 = dataframe!([(9, 1), (10, 2), (19, 3), (20, 4), (50, 10), (51, 11)]);
 
@@ -732,7 +766,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        //let mut df_2 = dataframe!([(12, 1212), (13, 1313)]);
+
         let cond = DatapointSearchCondition::new(some_ts!(0), some_ts!(3));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 

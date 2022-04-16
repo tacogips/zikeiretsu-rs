@@ -79,7 +79,11 @@ pub fn trim_values<V>(
         ));
     }
 
-    if retain_start_index >= values.len() {
+    if retain_start_index > values.len() || cut_off_suffix_start_idx > values.len() {
+        return Err(VecOpeError::OutOfRange(retain_start_index));
+    }
+
+    if retain_start_index == values.len() {
         let removed = remove_range(values, (0, values.len() - 1))?;
         return Ok((removed, vec![]));
     }
@@ -320,6 +324,26 @@ mod test {
         assert_eq!(vec![1, 2, 3, 4, 5, 6], data);
         assert_eq!(head, Vec::<i32>::new());
         assert_eq!(tail, Vec::<i32>::new());
+    }
+
+    #[tokio::test]
+    async fn trim_value_8() {
+        let mut data = vec![1, 2, 3, 4, 5, 6];
+
+        let (head, tail) = trim_values(&mut data, 5, 6).unwrap();
+
+        assert_eq!(vec![6], data);
+
+        assert_eq!(vec![1, 2, 3, 4, 5], head);
+        assert_eq!(Vec::<i32>::new(), tail);
+    }
+
+    #[tokio::test]
+    async fn trim_value_9() {
+        let mut data = vec![1, 2, 3, 4, 5, 6];
+
+        assert!(trim_values(&mut data, 7, 7).is_err());
+        assert!(trim_values(&mut data, 0, 7).is_err());
     }
 
     #[tokio::test]

@@ -120,6 +120,10 @@ impl TimeSeriesDataFrame {
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
 
+        //TODO(tacogips) for debugging
+        println!("==== {:?}", prefix_data_frames);
+        println!("==== {:?}", suffix_data_frames);
+
         //  Insert rows into middle of self dataframes
         //  This may be inefficient process
         if !other.is_empty() {

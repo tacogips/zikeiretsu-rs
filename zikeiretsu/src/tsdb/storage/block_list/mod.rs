@@ -8,11 +8,14 @@
 ///  (5) timestamp second head (untile)(v byte)
 ///  (6) timestamp second (until)(v byte)
 ///
+mod block_timestamp;
+
 use crate::tsdb::search::*;
 use crate::tsdb::{metrics::Metrics, timestamp_nano::*, timestamp_sec::*};
 use crate::FieldError;
 use base_128_variants;
 use bits_ope::*;
+pub use block_timestamp::*;
 use memmap2::MmapOptions;
 use serde::{Deserialize, Serialize};
 use simple8b_rle;
@@ -105,7 +108,7 @@ impl From<Vec<TimestampSec>> for TimestampSecDeltas {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockList {
-    pub metrics: Metrics, //TODO(tacogips) this metrics tobe a reference
+    pub metrics: Metrics,
     pub updated_timestamp_sec: TimestampNano,
     pub block_timestamps: Vec<BlockTimestamp>,
 }
@@ -123,15 +126,48 @@ impl BlockList {
         }
     }
 
+    pub fn block_num(&self) -> usize {
+        self.block_timestamps.len()
+    }
+
+    pub fn range(&self) -> Option<(&TimestampSec, &TimestampSec)> {
+        let mut min: Option<&TimestampSec> = None;
+        let mut max: Option<&TimestampSec> = None;
+
+        for each in self.block_timestamps.iter() {
+            match min {
+                Some(current_min) => {
+                    if each.since_sec < *current_min {
+                        min = Some(&each.since_sec)
+                    }
+                }
+                None => min = Some(&each.since_sec),
+            }
+
+            match max {
+                Some(current_max) => {
+                    if each.until_sec > *current_max {
+                        max = Some(&each.until_sec)
+                    }
+                }
+                None => max = Some(&each.until_sec),
+            }
+        }
+        match (min, max) {
+            (None, None) => None,
+            (Some(min), Some(max)) => Some((min, max)),
+            _ => panic!("range of block list has bug"),
+        }
+    }
     pub fn update_updated_at(&mut self, dt: TimestampNano) {
         self.updated_timestamp_sec = dt;
     }
 
     pub fn add_timestamp(&mut self, new_block_timestamp: BlockTimestamp) -> Result<()> {
-        // in almost  all case,  the block_timestamp will be stored at the tail
+        // in almost case,  the new block_timestamp will be inserted at the tail
         let mut insert_at = 0;
         for (idx, each) in self.block_timestamps.iter().rev().enumerate() {
-            if each.since_sec <= new_block_timestamp.since_sec {
+            if each.until_sec <= new_block_timestamp.until_sec {
                 insert_at = self.block_timestamps.len() - idx;
                 break;
             }
@@ -151,7 +187,7 @@ impl BlockList {
         } else {
             let mut prev = unsafe { self.block_timestamps.get_unchecked(0) };
             for each_block_timestamp in self.block_timestamps.as_slice()[1..].iter() {
-                if each_block_timestamp.since_sec.cmp(&prev.since_sec) == Ordering::Less {
+                if each_block_timestamp.until_sec.cmp(&prev.until_sec) == Ordering::Less {
                     return Err(BlockListError::BlockTimestampIsNotSorted(
                         self.metrics.clone(),
                     ));
@@ -181,20 +217,21 @@ impl BlockList {
 
     pub fn search(
         &self,
-        since: Option<&TimestampSec>,
-        until: Option<&TimestampSec>,
+        since_inclusive: Option<&TimestampSec>,
+        until_exclusive: Option<&TimestampSec>,
     ) -> Result<Option<&[BlockTimestamp]>> {
-        //TODO(tacogis)  maybe redundunt
-        self.check_block_timestamp_is_sorted()?;
+        debug_assert!(self.check_block_timestamp_is_sorted().is_ok());
 
         let block_timestamps = self.block_timestamps.as_slice();
 
-        match (since, until) {
+        log::debug!("block_list. all block timestamps: {:?}", block_timestamps);
+
+        match (since_inclusive, until_exclusive) {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.since_sec.cmp(&since),
-                    BinaryRangeSearchType::AtLeast,
+                    |block_timestamp| block_timestamp.until_sec.cmp(&since),
+                    BinaryRangeSearchType::AtLeastInclusive,
                 );
 
                 match lower_idx {
@@ -203,7 +240,7 @@ impl BlockList {
                         let upper_idx = binary_search_by(
                             block_timestamps,
                             |block_timestamp| block_timestamp.since_sec.cmp(&until),
-                            BinaryRangeSearchType::AtMost,
+                            BinaryRangeSearchType::AtMostInclusive,
                         );
 
                         match upper_idx {
@@ -219,8 +256,8 @@ impl BlockList {
             (Some(since), None) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.since_sec.cmp(&since),
-                    BinaryRangeSearchType::AtLeast,
+                    |block_timestamp| block_timestamp.until_sec.cmp(&since),
+                    BinaryRangeSearchType::AtLeastInclusive,
                 );
 
                 match lower_idx {
@@ -233,7 +270,7 @@ impl BlockList {
                 let upper_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&until),
-                    BinaryRangeSearchType::AtMost,
+                    BinaryRangeSearchType::AtMostInclusive,
                 );
 
                 match upper_idx {
@@ -249,74 +286,6 @@ impl BlockList {
                 }
             }
         }
-    }
-}
-
-#[derive(Copy, Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct BlockTimestamp {
-    pub since_sec: TimestampSec,
-    pub until_sec: TimestampSec,
-}
-
-impl BlockTimestamp {
-    #[allow(dead_code)]
-    pub fn new(since_sec: TimestampSec, until_sec: TimestampSec) -> Self {
-        Self {
-            since_sec,
-            until_sec,
-        }
-    }
-
-    pub fn is_before(&self, other: &Self) -> bool {
-        self.until_sec <= other.since_sec
-    }
-
-    #[allow(dead_code)]
-    pub fn is_after(&self, other: &Self) -> bool {
-        other.until_sec <= self.since_sec
-    }
-
-    #[allow(dead_code)]
-    fn is_valid(&self) -> bool {
-        self.since_sec <= self.until_sec
-    }
-    fn from_splited_timestamps(
-        since_secs: Vec<TimestampSec>,
-        until_secs: Vec<TimestampSec>,
-    ) -> Vec<BlockTimestamp> {
-        debug_assert_eq!(since_secs.len(), until_secs.len());
-        let timestamp_pairs: Vec<(TimestampSec, TimestampSec)> =
-            since_secs.into_iter().zip(until_secs.into_iter()).collect();
-        Self::from_timestamp_pairs(timestamp_pairs)
-    }
-
-    fn from_timestamp_pairs(timestamps: Vec<(TimestampSec, TimestampSec)>) -> Vec<BlockTimestamp> {
-        timestamps
-            .into_iter()
-            .map(|(since_sec, until_sec)| BlockTimestamp {
-                since_sec,
-                until_sec,
-            })
-            .collect()
-    }
-
-    #[allow(dead_code)]
-    fn insert(block_timestamps: &mut Vec<BlockTimestamp>, new_block: BlockTimestamp) -> Result<()> {
-        let insert_idx = match binary_search_by(
-            block_timestamps.as_slice(),
-            |block_timestamp| block_timestamp.since_sec.cmp(&new_block.since_sec),
-            BinaryRangeSearchType::AtMost,
-        ) {
-            Some(idx) => idx + 1,
-            None => block_timestamps.len(),
-        };
-        if insert_idx >= block_timestamps.len() {
-            block_timestamps.push(new_block);
-        } else {
-            block_timestamps.insert(insert_idx, new_block);
-        }
-
-        Ok(())
     }
 }
 
@@ -490,7 +459,7 @@ mod test {
     fn test_wr_block_list_1() {
         let mut dest = Vec::<u8>::new();
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = {
             let ts1 =
                 BlockTimestamp::new(TimestampSec::new(1629745452), TimestampSec::new(1629745453));
@@ -536,8 +505,7 @@ mod test {
     #[test]
     fn test_block_timestamps_insert_1() {
         let mut block_timestamps = block_timestamps!({10,20},{10,20}, {21,30});
-        let result = BlockTimestamp::insert(&mut block_timestamps, blts!(10, 15));
-        assert!(result.is_ok());
+        BlockTimestamp::insert(&mut block_timestamps, blts!(10, 15));
         assert_eq!(
             block_timestamps,
             block_timestamps!({10,20},{10,20}, {10,15},{21,30})
@@ -547,8 +515,7 @@ mod test {
     #[test]
     fn test_block_timestamps_insert_2() {
         let mut block_timestamps = block_timestamps!({10,20},{10,20}, {21,30});
-        let result = BlockTimestamp::insert(&mut block_timestamps, blts!(22, 50));
-        assert!(result.is_ok());
+        BlockTimestamp::insert(&mut block_timestamps, blts!(22, 50));
         assert_eq!(
             block_timestamps,
             block_timestamps!({10,20},{10,20}, {21,30},{22,50})
@@ -560,7 +527,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -573,7 +540,7 @@ mod test {
         assert!(result.is_some());
         assert_eq!(
             result.unwrap(),
-            block_timestamps!({11,30}, {11,30}, {12,30}, {15,30})
+            block_timestamps!({10,20},{10,20}, {10,20}, {11,30}, {11,30}, {12,30}, {15,30})
         );
     }
 
@@ -582,7 +549,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -604,7 +571,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -626,7 +593,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -647,7 +614,7 @@ mod test {
     fn test_block_timestamps_search_5() {
         let block_timestamps = block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30},{21,31});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -669,7 +636,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -689,9 +656,9 @@ mod test {
     #[test]
     fn test_block_timestamps_search_7() {
         let block_timestamps =
-            block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
+            block_timestamps!({10,11},{10,12}, {10,13},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -702,15 +669,18 @@ mod test {
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), block_timestamps!({15,30},{21,30}));
+        assert_eq!(
+            result.unwrap(),
+            block_timestamps!({10,13},{11,30}, {11,30}, {12,30}, {15,30},{21,30})
+        );
     }
 
     #[test]
     fn test_block_timestamps_search_8() {
         let block_timestamps =
-            block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
+            block_timestamps!({10,20},{10,20}, {10,20},{11,21}, {11,22}, {12,30}, {15,30},{21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -720,15 +690,19 @@ mod test {
         let result = block_list.search(Some(&ts!(22)), None);
         assert!(result.is_ok());
         let result = result.unwrap();
-        assert!(result.is_none());
+        assert!(result.is_some());
+        assert_eq!(
+            result.unwrap(),
+            block_timestamps!( {11,22}, {12,30}, {15,30},{21,30})
+        );
     }
 
     #[test]
     fn test_block_timestamps_search_9() {
         let block_timestamps =
-            block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
+            block_timestamps!({9,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -738,7 +712,7 @@ mod test {
         let result = block_list.search(None, Some(&ts!(9)));
         assert!(result.is_ok());
         let result = result.unwrap();
-        assert!(result.is_none());
+        assert_eq!(result.unwrap(), block_timestamps!({9,20}));
     }
 
     #[test]
@@ -746,7 +720,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -764,7 +738,7 @@ mod test {
         let block_timestamps =
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
             metrics,
             updated_timestamp_sec: TimestampNano::new(0),
@@ -782,10 +756,101 @@ mod test {
     }
 
     #[test]
+    fn test_block_timestamps_search_12() {
+        let block_timestamps = block_timestamps!({1632735700,1632735903});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(
+            Some(&TimestampSec::new(1632735720)),
+            Some(&TimestampSec::new(1632735903)),
+        );
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), block_timestamps!({1632735700,1632735903}));
+    }
+
+    #[test]
+    fn test_block_timestamps_search_13() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(Some(&TimestampSec::new(22)), None);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), block_timestamps!({21,23},{30,36}));
+    }
+
+    #[test]
+    fn test_block_timestamps_search_14() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(None, Some(&TimestampSec::new(22)));
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), block_timestamps!({10,12},{21,23}));
+    }
+
+    #[test]
+    fn test_block_timestamps_search_15() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(None, Some(&TimestampSec::new(9)));
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_block_timestamps_search_16() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(Some(&TimestampSec::new(40)), None);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn test_block_list_add_timestamps_1() {
         let updated_timestamp = TimestampNano::new(1629745452_715062000);
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let mut blocklist = BlockList::new(metrics, updated_timestamp, vec![]);
         block_timestamps!({10,20});
         {
@@ -820,7 +885,7 @@ mod test {
             let result = blocklist.add_timestamp(block_timestamp);
             assert!(result.is_ok());
 
-            let expected = block_timestamps!({9, 10}, {10, 20},{10, 10},{21, 22});
+            let expected = block_timestamps!({9, 10}, {10, 10},{10, 20},{21, 22});
             assert_eq!(blocklist.block_timestamps, expected);
         }
 
@@ -829,7 +894,7 @@ mod test {
             let result = blocklist.add_timestamp(block_timestamp);
             assert!(result.is_ok());
 
-            let expected = block_timestamps!({9, 10}, {10, 20}, {10, 10}, {21, 22},{23,23});
+            let expected = block_timestamps!({9, 10}, {10, 10},{10, 20},  {21, 22},{23,23});
             assert_eq!(blocklist.block_timestamps, expected);
         }
     }
@@ -846,7 +911,7 @@ mod test {
             { 1638275138, 1638275169 }
         );
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let mut blocklist = BlockList::new(metrics, updated_timestamp, init_timestamp);
         {
             let block_timestamp = blts!(1638275168, 1638275200);
@@ -881,7 +946,7 @@ mod test {
 
             );
 
-        let metrics = Metrics::new("dummy");
+        let metrics = Metrics::new("dummy").unwrap();
         let mut blocklist = BlockList::new(metrics, updated_timestamp, init_timestamp);
         {
             let block_timestamp = blts!(1638276696, 1638276728);

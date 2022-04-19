@@ -30,8 +30,8 @@ impl<'a> CloudBlockFilePath<'a> {
         let block_path = format!(
             "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/block",
             metrics = self.metrics,
-            since_sec = self.block_timestamp.since_sec,
-            until_sec = self.block_timestamp.until_sec,
+            since_sec = self.block_timestamp.since_sec.0,
+            until_sec = self.block_timestamp.until_sec.0,
         );
 
         format!(
@@ -77,8 +77,12 @@ impl<'a> CloudBlockListFilePath<'a> {
     }
 
     pub(crate) async fn list_files_urls(cloud_storage: &CloudStorage) -> Result<Vec<String>> {
+        let list_file_url = format!(
+            "{storage_url}blocklist",
+            storage_url = cloud_storage.as_url(),
+        );
         match cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::list_block_list_files(cloud_storage.as_url()).await,
+            CloudStorage::Gcp(_, _) => gcp::list_block_list_files(list_file_url).await,
         }
     }
 
@@ -150,8 +154,8 @@ mod test {
     use crate::tsdb::*;
 
     #[test]
-    pub fn cloud_block_list_file_path() {
-        let metrics = Metrics::new("some_metrics");
+    pub fn test_cloud_block_list_file_path() {
+        let metrics = Metrics::new("some_metrics").unwrap();
 
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
         let file_path = CloudBlockListFilePath::new(&metrics, &storage);
@@ -163,8 +167,8 @@ mod test {
     }
 
     #[test]
-    pub fn cloud_block_file_path() {
-        let metrics = Metrics::new("some_metrics");
+    pub fn test_cloud_block_file_path() {
+        let metrics = Metrics::new("some_metrics").unwrap();
 
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
 
@@ -180,8 +184,8 @@ mod test {
     }
 
     #[test]
-    pub fn cloud_lock_file_path() {
-        let metrics = Metrics::new("some_metrics");
+    pub fn test_cloud_lock_file_path() {
+        let metrics = Metrics::new("some_metrics").unwrap();
 
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
         let file_path = CloudLockfilePath::new(&metrics, &storage);

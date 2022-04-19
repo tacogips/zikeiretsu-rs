@@ -1,0 +1,173 @@
+
+// === silents =================
+WHITESPACE = _{ " " | "\t" | "\\" | NEWLINE }
+COMMENT = _{ "//" ~ ( !NEWLINE ~ ANY )* ~ NEWLINE }
+
+// === primitive =================
+POS_NEG      = { "+" | "-" }
+ASCII_DIGITS = { ASCII_DIGIT+ }
+
+// === reserved keyword =================
+KW_SELECT = @{ ^"SELECT" ~ !ASCII_ALPHANUMERIC }
+KW_FROM   = @{ ^"FROM"  ~ !ASCII_ALPHANUMERIC }
+KW_WITH   = @{ ^"WITH" ~ !ASCII_ALPHANUMERIC  }
+KW_WHERE  = @{ ^"WHERE"  ~ !ASCII_ALPHANUMERIC }
+KW_ASTERISK = @{ "*" ~ !ASCII_ALPHANUMERIC }
+
+KW_TIMESTAMP  = @{ ^"ts" ~ !ASCII_ALPHANUMERIC }
+KW_METRICS    = @{ ^"metrics" ~ !ASCII_ALPHANUMERIC }
+
+KW_AND  = @{ ^"AND" ~ !ASCII_ALPHANUMERIC }
+KW_OR  = @{ ^"OR" ~ !ASCII_ALPHANUMERIC }
+
+KW_ASC  = @{ ^"ASC" ~ !ASCII_ALPHANUMERIC }
+KW_DESC = @{ ^"DESC" ~ !ASCII_ALPHANUMERIC }
+
+//TODO(tacogips) limit and offset are not supported yet.
+//KW_OFFSET = @{ ^"OFFSET" ~ !ASCII_ALPHANUMERIC }
+//KW_LIMIT  = @{ ^"LIMIT" ~ !ASCII_ALPHANUMERIC }
+
+KW_COLS    = @{ ^"COLS" ~ !ASCII_ALPHANUMERIC }
+KW_TZ      = @{ ^"TZ" ~ !ASCII_ALPHANUMERIC }
+KW_FORMAT  = @{ ^"FORMAT" ~ !ASCII_ALPHANUMERIC }
+KW_OUTPUT_FILE = @{ ^"OUTPUT_FILE" ~ !ASCII_ALPHANUMERIC }
+KW_ORDER   = @{ ^"ORDER" ~ !ASCII_ALPHANUMERIC }
+KW_BY      = @{ ^"BY" ~ !ASCII_ALPHANUMERIC }
+KW_USE_CACHE   = @{ ^"USE_CACHE" ~ !ASCII_ALPHANUMERIC }
+KW_SYNC_CLOUD  = @{ ^"SYNC_CLOUD" ~ !ASCII_ALPHANUMERIC }
+
+KW_TRUE      = @{ ^"TRUE" ~ !ASCII_ALPHANUMERIC }
+KW_FALSE      = @{ ^"FALSE" ~ !ASCII_ALPHANUMERIC }
+
+KW_MICROSECOND = @{ ^"MICRO" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_MILLISECOND = @{ ^"MILLI" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_SECOND  		= @{ ^"SECOND" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_MINUTES  	= @{ ^"MINUTE" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_HOUR  			= @{ ^"HOUR" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+KW_DAY  			= @{ ^"DAY" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
+
+KW_JSON  			= @{ ^"JSON"  ~ !ASCII_ALPHANUMERIC }
+KW_DATAFRAME  = @{ ^"DF" ~ !ASCII_ALPHANUMERIC }
+KW_PARQUET    = @{ ^"PARQUET" ~ !ASCII_ALPHANUMERIC }
+
+KW_SEMICOLON  = @{ ^";" ~ !ASCII_ALPHANUMERIC }
+
+BOOLEAN_VALUE = { KW_TRUE | KW_FALSE }
+
+DURATION_UNIT = { KW_MICROSECOND | KW_MILLISECOND | KW_SECOND | KW_MINUTES | KW_HOUR	| KW_DAY }
+FILE_PATH = @{ (ASCII_ALPHANUMERIC| "." |"/" | "\\" )+}
+
+// === selector =================
+STAR_SELECTOR =  { "*" }
+
+CLOCK = { (ASCII_DIGIT | ":")+ }
+
+TIMEZONE_OFFSET_VAL = @{ POS_NEG ~ CLOCK }
+TIMEZONE_NAME = @{ ASCII_ALPHA{3,5} ~ !ASCII_ALPHANUMERIC }
+
+COLUMN_NAME_AVAILABLE_SYMBOL = { "_" | "-"}
+COLUMN_NAME = @{ ( ASCII_ALPHANUMERIC | COLUMN_NAME_AVAILABLE_SYMBOL )+ }
+
+//TODO(tacogips) exclude KWs from column names
+COLUMNS = { COLUMN_NAME  ~ ( "," ~  COLUMN_NAME )* ~ !"," }
+
+METRICS_NAME_AVAILABLE_SYMBOL = { "_" | "-" | "."}
+METRICS_NAME = @{ (ASCII_ALPHANUMERIC | METRICS_NAME_AVAILABLE_SYMBOL )+ }
+
+DEFINE_COLUMNS = { KW_COLS ~ "=" ~  "[" ~ COLUMNS ~ "]" }
+DEFINE_TZ      = { KW_TZ ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
+DEFINE_FORMAT  = { KW_FORMAT ~ "=" ~ ( KW_JSON | KW_DATAFRAME | KW_PARQUET ) }
+DEFINE_OUTPUT_FILE  = { KW_OUTPUT_FILE ~ "=" ~ "'" ~ FILE_PATH ~ "'"}
+DEFINE_CACHE   = { KW_USE_CACHE ~ "=" ~ BOOLEAN_VALUE }
+DEFINE_CLOUD   = { KW_SYNC_CLOUD ~ "=" ~ BOOLEAN_VALUE }
+
+DATETIME_STR = { "'" ~ ( ASCII_ALPHANUMERIC | " " | "-" | ":") + ~ "'"}
+FN_TODAY     = { ^"TODAY()" }
+FN_YESTERDAY = { ^"YESTERDAY()" }
+FN_TOMORROW  = { ^"TOMORROW()" }
+
+CLOCK_DELTA        = { POS_NEG? ~ CLOCK }
+DURATION_DELTA     = { POS_NEG? ~ ASCII_DIGITS ~ DURATION_UNIT }
+DATETIME_DELTA     = { DURATION_DELTA | CLOCK_DELTA }
+DATETIME_FN        = { FN_TODAY | FN_YESTERDAY | FN_TOMORROW }
+
+DATETIME =   { ( DATETIME_FN  | DATETIME_STR ) ~ DATETIME_DELTA? }
+DATETIME_RANGE_CLOSE = { DATETIME_DELTA | DATETIME }
+DATETIME_RANGE =  { "(" ~ DATETIME ~"," ~ DATETIME_RANGE_CLOSE ~ ")"}
+
+REL_IN  = { ^"IN" }
+REL_GTE = { ">=" }
+REL_GT  = { ">" }
+REL_LTE = { "<=" }
+REL_LT  = { "<" }
+REL_EQ  = { "=" }
+
+REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
+
+
+// ### 1. show datapoints in today
+// ```
+// with
+// 	cols = [is_buy, volume, price],
+// 	tz = +9
+//
+// select ts, is_buy, volume, price
+// from trades
+// where ts in today()
+// ```
+//
+// ### 2. show datapoints in specific range
+// ```
+// with
+// 	cols = [_, volume, price],
+// 	tz = JST
+//
+// select ts, volume, price
+// from trades
+// where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
+//
+// ### 3. datetime filter as functionn
+// ```
+// with
+// 	cols = [_, volume, price],
+// 	tz = JST
+// select ts, volume, price
+// from trades
+// where ts in (yesterday() + 9:00, today() + 2 hours )
+//
+// ```
+
+
+FILTER = { DATETIME_FILTER | METRICS_FILTER }
+DATETIME_FILTER = { KW_TIMESTAMP ~ REL_OP ~ ( DATETIME_RANGE | DATETIME )}
+METRICS_FILTER  = { KW_METRICS   ~ "=" ~ METRICS_NAME }
+
+// === WITH CLAUSE =========================================
+WITH_CLAUSE   = { KW_WITH ~ WITH_CLAUSE_DEFINES  ~ ("," ~ WITH_CLAUSE_DEFINES )* }
+WITH_CLAUSE_DEFINES = { DEFINE_TZ  | DEFINE_COLUMNS | DEFINE_FORMAT  | DEFINE_OUTPUT_FILE  | DEFINE_CACHE | DEFINE_CLOUD }
+
+SELECT_CLAUSE = { KW_SELECT ~ ( KW_ASTERISK | COLUMNS ) }
+FROM_CLAUSE   = { KW_FROM ~ METRICS_NAME  }
+
+WHERE_CLAUSE  = { KW_WHERE ~ FILTER } // only simple condition is allowed now
+
+ORDER_CLAUSE = { KW_ORDER  ~ KW_BY ~  KW_TIMESTAMP ~ (KW_DESC | KW_ASC)?  }
+
+//TODO(tacogips) limit and offset are not supported yet.
+//LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
+//OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allowed now
+//ORDER_OR_LIMIT_CLAUSE = { (  ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE ) + }
+
+ORDER_OR_LIMIT_CLAUSE = {   ORDER_CLAUSE   }
+
+// === Query =================
+QUERY = {
+		SOI
+	~ WITH_CLAUSE?
+	~ SELECT_CLAUSE
+	~ FROM_CLAUSE
+	~ WHERE_CLAUSE?
+	~ ORDER_OR_LIMIT_CLAUSE*
+	~ KW_SEMICOLON?
+	~ EOI }
+

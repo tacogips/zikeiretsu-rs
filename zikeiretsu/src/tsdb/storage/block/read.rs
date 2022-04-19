@@ -2,8 +2,12 @@ use super::compress::bools;
 use super::{field_type_convert, BlockError, Result, TimestampDeltas};
 use crate::tsdb::*;
 use bits_ope::*;
+use std::collections::HashMap;
 
-pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
+pub(crate) fn read_from_block_with_specific_fields(
+    block_data: &[u8],
+    field_selectors: Option<&[usize]>,
+) -> Result<TimeSeriesDataFrame> {
     // 1. number  of data
     let (number_of_data, mut block_idx): (u64, usize) =
         base_128_variants::decompress_u64(&block_data)?;
@@ -20,6 +24,29 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
         }
     };
     block_idx += 1;
+
+    // validate field number and field_selectors
+    let field_selectors_map = match field_selectors {
+        None => HashMap::new(),
+        Some(field_selectors) => {
+            let mut field_selectors_set = HashMap::new();
+            if field_selectors.len() == 0 {
+                return Err(BlockError::InvalidFieldSelector(
+                    "empty field selector".to_string(),
+                ));
+            } else {
+                for (idx, each_selector) in field_selectors.iter().enumerate() {
+                    if *each_selector >= number_of_field as usize {
+                        return Err(BlockError::InvalidFieldSelector(
+                            "empty field selector".to_string(),
+                        ));
+                    }
+                    field_selectors_set.insert(*each_selector, idx);
+                }
+                field_selectors_set
+            }
+        }
+    };
 
     // 3.  field types
     let mut field_types = Vec::<FieldType>::new();
@@ -108,9 +135,25 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
         }
     };
 
-    let mut block_field_values = Vec::<Vec<FieldValue>>::new();
+    let data_field_size = if field_selectors_map.is_empty() {
+        number_of_field as usize
+    } else {
+        field_selectors_map.len()
+    };
+    let mut block_field_values = Vec::<SeriesValues>::with_capacity(data_field_size);
+    for _ in 0..data_field_size {
+        block_field_values.push(SeriesValues::Vacant(number_of_datapoints));
+    }
 
-    for each_field_type in field_types {
+    let is_field_to_select = |idx: usize| {
+        if field_selectors_map.is_empty() {
+            Some(idx)
+        } else {
+            field_selectors_map.get(&idx).map(|v| *v)
+        }
+    };
+
+    for (field_idx, each_field_type) in field_types.iter().enumerate() {
         match each_field_type {
             FieldType::Float64 => {
                 let mut float_values = Vec::<f64>::new();
@@ -121,12 +164,12 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
                 )?;
                 block_idx += read_idx;
 
-                block_field_values.push(
-                    float_values
-                        .into_iter()
-                        .map(|v| FieldValue::Float64(v))
-                        .collect(),
-                )
+                if let Some(data_series_idx) = is_field_to_select(field_idx) {
+                    let _ = std::mem::replace(
+                        &mut block_field_values[data_series_idx],
+                        SeriesValues::Float64(float_values),
+                    );
+                }
             }
 
             FieldType::Bool => {
@@ -138,30 +181,27 @@ pub(crate) fn read_from_block(block_data: &[u8]) -> Result<Vec<DataPoint>> {
                 )?;
                 block_idx += read_idx;
 
-                block_field_values.push(
-                    bool_values
-                        .into_iter()
-                        .map(|v| FieldValue::Bool(v))
-                        .collect(),
-                )
+                if let Some(data_series_idx) = is_field_to_select(field_idx) {
+                    let _ = std::mem::replace(
+                        &mut block_field_values[data_series_idx],
+                        SeriesValues::Bool(bool_values),
+                    );
+                }
+            }
+            unsupported_field_type => {
+                return Err(BlockError::UnsupportedFieldType(
+                    unsupported_field_type.clone(),
+                ))
             }
         }
     }
 
-    let mut datapoints = Vec::<DataPoint>::new();
-    for data_idx in 0..number_of_datapoints {
-        let mut field_values = Vec::<FieldValue>::new();
-        for field_idx in 0..number_of_field as usize {
-            let block_values = unsafe { block_field_values.get_unchecked(field_idx) };
-            let block_field_value = unsafe { block_values.get_unchecked(data_idx) };
-            field_values.push(block_field_value.clone());
-        }
-
-        let datapoint = DataPoint {
-            timestamp_nano: unsafe { timestamps.get_unchecked(data_idx) }.clone(),
-            field_values,
-        };
-        datapoints.push(datapoint);
-    }
-    Ok(datapoints)
+    let dataframe = TimeSeriesDataFrame::new(
+        timestamps,
+        block_field_values
+            .into_iter()
+            .map(|field_values| DataSeries::new(field_values))
+            .collect(),
+    );
+    Ok(dataframe)
 }

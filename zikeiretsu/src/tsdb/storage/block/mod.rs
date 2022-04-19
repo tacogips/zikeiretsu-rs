@@ -73,11 +73,17 @@ pub enum BlockError {
     #[error("invalid block file : {0} at {1}")]
     InvalidBlockfileError(String, usize),
 
+    #[error("unsupported field type : {0}")]
+    UnsupportedFieldType(FieldType),
+
     #[error("unknwon error : {0}")]
     UnKnownError(String),
 
     #[error("compress error : {0}")]
     CompressError(#[from] CompressError),
+
+    #[error("invalid field selector : {0}")]
+    InvalidFieldSelector(String),
 }
 
 impl BlockError {
@@ -106,8 +112,9 @@ impl TimestampDeltas {
         let mut prev_timestamp = self.head_timestamp;
 
         for data_idx in 0..self.timestamps_deltas_second.len() {
-            let current_timestamp = ((*prev_timestamp / SEC_IN_NANOSEC) * SEC_IN_NANOSEC)
-                + (self.timestamps_deltas_second.get(data_idx).unwrap() * SEC_IN_NANOSEC)
+            let current_timestamp = ((*prev_timestamp / SEC_IN_NANOSEC as u64)
+                * SEC_IN_NANOSEC as u64)
+                + (self.timestamps_deltas_second.get(data_idx).unwrap() * SEC_IN_NANOSEC as u64)
                 + (self.timestamps_nanoseconds.get(data_idx).unwrap()
                     << self.common_trailing_zero_bits);
             let current_timestamp = TimestampNano(current_timestamp);
@@ -133,7 +140,7 @@ impl From<&[DataPoint]> for TimestampDeltas {
             let delta_sec =
                 &curr.timestamp_nano.as_timestamp_sec() - &prev.timestamp_nano.as_timestamp_sec();
 
-            let nanosec: u64 = *curr.timestamp_nano % SEC_IN_NANOSEC;
+            let nanosec: u64 = *curr.timestamp_nano % SEC_IN_NANOSEC as u64;
 
             timestamps_deltas_second.push(delta_sec);
             timestamps_nanoseconds.push(nanosec);
@@ -162,7 +169,10 @@ impl From<&[DataPoint]> for TimestampDeltas {
     }
 }
 
-pub fn read_from_block_file<P: AsRef<Path>>(path: P) -> Result<Vec<DataPoint>> {
+pub fn read_from_block_file<P: AsRef<Path>>(
+    path: P,
+    field_selectors: Option<&[usize]>,
+) -> Result<TimeSeriesDataFrame> {
     let block_file =
         File::open(path.as_ref()).map_err(|e| BlockError::file_error(e, path.as_ref()))?;
     let block_data = unsafe {
@@ -170,7 +180,7 @@ pub fn read_from_block_file<P: AsRef<Path>>(path: P) -> Result<Vec<DataPoint>> {
             .map(&block_file)
             .map_err(|e| BlockError::file_error(e, path))?
     };
-    read::read_from_block(&block_data)
+    read::read_from_block_with_specific_fields(&block_data, field_selectors)
 }
 
 pub fn write_to_block_file<P: AsRef<Path>>(path: P, datapoints: &[DataPoint]) -> Result<()> {
@@ -291,12 +301,12 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed.len(), 1);
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.len(), 1);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -310,12 +320,12 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed.len(), 1);
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.len(), 1);
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -329,11 +339,11 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -347,11 +357,11 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -366,11 +376,11 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -385,11 +395,11 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -403,11 +413,11 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -421,11 +431,11 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
@@ -473,28 +483,29 @@ mod test {
         let result = write::write_to_block(&mut data, &datapoints);
         assert!(result.is_ok());
 
-        let readed = read::read_from_block(&data);
+        let read_data = read::read_from_block_with_specific_fields(&data, None);
 
-        assert!(readed.is_ok());
-        let readed = readed.unwrap();
-        assert_eq!(readed, datapoints);
+        assert!(read_data.is_ok());
+        let read_data = read_data.unwrap();
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 
     #[test]
     fn test_block_file_1() {
         let target_file = tempfile::NamedTempFile::new().unwrap();
         let datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715062000, vec![200f64,36f64]},
-            {1629746451_715062000, vec![200f64,36f64]}
+            {1629745451_715062000, vec![100f64, 12f64]},
+            {1629745451_715062000, vec![200f64, 36f64]},
+            {1629746451_715062000, vec![200f64, 36f64]}
         );
 
         let result = write_to_block_file(target_file.as_ref(), &datapoints);
         assert!(result.is_ok());
 
-        let result = read_from_block_file(target_file.as_ref());
+        let result = read_from_block_file(target_file.as_ref(), None);
         assert!(result.is_ok());
-        let result = result.unwrap();
-        assert_eq!(result, datapoints);
+        let read_data = result.unwrap();
+
+        assert_eq!(read_data.into_datapoints().unwrap(), datapoints);
     }
 }

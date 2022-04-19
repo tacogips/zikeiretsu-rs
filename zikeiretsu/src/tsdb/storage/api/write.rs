@@ -18,15 +18,14 @@ pub async fn write_datas<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
     data_points: &[DataPoint],
-    cloud_setting: Option<&CloudStorageSetting>,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<()> {
     debug_assert!(!data_points.is_empty());
     debug_assert!(DataPoint::check_datapoints_is_sorted(&data_points).is_ok());
 
-    let cloud_lock_file_path = if let Some(cloud_setting) = cloud_setting {
+    let cloud_infos = if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if cloud_setting.upload_data_after_write {
-            let cloud_lock_file_path =
-                CloudLockfilePath::new(metrics, &cloud_setting.cloud_storage);
+            let cloud_lock_file_path = CloudLockfilePath::new(metrics, &cloud_storage);
             if cloud_lock_file_path.exists().await? {
                 return Err(StorageApiError::CreateLockfileError(format!(
                     "cloud lock file already exists at {lock_file_url} ",
@@ -34,7 +33,7 @@ pub async fn write_datas<P: AsRef<Path>>(
                 )));
             } else {
                 cloud_lock_file_path.create().await?;
-                Some(cloud_lock_file_path)
+                Some((cloud_lock_file_path, cloud_storage, cloud_setting))
             }
         } else {
             None
@@ -51,7 +50,9 @@ pub async fn write_datas<P: AsRef<Path>>(
             block_file_dir,
             block_file_path,
             block_timestamp,
-        } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_setting).await {
+        } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_storage_and_setting)
+            .await
+        {
             Ok(r) => r,
             Err(e) => {
                 log::error!("failed to write block file on local: {e}");
@@ -59,18 +60,18 @@ pub async fn write_datas<P: AsRef<Path>>(
             }
         };
 
-        if cloud_lock_file_path.is_some() {
+        if let Some((_, cloud_storage, cloud_setting)) = cloud_infos.as_ref() {
             let upload_result = upload_to_cloud(
                 &block_list_file_path,
                 &block_file_path,
                 &metrics,
                 &block_timestamp,
-                &cloud_setting.unwrap().cloud_storage,
+                &cloud_storage,
             )
             .await;
             match upload_result {
                 Ok(_) => {
-                    if cloud_setting.unwrap().remove_local_file_after_upload {
+                    if cloud_setting.remove_local_file_after_upload {
                         fs::remove_dir_all(block_file_dir.as_path())
                             .map_err(StorageApiError::RemoveBlockDirError)?;
                         log::debug!(
@@ -97,7 +98,7 @@ pub async fn write_datas<P: AsRef<Path>>(
     };
     let result = write().await;
 
-    if let Some(cloud_lock_file_path) = cloud_lock_file_path {
+    if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
         cloud_lock_file_path.remove().await?;
     }
 
@@ -114,7 +115,7 @@ async fn write_datas_to_local(
     db_dir: &Path,
     metrics: &Metrics,
     data_points: &[DataPoint],
-    cloud_setting: Option<&CloudStorageSetting>,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<WrittenBlockInfo> {
     let lock_file_path = lockfile_path(&db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
@@ -135,8 +136,13 @@ async fn write_datas_to_local(
 
     // write block list file first
     let block_list_file_path = {
-        let block_list =
-            super::read::read_block_list(db_dir, &metrics, &cache_setting, cloud_setting).await;
+        let block_list = super::read::read_block_list(
+            db_dir,
+            &metrics,
+            &cache_setting,
+            cloud_storage_and_setting,
+        )
+        .await;
 
         let mut block_list = match block_list {
             Ok(block_list) => block_list,

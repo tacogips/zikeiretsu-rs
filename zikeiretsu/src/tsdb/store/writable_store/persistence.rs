@@ -2,11 +2,11 @@ use super::{storage_api, DatapointSorter, WritableStore};
 use crate::tsdb::datapoint::*;
 use crate::tsdb::store::writable_store::Result;
 use crate::tsdb::timestamp_nano::TimestampNano;
-use chrono::{DateTime, Utc};
+use crate::tsdb::CloudStorage;
+use chrono::{DateTime, Duration, Utc};
 use log;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
 use tokio::{task, time};
 
@@ -15,11 +15,25 @@ pub struct PersistCondition {
     pub datapoint_search_condition: DatapointSearchCondition,
     pub remove_from_store_after_persisted: bool,
 }
+impl PersistCondition {
+    pub fn new(
+        datapoint_search_condition: DatapointSearchCondition,
+        remove_from_store_after_persisted: bool,
+    ) -> Self {
+        Self {
+            datapoint_search_condition,
+            remove_from_store_after_persisted,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub enum Persistence {
     OnMemory,
-    Storage(PathBuf, Option<storage_api::CloudStorageSetting>),
+    Storage(
+        PathBuf,
+        Option<(CloudStorage, storage_api::CloudStorageSetting)>,
+    ),
 }
 
 pub struct PeriodicallyPeristenceShutdown {
@@ -42,6 +56,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
 ) -> PeriodicallyPeristenceShutdown {
     let (persistence_tx, mut persistence_rx) = mpsc::channel::<DateTime<Utc>>(1);
     let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<chrono::DateTime<chrono::Utc>>(1);
+    let interval_duration = interval_duration.to_std().unwrap();
     task::spawn(async move {
         loop {
             let waiting_shutdown =
@@ -49,8 +64,10 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
             if !waiting_shutdown.is_err() {
                 log::info!("breaking the periodicaly persistence loop");
 
-                let datapoint_search_condition =
-                    DatapointSearchCondition::new(None, Some(TimestampNano::now()));
+                let datapoint_search_condition = DatapointSearchCondition::new(
+                    None,
+                    Some(TimestampNano::now() + Duration::nanoseconds(1)),
+                );
                 let condition = PersistCondition {
                     datapoint_search_condition,
                     remove_from_store_after_persisted,
@@ -67,8 +84,10 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 log::error!("periodicaly persistence failed:{e}");
             }
 
-            let datapoint_search_condition =
-                DatapointSearchCondition::new(None, Some(TimestampNano::now()));
+            let datapoint_search_condition = DatapointSearchCondition::new(
+                None,
+                Some(TimestampNano::now() + Duration::nanoseconds(1)),
+            );
             let condition = PersistCondition {
                 datapoint_search_condition,
                 remove_from_store_after_persisted,
@@ -83,7 +102,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
         }
     });
 
-    // TODO(tacogips) what's this doing?
+    // TODO(tacogips) need this??
     // persist
     let join_handle =
         task::spawn(async move { while let Some(_dt) = persistence_rx.recv().await {} });

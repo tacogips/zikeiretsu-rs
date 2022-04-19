@@ -1,3 +1,4 @@
+use crate::tsdb::cloudstorage::CloudStorage;
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::store::writable_store::DatapointDefaultSorter;
@@ -20,12 +21,13 @@ pub enum EngineError {
 
 pub type Result<T> = std::result::Result<T, EngineError>;
 
-pub struct SearchSettings {
-    cache_setting: api::CacheSetting,
-    cloud_setting: Option<api::CloudStorageSetting>,
+pub struct DBConfig {
+    pub cache_setting: api::CacheSetting,
+    pub cloud_storage: Option<CloudStorage>,
+    pub cloud_setting: api::CloudStorageSetting,
 }
 
-impl SearchSettings {
+impl DBConfig {
     pub fn builder_with_cache() -> SearchSettingsBuilder {
         Self::builder_with_cache_setting(true, true)
     }
@@ -44,14 +46,37 @@ impl SearchSettings {
         };
         SearchSettingsBuilder {
             cache_setting,
-            cloud_setting: None,
+            cloud_storage: None,
+            cloud_setting: CloudStorageSetting::default(),
+        }
+    }
+
+    pub fn cloud_storage_and_setting(&self) -> Option<(&CloudStorage, &CloudStorageSetting)> {
+        match &self.cloud_storage {
+            None => None,
+            Some(cloud_storage) => Some((&cloud_storage, &self.cloud_setting)),
+        }
+    }
+}
+
+impl Default for DBConfig {
+    fn default() -> Self {
+        Self {
+            cache_setting: api::CacheSetting {
+                read_cache: true,
+                write_cache: true,
+            },
+
+            cloud_storage: None,
+            cloud_setting: api::CloudStorageSetting::default(),
         }
     }
 }
 
 pub struct SearchSettingsBuilder {
     cache_setting: api::CacheSetting,
-    cloud_setting: Option<api::CloudStorageSetting>,
+    cloud_storage: Option<CloudStorage>,
+    cloud_setting: api::CloudStorageSetting,
 }
 
 impl SearchSettingsBuilder {
@@ -64,26 +89,27 @@ impl SearchSettingsBuilder {
         mut self,
         cloud_setting: api::CloudStorageSetting,
     ) -> SearchSettingsBuilder {
-        self.cloud_setting = Some(cloud_setting);
+        self.cloud_setting = cloud_setting;
         self
     }
 
-    pub fn build(self) -> SearchSettings {
-        SearchSettings {
+    pub fn build(self) -> DBConfig {
+        DBConfig {
             cache_setting: self.cache_setting,
+            cloud_storage: self.cloud_storage,
             cloud_setting: self.cloud_setting,
         }
     }
 }
 
-pub struct Zikeiretsu;
-
-impl Zikeiretsu {
+pub struct Engine;
+impl Engine {
     pub async fn list_metrics<P: AsRef<Path>>(
         db_dir: Option<P>,
-        setting: &SearchSettings,
+        config: &DBConfig,
     ) -> Result<Vec<Metrics>> {
-        let metrics = api::read::fetch_all_metrics(db_dir, setting.cloud_setting.as_ref()).await?;
+        let metrics =
+            api::read::fetch_all_metrics(db_dir, config.cloud_storage_and_setting()).await?;
 
         Ok(metrics)
     }
@@ -91,42 +117,48 @@ impl Zikeiretsu {
     pub async fn block_list_data<P: AsRef<Path>>(
         db_dir: P,
         metrics: &Metrics,
-        setting: &SearchSettings,
+        config: &DBConfig,
     ) -> Result<block_list::BlockList> {
         let block_list = api::read::read_block_list(
             db_dir.as_ref(),
             &metrics,
-            &setting.cache_setting,
-            setting.cloud_setting.as_ref(),
+            &config.cache_setting,
+            config.cloud_storage_and_setting(),
         )
         .await?;
 
         Ok(block_list)
     }
 
-    pub fn writable_store_builder<M: Into<Metrics>>(
-        metics: M,
+    pub fn writable_store_builder(
+        metics: Metrics,
         field_types: Vec<FieldType>,
     ) -> WritableStoreBuilder<DatapointDefaultSorter> {
         WritableStore::builder(metics, field_types)
     }
 
-    pub async fn readonly_store<P: AsRef<Path>, M: Into<Metrics>>(
+    pub async fn search<P: AsRef<Path>>(
         db_dir: P,
-        metrics: M,
+        metrics: &Metrics,
+        field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
-        setting: &SearchSettings,
-    ) -> Result<ReadonlyStore> {
-        let datapoints = api::read::search_datas(
+        db_config: &DBConfig,
+    ) -> Result<Option<ReadonlyStore>> {
+        let dataframe = api::read::search_dataframe(
             db_dir,
-            &metrics.into(),
+            &metrics,
+            field_selectors,
             condition,
-            &setting.cache_setting,
-            setting.cloud_setting.as_ref(),
+            &db_config.cache_setting,
+            db_config.cloud_storage_and_setting(),
         )
         .await?;
-
-        let store = ReadonlyStore::new(datapoints, false)?;
-        Ok(store)
+        match dataframe {
+            None => Ok(None),
+            Some(dataframe) => {
+                let store = ReadonlyStore::new(dataframe, false)?;
+                Ok(Some(store))
+            }
+        }
     }
 }

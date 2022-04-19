@@ -2,15 +2,17 @@ mod persistence;
 mod sorter;
 
 use super::*;
+
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
 };
 
+use crate::tsdb::util;
+use chrono::Duration;
 pub use persistence::*;
 pub use sorter::*;
 use std::marker::Send;
 pub use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
 
 pub struct WritableStoreBuilder<S: DatapointSorter + 'static> {
@@ -99,11 +101,11 @@ pub struct WritableStore<S: DatapointSorter + 'static> {
 }
 
 impl WritableStore<DatapointDefaultSorter> {
-    pub fn builder<M: Into<Metrics>>(
-        metrics: M,
+    pub fn builder(
+        metrics: Metrics,
         field_types: Vec<FieldType>,
     ) -> WritableStoreBuilder<DatapointDefaultSorter> {
-        WritableStoreBuilder::default(metrics.into(), field_types)
+        WritableStoreBuilder::default(metrics, field_types)
     }
 }
 
@@ -193,7 +195,7 @@ where
                         match binary_search_by(
                             &self.sorted_datapoints,
                             |datapoint| datapoint.timestamp_nano.cmp(&head.timestamp_nano),
-                            BinaryRangeSearchType::AtMost,
+                            BinaryRangeSearchType::AtMostInclusive,
                         ) {
                             Some(idx) => {
                                 self.sorted_datapoints.insert(idx, head);
@@ -227,7 +229,7 @@ where
             .search_with_indices(datapoint_search_condition)
             .await
         {
-            remove_range(datapoints, indices);
+            remove_range(datapoints, indices)?;
         }
 
         Ok(())
@@ -235,7 +237,7 @@ where
 
     /// persist on disk and to cloud
     pub async fn persist(&mut self, condition: PersistCondition) -> Result<Option<()>> {
-        if let Persistence::Storage(db_dir, cloud_setting) = self.persistence.clone() {
+        if let Persistence::Storage(db_dir, cloud_storage_and_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
             let all_datapoints = self.datapoints().await?;
             let datapoints_searcher = DatapointSearcher::new(&all_datapoints);
@@ -248,7 +250,9 @@ where
                     db_dir,
                     &metrics,
                     &datapoints,
-                    cloud_setting.as_ref(),
+                    cloud_storage_and_setting
+                        .as_ref()
+                        .map(|(cloud_strorage, cloud_setting)| (cloud_strorage, cloud_setting)),
                 )
                 .await?;
 
@@ -257,7 +261,7 @@ where
                         "clear writable store after persistence. indices:{indices:?}, datapoint len: {data_len}",
                         data_len = datapoints.len(),
                     );
-                    remove_range(all_datapoints, indices);
+                    remove_range(all_datapoints, indices)?;
                     self.shrink_to_fit_vec();
 
                     log::debug!(
@@ -307,44 +311,15 @@ where
     }
 }
 
-pub fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) {
-    datapoints.drain(range.0..range.1 + 1);
-    // same code as below causes memory leak somehow..
-    //let orig_len = datapoints.len();
-    //let (start, end) = range;
-    //assert!(
-    //    start <= end,
-    //    "invalid purge index start:{} > end:{}",
-    //    start,
-    //    end
-    //);
-
-    //assert!(
-    //    end < orig_len,
-    //    "invalid purge end index  end:{}, len:{}",
-    //    end,
-    //    orig_len
-    //);
-
-    //let purge_len = end - start + 1;
-
-    //let remaining_len = orig_len - purge_len;
-    //let shift_elem_len = orig_len - end - 1;
-    //unsafe {
-    //    let purge_start_ptr = datapoints.as_mut_ptr().add(start);
-    //    ptr::copy(
-    //        purge_start_ptr.offset(purge_len as isize),
-    //        purge_start_ptr,
-    //        shift_elem_len,
-    //    );
-
-    //    datapoints.set_len(remaining_len);
-    //}
+fn remove_range(datapoints: &mut Vec<DataPoint>, range: (usize, usize)) -> Result<()> {
+    util::remove_range(datapoints, range)?;
+    Ok(())
 }
 
 #[cfg(test)]
 mod test {
 
+    use super::*;
     use crate::tsdb::*;
     macro_rules! float_data_points {
         ($({$timestamp:expr,$values:expr}),*) => {
@@ -370,7 +345,7 @@ mod test {
             {1629745451_715066000, vec![600f64,36f64]}
         );
 
-        remove_range(&mut datapoints, (1, 3));
+        remove_range(&mut datapoints, (1, 3)).unwrap();
 
         let expected = float_data_points!(
             {1629745451_715062000, vec![200f64,12f64]},

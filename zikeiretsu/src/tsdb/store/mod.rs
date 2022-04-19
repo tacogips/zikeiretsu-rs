@@ -1,6 +1,7 @@
 pub mod read_only_store;
 pub mod writable_store;
 
+use crate::tsdb::util;
 use crate::tsdb::{search::*, storage::api as storage_api};
 use chrono::{DateTime, Utc};
 pub use read_only_store::*;
@@ -17,6 +18,9 @@ pub enum StoreError {
 
     #[error("unsorted datapoints. {0}")]
     UnsortedDatapoints(String),
+
+    #[error("unsorted dataframe. {0}")]
+    UnsortedDataFrame(String),
 
     #[error("data field types mismatched. expected fields {0}, acutual:{1}")]
     DataFieldTypesMismatched(String, String),
@@ -35,6 +39,12 @@ pub enum StoreError {
 
     #[error("datetime channel Sender Error. {0}")]
     JoinError(#[from] task::JoinError),
+
+    #[error("invalid metrics error. {0}")]
+    InvalidMetrics(String),
+
+    #[error("Vec ope Error. {0}")]
+    VecOpeError(#[from] util::VecOpeError),
 }
 
 type Result<T> = std::result::Result<T, StoreError>;
@@ -68,7 +78,7 @@ mod test {
             {1629745451_715063000, vec![200f64,36f64]}
         );
         let store = WritableStoreBuilder::default(
-            Metrics::new("default"),
+            Metrics::new("default").unwrap(),
             vec![FieldType::Float64, FieldType::Float64],
         )
         .build();
@@ -104,7 +114,7 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
         let store = WritableStoreBuilder::default(
-            Metrics::new("default"),
+            Metrics::new("default").unwrap(),
             vec![FieldType::Float64, FieldType::Float64],
         )
         .build();
@@ -137,7 +147,7 @@ mod test {
         }
 
         let condition = DatapointSearchCondition::since(TimestampNano::new(1629745451_715063000))
-            .with_until(TimestampNano::new(1629745451_715065000));
+            .with_until(TimestampNano::new(1629745451_715065001));
 
         {
             let mut s = store.lock().await;
@@ -160,127 +170,11 @@ mod test {
     }
 
     #[tokio::test]
-    async fn remove_range_1() {
-        let mut datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715064000, vec![200f64,36f64]},
-            {1629745451_715065000, vec![300f64,36f64]},
-            {1629745451_715066000, vec![300f64,36f64]}
-        );
-
-        remove_range(&mut datapoints, (2, 3));
-
-        let expected_datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715066000, vec![300f64,36f64]}
-        );
-
-        assert_eq!(*datapoints, expected_datapoints);
-    }
-
-    #[tokio::test]
-    async fn remove_range_2() {
-        let mut datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715064000, vec![200f64,36f64]},
-            {1629745451_715065000, vec![300f64,36f64]},
-            {1629745451_715066000, vec![300f64,36f64]}
-        );
-
-        remove_range(&mut datapoints, (0, 4));
-
-        let expected_datapoints = float_data_points!();
-
-        assert_eq!(*datapoints, expected_datapoints);
-    }
-
-    #[tokio::test]
-    async fn remove_range_3() {
-        let mut datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715064000, vec![200f64,36f64]},
-            {1629745451_715065000, vec![300f64,36f64]},
-            {1629745451_715066000, vec![300f64,36f64]}
-        );
-
-        remove_range(&mut datapoints, (4, 4));
-
-        let expected_datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715064000, vec![200f64,36f64]},
-            {1629745451_715065000, vec![300f64,36f64]}
-        );
-
-        assert_eq!(*datapoints, expected_datapoints);
-    }
-
-    #[tokio::test]
-    async fn remove_range_4() {
-        let mut datapoints = float_data_points!(
-            {1629745451_715062000, vec![100f64,12f64]}
-        );
-
-        remove_range(&mut datapoints, (0, 0));
-
-        let expected_datapoints = float_data_points!();
-
-        assert_eq!(*datapoints, expected_datapoints);
-    }
-
-    #[tokio::test]
-    async fn remove_range_5() {
-        let mut datapoints = float_data_points!(
-            {1629745451_715061000, vec![100f64,12f64]},
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715064000, vec![200f64,36f64]},
-            {1629745451_715065000, vec![300f64,36f64]},
-            {1629745451_715066000, vec![300f64,36f64]},
-            {1629745451_715067000, vec![300f64,36f64]}
-        );
-
-        remove_range(&mut datapoints, (2, 4));
-
-        let expected_datapoints = float_data_points!(
-            {1629745451_715061000, vec![100f64,12f64]},
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715066000, vec![300f64,36f64]},
-            {1629745451_715067000, vec![300f64,36f64]}
-        );
-
-        assert_eq!(*datapoints, expected_datapoints);
-    }
-
-    #[tokio::test]
-    async fn remove_range_6() {
-        let mut datapoints = float_data_points!(
-            {1629745451_715061000, vec![100f64,12f64]},
-            {1629745451_715062000, vec![100f64,12f64]},
-            {1629745451_715063000, vec![200f64,36f64]},
-            {1629745451_715064000, vec![200f64,36f64]},
-            {1629745451_715065000, vec![300f64,36f64]},
-            {1629745451_715066000, vec![300f64,36f64]},
-            {1629745451_715067000, vec![300f64,36f64]}
-        );
-
-        remove_range(&mut datapoints, (0, 6));
-
-        let expected_datapoints = float_data_points!();
-
-        assert_eq!(*datapoints, expected_datapoints);
-    }
-
-    #[tokio::test]
     async fn persistence_test_1() {
         let temp_db_dir = TempDir::new("persistence_test_1").unwrap();
 
         let field_types = vec![FieldType::Float64, FieldType::Float64];
-        let metrics: Metrics = "test_metrics".into();
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
         let store = WritableStore::builder(metrics.clone(), field_types)
@@ -349,7 +243,7 @@ mod test {
             let condition = PersistCondition {
                 datapoint_search_condition: DatapointSearchCondition::new(
                     Some(TimestampNano::new(1629745451_715061000)),
-                    Some(TimestampNano::new(1629745451_715066000)),
+                    Some(TimestampNano::new(1629745451_715066001)),
                 ),
                 remove_from_store_after_persisted: true,
             };
@@ -377,14 +271,15 @@ mod test {
         {
             let condition = DatapointSearchCondition::new(
                 Some(TimestampNano::new(1629745451_715062000)),
-                Some(TimestampNano::new(1629745451_715066000)),
+                Some(TimestampNano::new(1629745451_715066001)),
             );
 
             let cache_setting = api::CacheSetting::none();
 
-            let datapoints = api::read::search_datas(
+            let datapoints = api::read::search_dataframe(
                 temp_db_dir.path(),
                 &metrics,
+                None,
                 &condition,
                 &cache_setting,
                 None,
@@ -392,16 +287,15 @@ mod test {
             .await;
 
             assert!(datapoints.is_ok());
-            let datapoints = datapoints.unwrap();
+            let dataframe = datapoints.unwrap().unwrap();
 
-            let store = ReadonlyStore::new(datapoints, false).unwrap();
-            let searcher = store.searcher();
+            let store = ReadonlyStore::new(dataframe, false).unwrap();
 
             {
-                let result = searcher.search(&condition).await;
+                let result = store.as_dataframe().search(&condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap(),
+                    result.unwrap().into_datapoints().unwrap(),
                     float_data_points!(
                         {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},
@@ -415,12 +309,12 @@ mod test {
             {
                 let another_condition = DatapointSearchCondition::new(
                     Some(TimestampNano::new(1629745451_715063000)),
-                    Some(TimestampNano::new(1629745451_715065000)),
+                    Some(TimestampNano::new(1629745451_715065001)),
                 );
-                let result = searcher.search(&another_condition).await;
+                let result = store.as_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap(),
+                    result.unwrap().into_datapoints().unwrap(),
                     float_data_points!(
                         {1629745451_715063000, vec![200f64,36f64]},
                         {1629745451_715064000, vec![200f64,37f64]},
@@ -436,7 +330,7 @@ mod test {
         let temp_db_dir = TempDir::new("persistence_test_2").unwrap();
 
         let field_types = vec![FieldType::Float64, FieldType::Float64];
-        let metrics: Metrics = "test_metrics".into();
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
         let store = WritableStore::builder(metrics.clone(), field_types)
@@ -507,9 +401,10 @@ mod test {
 
             let cache_setting = api::CacheSetting::none();
 
-            let datapoints = api::read::search_datas(
+            let datapoints = api::read::search_dataframe(
                 temp_db_dir.path(),
                 &metrics,
+                None,
                 &condition,
                 &cache_setting,
                 None,
@@ -517,10 +412,9 @@ mod test {
             .await;
 
             assert!(datapoints.is_ok());
-            let datapoints = datapoints.unwrap();
+            let dataframe = datapoints.unwrap().unwrap();
 
-            let store = ReadonlyStore::new(datapoints, false).unwrap();
-            let searcher = store.searcher();
+            let store = ReadonlyStore::new(dataframe, false).unwrap();
 
             {
                 let expected = float_data_points!(
@@ -533,12 +427,18 @@ mod test {
                     {1639745451_715062000, vec![1200f64,37f64]}
                 );
 
-                let result = searcher.search(&condition).await;
+                let result = store.as_dataframe().search(&condition).await;
                 assert!(result.is_some());
 
-                assert_eq!(result.unwrap().len(), expected.len());
-                for (i, each) in result.unwrap().into_iter().enumerate() {
-                    assert_eq!(each, expected.get(i).unwrap());
+                assert_eq!(result.clone().unwrap().len(), expected.len());
+                for (i, each) in result
+                    .unwrap()
+                    .into_datapoints()
+                    .unwrap()
+                    .into_iter()
+                    .enumerate()
+                {
+                    assert_eq!(&each, expected.get(i).unwrap());
                 }
             }
 
@@ -547,10 +447,10 @@ mod test {
                     None,
                     Some(TimestampNano::new(1639745451_715061001)),
                 );
-                let result = searcher.search(&another_condition).await;
+                let result = store.as_dataframe().search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
-                    result.unwrap(),
+                    result.unwrap().into_datapoints().unwrap(),
                     float_data_points!(
                         {1629745451_715062000, vec![100f64,12f64]},
                         {1629745451_715063000, vec![200f64,36f64]},

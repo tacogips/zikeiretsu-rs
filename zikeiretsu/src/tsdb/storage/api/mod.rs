@@ -6,15 +6,27 @@ use crate::tsdb::cloudstorage::*;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::{block, block_list, persisted_error};
 use crate::tsdb::timestamp_nano::TimestampNano;
+use crate::tsdb::DataframeError;
 pub use cloud_setting::*;
 
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, StorageApiError>;
+
+#[derive(Debug)]
 pub struct CacheSetting {
     pub read_cache: bool,
     pub write_cache: bool,
+}
+
+impl Default for CacheSetting {
+    fn default() -> Self {
+        Self {
+            read_cache: true,
+            write_cache: true,
+        }
+    }
 }
 
 impl CacheSetting {
@@ -90,6 +102,12 @@ pub enum StorageApiError {
 
     #[error("Local DB path required. {0}")]
     DbDirPathRequired(String),
+
+    #[error("invalid metrics name. {0}")]
+    InvalidMetricsName(String),
+
+    #[error("data frame error. {0}")]
+    DataframeError(#[from] DataframeError),
 }
 
 pub(crate) fn lockfile_path(db_dir: &Path, metrics: &Metrics) -> PathBuf {
@@ -120,14 +138,14 @@ pub(crate) fn block_timestamp_to_block_file_path(
 
     let block_path_dir = root_dir.to_path_buf().join(format!(
         "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/",
-        since_sec = block_timestamp.since_sec,
-        until_sec = block_timestamp.until_sec,
+        since_sec = block_timestamp.since_sec.0,
+        until_sec = block_timestamp.until_sec.0,
     ));
 
     let block_path = root_dir.to_path_buf().join(format!(
         "block/{metrics}/{timestamp_head}/{since_sec}_{until_sec}/block",
-        since_sec = block_timestamp.since_sec,
-        until_sec = block_timestamp.until_sec,
+        since_sec = block_timestamp.since_sec.0,
+        until_sec = block_timestamp.until_sec.0,
     ));
     (block_path_dir, block_path)
 }
@@ -146,7 +164,7 @@ mod test {
             BlockTimestamp::new(TimestampSec::new(162688734), TimestampSec::new(162688735));
         let (path_dir, path_buf) = block_timestamp_to_block_file_path(
             &PathBuf::from("root_dir"),
-            &Metrics::new("some_metrics"),
+            &Metrics::new("some_metrics").unwrap(),
             &block_timestamp,
         );
 

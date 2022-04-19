@@ -1,49 +1,29 @@
+use super::Result as StoreResult;
 use super::*;
 
-use crate::tsdb::{datapoint::*, datapoints_searcher::*};
-
-pub struct RefReadonlyStore<'datapoint> {
-    datapoints: &'datapoint [DataPoint],
-}
-
-impl<'datapoint> RefReadonlyStore<'datapoint> {
-    pub fn new(datapoints: &'datapoint [DataPoint], validate: bool) -> Result<Self> {
-        if validate {
-            if let Err(e) = DataPoint::check_datapoints_is_sorted(&datapoints) {
-                return Err(StoreError::UnsortedDatapoints(e));
-            }
-        }
-        Ok(Self { datapoints })
-    }
-
-    pub async fn datapoints_searcher<'a>(&'a self) -> DatapointSearcher<'a> {
-        DatapointSearcher::new(&self.datapoints)
-    }
-}
+use crate::tsdb::time_series_dataframe::*;
 
 pub struct ReadonlyStore {
-    datapoints: Vec<DataPoint>,
+    time_series_dataframe: TimeSeriesDataFrame,
 }
 
 impl ReadonlyStore {
-    pub fn new(datapoints: Vec<DataPoint>, validate: bool) -> Result<Self> {
+    pub fn new(dataframe: TimeSeriesDataFrame, validate: bool) -> StoreResult<Self> {
         if validate {
-            if let Err(e) = DataPoint::check_datapoints_is_sorted(&datapoints) {
-                return Err(StoreError::UnsortedDatapoints(e));
+            if let Err(e) = TimeSeriesDataFrame::check_dataframe_is_sorted(&dataframe) {
+                return Err(StoreError::UnsortedDataFrame(e.to_string()));
             }
         }
-        Ok(Self { datapoints })
+        Ok(Self {
+            time_series_dataframe: dataframe,
+        })
     }
 
     pub fn len(&self) -> usize {
-        self.datapoints.len()
+        self.time_series_dataframe.len()
     }
 
-    pub fn all_datapoints(&self) -> &[DataPoint] {
-        &self.datapoints
-    }
-
-    pub fn searcher<'a>(&'a self) -> DatapointSearcher<'a> {
-        DatapointSearcher::new(&self.datapoints)
+    pub fn as_dataframe(&self) -> &TimeSeriesDataFrame {
+        &self.time_series_dataframe
     }
 }

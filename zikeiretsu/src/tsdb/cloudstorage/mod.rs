@@ -33,6 +33,9 @@ pub enum CloudStorageError {
 
     #[error("invalid block list file url. {0}")]
     InvalidBlockListFileUrl(String),
+
+    #[error("invalid metrics name. {0}")]
+    InvalidMetricsName(String),
 }
 
 #[derive(Debug, Clone)]

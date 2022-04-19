@@ -97,7 +97,9 @@ pub fn extract_metrics_from_url(dest_url: &str) -> Result<Metrics> {
     let captured = BLOCK_LIST_FILE_PATTERN.captures(dest_url);
     if let Some(captured) = captured {
         if let Some(matched) = captured.get(1) {
-            return Ok(Metrics::new(matched.as_str()));
+            let metrics = Metrics::new(matched.as_str())
+                .map_err(|e| CloudStorageError::InvalidMetricsName(e))?;
+            return Ok(metrics);
         }
     }
 
@@ -165,6 +167,6 @@ mod test {
         assert!(result.is_ok());
         let result = result.unwrap();
 
-        assert_eq!(Metrics::new("some_metrics"), result);
+        assert_eq!(Metrics::new("some_metrics").unwrap(), result);
     }
 }

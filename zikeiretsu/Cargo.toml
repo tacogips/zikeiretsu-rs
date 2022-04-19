@@ -1,8 +1,8 @@
 [package]
 name = "zikeiretsu"
-version = "0.1.7"
+version = "0.0.1"
 edition = "2021"
-rust = "1.58.1"
+rust-version = "1.58.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,10 +19,12 @@ path = "src/bin/main.rs"
 bits-ope = { path = "../bits-ope" }
 xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
-base-128-variants = {path ="../base-128-variants" }
+base-128-variants = { path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.9" }
+polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" ,features=["dtype-full", "serde", "fmt","parquet"]}
 
 chrono = "0.4"
+chrono-tz = "0.4"
 lazy_static = "1"
 strum = { version = "0.21", features = ["derive"] }
 thiserror = "1"
@@ -37,12 +39,26 @@ futures = "0.3"
 serde = "1"
 serde_json = "1"
 owning_ref = "0.4"
-argh = "0.1"
 regex = "1"
 dotenv = "0.15"
 walkdir = "2.3"
+dirs = "4.0"
+rustyline = "9.1"
+rustyline-derive = "0.6"
+toml = "0.5"
+
+pest = "2.1"
+pest_derive = "2.1"
+once_cell = "1.9"
+either = "1.6"
+clap = {version = "3.1" , features= ["derive","env"]}
+
+tracing = "0.1"
+tracing-subscriber = {version = "0.2", features = ["env-filter"]}
+tracing-log = "0.1"
 
 [dev-dependencies]
 tempfile = "3.2"
 tempdir = "0.3"
 tokio-test = "0.4"
+

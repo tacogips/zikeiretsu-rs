@@ -419,9 +419,71 @@ from trades
  "#;
 
         let parsed_query = parse_query(query);
-        //TODO(tacogips) for debugging
-        println!("==== {:?}", parsed_query);
 
         assert!(parsed_query.is_ok());
     }
+
+    #[test]
+    fn parse_query_6() {
+        let query = r#"with
+	cols = [_, volume, price],
+	tz = JST
+
+select ts, volume, price
+from trades
+where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
+ "#;
+
+        let parsed_query = parse_query(query);
+
+        assert!(parsed_query.is_ok());
+    }
+
+    #[test]
+    fn parse_query_7() {
+        let query = r#"with
+  	    cols = [_, volume, price],
+  	    tz = JST
+     select ts, volume, price
+     from trades
+     where ts in (yesterday() + 9:00, today() + 2 hours )
+ "#;
+
+        let parsed_query = parse_query(query);
+
+        assert!(parsed_query.is_ok());
+    }
+
+    // ### 1. show datapoints in today
+    // ```
+    // with
+    // 	cols = [is_buy, volume, price],
+    // 	tz = +9
+    //
+    // select ts, is_buy, volume, price
+    // from trades
+    // where ts in today()
+    // ```
+    //
+    // ### 2. show datapoints in specific range
+    // ```
+    // with
+    // 	cols = [_, volume, price],
+    // 	tz = JST
+    //
+    // select ts, volume, price
+    // from trades
+    // where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
+    //
+    // ### 3. datetime filter as functionn
+    // ```
+    // with
+    // 	cols = [_, volume, price],
+    // 	tz = JST
+    //
+    // select ts, volume, price
+    // from trades
+    // where ts in (yesterday() + 9:00, today() + 2 hours )
+    //
+    // ```
 }

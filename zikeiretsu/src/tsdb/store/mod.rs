@@ -40,6 +40,9 @@ pub enum StoreError {
     #[error("datetime channel Sender Error. {0}")]
     JoinError(#[from] task::JoinError),
 
+    #[error("invalid metrics error. {0}")]
+    InvalidMetrics(String),
+
     #[error("Vec ope Error. {0}")]
     VecOpeError(#[from] util::VecOpeError),
 }

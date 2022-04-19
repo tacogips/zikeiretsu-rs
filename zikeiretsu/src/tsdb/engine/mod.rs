@@ -130,11 +130,15 @@ impl Engine {
         Ok(block_list)
     }
 
-    pub fn writable_store_builder<M: Into<Metrics>>(
+    pub fn writable_store_builder<M>(
         metics: M,
         field_types: Vec<FieldType>,
-    ) -> WritableStoreBuilder<DatapointDefaultSorter> {
-        WritableStore::builder(metics, field_types)
+    ) -> Result<WritableStoreBuilder<DatapointDefaultSorter>>
+    where
+        M: TryInto<Metrics, Error = String>,
+    {
+        let store = WritableStore::builder(metics, field_types)?;
+        Ok(store)
     }
 
     pub async fn search<P: AsRef<Path>, M, ME>(

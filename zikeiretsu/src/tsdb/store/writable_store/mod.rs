@@ -101,11 +101,19 @@ pub struct WritableStore<S: DatapointSorter + 'static> {
 }
 
 impl WritableStore<DatapointDefaultSorter> {
-    pub fn builder<M: Into<Metrics>>(
+    pub fn builder<M>(
         metrics: M,
         field_types: Vec<FieldType>,
-    ) -> WritableStoreBuilder<DatapointDefaultSorter> {
-        WritableStoreBuilder::default(metrics.into(), field_types)
+    ) -> Result<WritableStoreBuilder<DatapointDefaultSorter>>
+    where
+        M: TryInto<Metrics, Error = String>,
+    {
+        Ok(WritableStoreBuilder::default(
+            metrics
+                .try_into()
+                .map_err(|err| StoreError::InvalidMetrics(err))?,
+            field_types,
+        ))
     }
 }
 

@@ -14,15 +14,21 @@ struct Trade {
 }
 
 impl Trade {
-    fn to_rec(self) -> TradeRec {
+    fn into_datapoint(self) -> DataPoint {
         let ts = DateTime::parse_from_rfc3339(&self.exec_date).unwrap();
-
-        TradeRec {
-            ts: ts.into(),
-            is_buy: self.side == "BUY",
-            price: self.price,
-            size: self.size,
+        DataPoint {
+            timestamp_nano: ts.into(),
+            field_values: self.field_values(),
         }
+    }
+
+    fn field_values(&self) -> Vec<FieldValue> {
+        let v = vec![
+            FieldValue::Bool(self.side == "BUY"),
+            FieldValue::Float64(self.price),
+            FieldValue::Float64(self.size),
+        ];
+        v
     }
 }
 
@@ -34,37 +40,18 @@ struct TradeRec {
     size: f64,
 }
 
-impl TradeRec {
-    fn into_datapoint(self) -> DataPoint {
-        DataPoint {
-            timestamp_nano: self.ts,
-            field_values: self.field_values(),
-        }
-    }
-
-    fn field_values(&self) -> Vec<FieldValue> {
-        let v = vec![
-            FieldValue::Bool(self.is_buy),
-            FieldValue::Float64(self.price),
-            FieldValue::Float64(self.size),
-        ];
-        v
-    }
-}
+impl Trade {}
 
 #[tokio::main]
 async fn main() {
     let prices: Vec<Trade> = serde_json::from_slice(PRICES_DATA).unwrap();
-    let prices: Vec<DataPoint> = prices
-        .into_iter()
-        .map(|e| e.to_rec().into_datapoint())
-        .collect();
+    let prices: Vec<DataPoint> = prices.into_iter().map(|e| e.into_datapoint()).collect();
 
     let fields = vec![FieldType::Bool, FieldType::Float64, FieldType::Float64];
     let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
     let persistence = Persistence::Storage(temp_db_dir.path().to_path_buf(), None);
 
-    let wr = Zikeiretsu::writable_store_builder("price", fields.clone())
+    let wr = Engine::writable_store_builder("price", fields.clone())
         .persistence(persistence)
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {
             if lhs.timestamp_nano == rhs.timestamp_nano {

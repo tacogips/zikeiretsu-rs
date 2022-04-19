@@ -24,7 +24,7 @@ pub(crate) fn interpret_field_selector<'q>(
                 match column_index_map {
                     None => {
                         return Err(LexerError::NoColumnDef(format!(
-                            "columns :{}",
+                            "columns : {}",
                             select
                                 .select_columns
                                 .iter()

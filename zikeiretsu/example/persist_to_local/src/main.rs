@@ -84,11 +84,11 @@ async fn main() {
     tracing_log::LogTracer::init().unwrap();
 
     let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
+
     write_datas(&temp_db_dir).await;
 
     let db_context = DBContext::new(Some(temp_db_dir.into_path()), None);
 
-    //where ts in ('2021-09-27 09:43', +10 minutes)
     let query = r#"
     with
         cols = [is_buy,price,size],
@@ -97,7 +97,7 @@ async fn main() {
     select *
 
     from trades
-    where ts  = '2021-09-27 09:42'
+    where ts  in ('2021-09-27 09:42',+3 minute)
         "#;
     execute_query(&db_context, query).await.unwrap();
 }

@@ -146,4 +146,33 @@ mod test {
             filter_cond
         );
     }
+
+    #[test]
+    fn lexer_datetime_in_1() {
+        let filter = DatetimeFilter::In(
+            ColumnName("ts"),
+            DatetimeFilterValue::Function(BuildinDatetimeFunction::Yesterday, None),
+            DatetimeFilterValue::Function(BuildinDatetimeFunction::Yesterday, None),
+        );
+
+        let filter_cond = datetime_filter_to_condition(&jst(), &filter);
+
+        assert!(filter_cond.is_ok())
+    }
+
+    #[test]
+    fn lexer_datetime_in_2() {
+        let filter = DatetimeFilter::In(
+            ColumnName("ts"),
+            DatetimeFilterValue::Function(
+                BuildinDatetimeFunction::Yesterday,
+                Some(DatetimeDelta::FixedOffset(FixedOffset::east(-9 * 60 * 60))),
+            ),
+            DatetimeFilterValue::Function(BuildinDatetimeFunction::Yesterday, None),
+        );
+
+        let filter_cond = datetime_filter_to_condition(&jst(), &filter);
+
+        assert!(filter_cond.is_ok())
+    }
 }

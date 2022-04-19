@@ -112,8 +112,9 @@ impl TimestampDeltas {
         let mut prev_timestamp = self.head_timestamp;
 
         for data_idx in 0..self.timestamps_deltas_second.len() {
-            let current_timestamp = ((*prev_timestamp / SEC_IN_NANOSEC) * SEC_IN_NANOSEC)
-                + (self.timestamps_deltas_second.get(data_idx).unwrap() * SEC_IN_NANOSEC)
+            let current_timestamp = ((*prev_timestamp / SEC_IN_NANOSEC as u64)
+                * SEC_IN_NANOSEC as u64)
+                + (self.timestamps_deltas_second.get(data_idx).unwrap() * SEC_IN_NANOSEC as u64)
                 + (self.timestamps_nanoseconds.get(data_idx).unwrap()
                     << self.common_trailing_zero_bits);
             let current_timestamp = TimestampNano(current_timestamp);
@@ -139,7 +140,7 @@ impl From<&[DataPoint]> for TimestampDeltas {
             let delta_sec =
                 &curr.timestamp_nano.as_timestamp_sec() - &prev.timestamp_nano.as_timestamp_sec();
 
-            let nanosec: u64 = *curr.timestamp_nano % SEC_IN_NANOSEC;
+            let nanosec: u64 = *curr.timestamp_nano % SEC_IN_NANOSEC as u64;
 
             timestamps_deltas_second.push(delta_sec);
             timestamps_nanoseconds.push(nanosec);

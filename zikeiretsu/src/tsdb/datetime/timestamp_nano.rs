@@ -7,7 +7,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, Deref, Sub};
 
-pub const SEC_IN_NANOSEC: u64 = 1_000_000_000;
+pub const SEC_IN_NANOSEC: i64 = 1_000_000_000;
 
 #[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize, PartialOrd)]
 pub struct TimestampNano(pub u64);
@@ -21,7 +21,7 @@ impl TimestampNano {
 
         debug_assert!(timestamp >= 0);
         let timestamp =
-            (timestamp as u64 * SEC_IN_NANOSEC) + Utc::now().timestamp_subsec_nanos() as u64;
+            ((timestamp * SEC_IN_NANOSEC) + Utc::now().timestamp_subsec_nanos() as i64) as u64;
 
         Self::new(timestamp)
     }
@@ -31,11 +31,11 @@ impl TimestampNano {
     }
 
     pub fn in_seconds(&self) -> u64 {
-        self.0 / SEC_IN_NANOSEC
+        self.0 / SEC_IN_NANOSEC as u64
     }
 
     pub fn in_subsec_nano(&self) -> u32 {
-        (self.0 % SEC_IN_NANOSEC) as u32
+        (self.0 % SEC_IN_NANOSEC as u64) as u32
     }
 
     pub fn as_timestamp_sec(&self) -> TimestampSec {
@@ -75,13 +75,13 @@ impl Add<Duration> for TimestampNano {
     type Output = Self;
 
     fn add(self, other: Duration) -> Self {
-        Self::new(self.0 + other.num_nanoseconds().unwrap_or(0) as u64)
+        Self::new((self.0 as i64 + other.num_nanoseconds().unwrap_or(0)) as u64)
     }
 }
 
 impl<Tz: TimeZone> From<DateTime<Tz>> for TimestampNano {
     fn from(dt: DateTime<Tz>) -> Self {
-        let v = dt.timestamp() as u64 * SEC_IN_NANOSEC + dt.timestamp_subsec_nanos() as u64;
+        let v = (dt.timestamp() * SEC_IN_NANOSEC + dt.timestamp_subsec_nanos() as i64) as u64;
         TimestampNano(v)
     }
 }
@@ -96,7 +96,7 @@ impl<Tz: TimeZone> From<Date<Tz>> for TimestampNano {
 impl TryFrom<&str> for TimestampNano {
     type Error = chrono::ParseError;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let num_val = s.parse::<u64>();
+        let num_val = s.parse::<i64>();
 
         let dt = match num_val {
             Ok(num_val) => {
@@ -105,7 +105,7 @@ impl TryFrom<&str> for TimestampNano {
                     let ndt = NaiveDateTime::from_timestamp(num_val as i64, 0);
                     DateTime::from_utc(ndt, Utc)
                 } else {
-                    let sec = (num_val / SEC_IN_NANOSEC) as i64;
+                    let sec = num_val / SEC_IN_NANOSEC;
                     let nano_sec_sub = (num_val % SEC_IN_NANOSEC) as u32;
 
                     let ndt = NaiveDateTime::from_timestamp(sec, nano_sec_sub);
@@ -171,5 +171,20 @@ mod test {
         let tz = FixedOffset::east(9 * 3600);
         let cdt = tsn.as_datetime_with_tz(&tz);
         assert_eq!(cdt, dt);
+    }
+
+    #[test]
+    fn calc_timestamp_duration_1() {
+        let tsn = TimestampNano::new(1_000_000_000);
+
+        assert_eq!(
+            TimestampNano::new(1_900_000_000),
+            tsn + Duration::milliseconds(900)
+        );
+
+        assert_eq!(
+            TimestampNano::new(900_000_000),
+            tsn + Duration::milliseconds(-100)
+        );
     }
 }

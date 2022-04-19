@@ -79,12 +79,12 @@ impl DurationUnit {
         match self {
             Self::MicroSecond => v,
             Self::Millisecond => v * 1000,
-            Self::Second => v * 1000_000,
-            Self::Minutes => v * 1000_000 * 60,
-            Self::Hour => v * 1000_000 * 60 * 60,
-            Self::Day => v * 1000_000 * 60 * 24,
-            Self::Month => v * 1000_000 * 60 * 24 * 30,
-            Self::Year => v * 1000_000 * 60 * 24 * 365,
+            Self::Second => v * 1_000_000,
+            Self::Minutes => v * 1_000_000 * 60,
+            Self::Hour => v * 1_000_000 * 60 * 60,
+            Self::Day => v * 1_000_000 * 60 * 24,
+            Self::Month => v * 1_000_000 * 60 * 24 * 30,
+            Self::Year => v * 1_000_000 * 60 * 24 * 365,
         }
     }
 }

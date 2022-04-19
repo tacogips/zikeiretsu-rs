@@ -67,7 +67,7 @@ impl DatetimeDelta {
     pub fn as_micro_second(&self) -> i64 {
         match self {
             DatetimeDelta::FixedOffset(fixed_offset) => {
-                fixed_offset.local_minus_utc() as i64 * 1000_000i64
+                fixed_offset.local_minus_utc() as i64 * 1_000_000i64
             }
             DatetimeDelta::MicroSec(delta) => *delta,
             DatetimeDelta::Composit(delta_1, delta_2) => {

@@ -36,7 +36,6 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
                             metrics_filter = Some(parse_metrics_filter(each_filter)?);
                         }
 
-                        //TODO(tacogips) add metrics name filter tin the case of  metrics list
                         _ => {}
                     }
                 }
@@ -208,7 +207,7 @@ mod test {
         );
         let expected_to = DatetimeFilterValue::DateString(
             expected_datetime,
-            Some(DatetimeDelta::MicroSec(2 * 60 * 60 * 1000_000)),
+            Some(DatetimeDelta::MicroSec(2 * 60 * 60 * 1_000_000)),
         );
 
         assert_eq!(

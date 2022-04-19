@@ -98,7 +98,10 @@ impl DatapointSearchCondition {
     }
 
     pub fn as_ref(&self) -> (Option<&TimestampNano>, Option<&TimestampNano>) {
-        (self.inner_since_inclusive.as_ref(), self.inner_until_exclusive.as_ref())
+        (
+            self.inner_since_inclusive.as_ref(),
+            self.inner_until_exclusive.as_ref(),
+        )
     }
 
     pub fn as_secs(&self) -> (Option<TimestampSec>, Option<TimestampSec>) {

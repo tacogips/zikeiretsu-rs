@@ -44,7 +44,7 @@ impl TimeSeriesDataFrame {
         match binary_search_by(
             &self.timestamp_nanos,
             compare_timestamps,
-            BinaryRangeSearchType::AtLeastEq,
+            BinaryRangeSearchType::AtLeastInclusive,
         ) {
             Some(target_index) => {
                 self.timestamp_nanos

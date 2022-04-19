@@ -230,7 +230,7 @@ impl BlockList {
                 let lower_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&since),
-                    BinaryRangeSearchType::AtLeastEq,
+                    BinaryRangeSearchType::AtLeastInclusive,
                 );
 
                 match lower_idx {
@@ -239,7 +239,7 @@ impl BlockList {
                         let upper_idx = binary_search_by(
                             block_timestamps,
                             |block_timestamp| block_timestamp.since_sec.cmp(&until),
-                            BinaryRangeSearchType::AtMostEq,
+                            BinaryRangeSearchType::AtMostInclusive,
                         );
 
                         match upper_idx {
@@ -256,7 +256,7 @@ impl BlockList {
                 let lower_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&since),
-                    BinaryRangeSearchType::AtLeastEq,
+                    BinaryRangeSearchType::AtLeastInclusive,
                 );
 
                 match lower_idx {
@@ -269,7 +269,7 @@ impl BlockList {
                 let upper_idx = binary_search_by(
                     block_timestamps,
                     |block_timestamp| block_timestamp.since_sec.cmp(&until),
-                    BinaryRangeSearchType::AtMostEq,
+                    BinaryRangeSearchType::AtMostInclusive,
                 );
 
                 match upper_idx {

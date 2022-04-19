@@ -73,7 +73,7 @@ impl BlockTimestamp {
         let insert_idx = match binary_search_by(
             block_timestamps.as_slice(),
             |block_timestamp| block_timestamp.since_sec.cmp(&new_block.since_sec),
-            BinaryRangeSearchType::AtMostEq,
+            BinaryRangeSearchType::AtMostInclusive,
         ) {
             Some(idx) => idx + 1,
             None => block_timestamps.len(),

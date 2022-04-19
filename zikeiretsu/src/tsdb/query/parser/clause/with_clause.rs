@@ -7,6 +7,7 @@ use std::path::PathBuf;
 pub enum OutputFormat {
     Json,
     DataFrame,
+    Parquet,
 }
 
 #[derive(Debug)]

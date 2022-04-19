@@ -49,6 +49,9 @@ pub enum OutputError {
 
     #[error("invalid output file path : {0}")]
     InvalidPath(String),
+
+    #[error("invalid output destination : {0}")]
+    InvalidOutputDestination(String),
 }
 
 #[derive(Debug)]
@@ -87,10 +90,24 @@ pub enum OutputWriter {
     Stdout,
     File(fs::File),
 }
+impl OutputWriter {
+    fn validate_available_for_format(&self, format: &OutputFormat) -> StdResult<(), OutputError> {
+        match format {
+            OutputFormat::Json => Ok(()),
+            OutputFormat::DataFrame => Ok(()),
+            OutputFormat::Parquet => match &self {
+                OutputWriter::File(_) => Ok(()),
+                OutputWriter::Stdout => Err(OutputError::InvalidOutputDestination(
+                    "parquet format can output to only a file".to_string(),
+                )),
+            },
+        }
+    }
+}
 
 impl OutputCondition {
     pub fn output_wirter(&self) -> StdResult<OutputWriter, OutputError> {
-        match &self.output_file_path {
+        let output_destination = match &self.output_file_path {
             None => Ok(OutputWriter::Stdout),
 
             Some(output_file_path) => match output_file_path.parent() {
@@ -103,7 +120,10 @@ impl OutputCondition {
                     Ok(OutputWriter::File(f))
                 }
             },
-        }
+        }?;
+
+        output_destination.validate_available_for_format(&self.output_format)?;
+        Ok(output_destination)
     }
 }
 

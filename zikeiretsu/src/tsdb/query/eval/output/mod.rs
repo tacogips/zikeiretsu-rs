@@ -3,6 +3,7 @@ pub mod parquet;
 pub mod table;
 
 pub use json::*;
+pub use parquet::*;
 pub use table::*;
 
 use super::Result as EvalResult;
@@ -24,6 +25,7 @@ where
     match format {
         OutputFormat::Json => Box::new(JsonDfOutput(output_dest)),
         OutputFormat::DataFrame => Box::new(TableDfOutput(output_dest)),
+        OutputFormat::Parquet => Box::new(ParquetDfOutput(output_dest)),
     }
 }
 

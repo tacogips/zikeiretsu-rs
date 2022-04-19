@@ -167,7 +167,7 @@ impl BlockList {
         // in almost case,  the new block_timestamp will be inserted at the tail
         let mut insert_at = 0;
         for (idx, each) in self.block_timestamps.iter().rev().enumerate() {
-            if each.since_sec <= new_block_timestamp.since_sec {
+            if each.until_sec <= new_block_timestamp.until_sec {
                 insert_at = self.block_timestamps.len() - idx;
                 break;
             }
@@ -187,7 +187,7 @@ impl BlockList {
         } else {
             let mut prev = unsafe { self.block_timestamps.get_unchecked(0) };
             for each_block_timestamp in self.block_timestamps.as_slice()[1..].iter() {
-                if each_block_timestamp.since_sec.cmp(&prev.since_sec) == Ordering::Less {
+                if each_block_timestamp.until_sec.cmp(&prev.until_sec) == Ordering::Less {
                     return Err(BlockListError::BlockTimestampIsNotSorted(
                         self.metrics.clone(),
                     ));
@@ -220,8 +220,7 @@ impl BlockList {
         since_inclusive: Option<&TimestampSec>,
         until_not_equal: Option<&TimestampSec>,
     ) -> Result<Option<&[BlockTimestamp]>> {
-        //TODO(tacogis)  maybe redundunt
-        self.check_block_timestamp_is_sorted()?;
+        debug_assert!(self.check_block_timestamp_is_sorted().is_ok());
 
         let block_timestamps = self.block_timestamps.as_slice();
 
@@ -231,7 +230,7 @@ impl BlockList {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.since_sec.cmp(&since),
+                    |block_timestamp| block_timestamp.until_sec.cmp(&since),
                     BinaryRangeSearchType::AtLeastInclusive,
                 );
 
@@ -248,7 +247,7 @@ impl BlockList {
                             Some(upper_idx) => {
                                 Ok(Some(&block_timestamps[lower_idx..upper_idx + 1]))
                             }
-                            None => Ok(None),
+                            None => Ok(Some(&block_timestamps[lower_idx..])),
                         }
                     }
                 }
@@ -257,7 +256,7 @@ impl BlockList {
             (Some(since), None) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.since_sec.cmp(&since),
+                    |block_timestamp| block_timestamp.until_sec.cmp(&since),
                     BinaryRangeSearchType::AtLeastInclusive,
                 );
 
@@ -771,6 +770,42 @@ mod test {
     }
 
     #[test]
+    fn test_block_timestamps_search_13() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(Some(&TimestampSec::new(22)), None);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), block_timestamps!({21,23},{30,36}));
+    }
+
+    #[test]
+    fn test_block_timestamps_search_14() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(None, Some(&TimestampSec::new(22)));
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), block_timestamps!({10,12},{21,23}));
+    }
+
+    #[test]
     fn test_block_list_add_timestamps_1() {
         let updated_timestamp = TimestampNano::new(1629745452_715062000);
 
@@ -809,7 +844,7 @@ mod test {
             let result = blocklist.add_timestamp(block_timestamp);
             assert!(result.is_ok());
 
-            let expected = block_timestamps!({9, 10}, {10, 20},{10, 10},{21, 22});
+            let expected = block_timestamps!({9, 10}, {10, 10},{10, 20},{21, 22});
             assert_eq!(blocklist.block_timestamps, expected);
         }
 
@@ -818,7 +853,7 @@ mod test {
             let result = blocklist.add_timestamp(block_timestamp);
             assert!(result.is_ok());
 
-            let expected = block_timestamps!({9, 10}, {10, 20}, {10, 10}, {21, 22},{23,23});
+            let expected = block_timestamps!({9, 10}, {10, 10},{10, 20},  {21, 22},{23,23});
             assert_eq!(blocklist.block_timestamps, expected);
         }
     }

@@ -1,5 +1,6 @@
 use chrono::DateTime;
 use serde::Deserialize;
+use std::io;
 use tempdir::TempDir;
 use zikeiretsu::*;
 
@@ -40,7 +41,7 @@ async fn write_datas(temp_db_dir: &TempDir) {
     let fields = vec![FieldType::Bool, FieldType::Float64, FieldType::Float64];
     let persistence = Persistence::Storage(temp_db_dir.path().to_path_buf(), None);
 
-    let wr = Engine::writable_store_builder("price", fields.clone())
+    let wr = Engine::writable_store_builder("trades".try_into().unwrap(), fields.clone())
         .persistence(persistence)
         //give the store specific sort function
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {
@@ -74,14 +75,29 @@ async fn write_datas(temp_db_dir: &TempDir) {
 
 #[tokio::main]
 async fn main() {
+    let sub = tracing_subscriber::FmtSubscriber::builder()
+        .with_writer(io::stderr)
+        .with_env_filter(tracing_subscriber::filter::EnvFilter::new("debug"))
+        .finish();
+
+    tracing::subscriber::set_global_default(sub).unwrap();
+    tracing_log::LogTracer::init().unwrap();
+
     let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
     write_datas(&temp_db_dir).await;
 
-    //let db_context = DBContext {
-    //    pub db_dir: Option<String>,
-    //    pub cloud_storage: Option<CloudStorage>,
-    //}
-    //
-    //
-    //    execute_query()
+    let db_context = DBContext::new(Some(temp_db_dir.into_path()), None);
+
+    //where ts in ('2021-09-27 09:43', +10 minutes)
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = df
+
+    select *
+
+    from trades
+    where ts  = '2021-09-27 09:42'
+        "#;
+    execute_query(&db_context, query).await.unwrap();
 }

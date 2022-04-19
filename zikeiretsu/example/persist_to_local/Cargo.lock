@@ -1044,6 +1044,9 @@ dependencies = [
  "serde_json",
  "tempdir",
  "tokio",
+ "tracing",
+ "tracing-log",
+ "tracing-subscriber",
  "zikeiretsu",
 ]
 

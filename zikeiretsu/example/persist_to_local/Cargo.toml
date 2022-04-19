@@ -17,3 +17,7 @@ zikeiretsu = {path = "../.."}
 
 tokio = {version= "1",features= ["full"]}
 tempdir = "0.3"
+
+tracing = "0.1"
+tracing-subscriber = {version = "0.2", features = ["env-filter"]}
+tracing-log = "0.1"

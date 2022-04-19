@@ -288,11 +288,11 @@ impl TimeSeriesDataFrame {
             .inner_since_eq
             .map(|since| move |ts: &TimestampNano| ts.cmp(&since));
 
-        let until_neq_cond = cond
-            .inner_until_neq
+        let until_exclusive_cond = cond
+            .inner_until_exclusive
             .map(|until| move |ts: &TimestampNano| ts.cmp(&until));
 
-        match binary_search_range_with_idx_by(&self.timestamp_nanos, since_eq_cond, until_neq_cond)
+        match binary_search_range_with_idx_by(&self.timestamp_nanos, since_eq_cond, until_exclusive_cond)
         {
             None => None,
             Some((tss, (start_idx, finish_idx))) => {

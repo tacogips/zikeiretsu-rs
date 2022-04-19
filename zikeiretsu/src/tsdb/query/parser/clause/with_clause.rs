@@ -60,6 +60,11 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                                         timezone_parser::parse_timezone_offset(each_in_define_tz)?;
 
                                     with_clause.def_timezone = Some(timezone)
+                                } else if each_in_define_tz.as_rule() == Rule::TIMEZONE_NAME {
+                                    let timezone =
+                                        timezone_parser::parse_timezone_name(each_in_define_tz)?;
+
+                                    with_clause.def_timezone = Some(timezone)
                                 }
                             }
                         }
@@ -197,5 +202,16 @@ mod test {
             result.def_output_file_path,
             Some(PathBuf::from("/some/thing.json"))
         );
+    }
+
+    #[test]
+    fn test_parse_with_6() {
+        let query = r"with tz = JST           ";
+        let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
+        let result = parse(pairs.next().unwrap()).unwrap();
+        assert_eq!(result.def_columns, None);
+        assert_eq!(result.def_timezone, Some(FixedOffset::east(9 * 3600)));
+        assert_eq!(result.def_output, None);
+        assert_eq!(result.def_output_file_path, None);
     }
 }

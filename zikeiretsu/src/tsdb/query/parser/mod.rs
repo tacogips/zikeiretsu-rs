@@ -85,6 +85,9 @@ pub enum ParserError {
 
     #[error("invalid metrics:{0}")]
     InvalidMetricsError(String),
+
+    #[error("invalid timezone abbrev:{0}")]
+    InvalidTimeZoneAbberv(String),
 }
 
 pub type Result<T> = std::result::Result<T, ParserError>;

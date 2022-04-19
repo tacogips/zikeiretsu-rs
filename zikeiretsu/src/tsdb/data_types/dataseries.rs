@@ -92,7 +92,6 @@ impl DataSeries {
     pub fn as_sub_dataseries(&self, start_idx: usize, finish_idx: usize) -> DataSeriesRef {
         let data_range = start_idx..=finish_idx;
         match &self.values {
-            //TODO(tacogips) move this branch into DataSeries or SeriesValues
             SeriesValues::Vacant(_) => {
                 DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
             }

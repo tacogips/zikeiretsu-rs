@@ -21,7 +21,7 @@ pub async fn execute_metrics_list(
     let mut series = StringDataSeriesRefs::default();
     series.push(&metricses_strs);
 
-    let p_df = series
+    let mut p_df = series
         .as_polar_dataframes(Some(vec!["metrics".to_string()]), None)
         .await?;
 

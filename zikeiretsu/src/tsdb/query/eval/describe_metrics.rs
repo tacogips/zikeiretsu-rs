@@ -46,7 +46,7 @@ pub async fn execute_describe_metrics(
     } else {
         describes_to_dataframe(describes.as_slice())?
     };
-    let p_df = df.as_polar_dataframes(Some(column_names), None).await?;
+    let mut p_df = df.as_polar_dataframes(Some(column_names), None).await?;
 
     if let Some(output_condition) = output_condition {
         output_with_condition!(output_condition, p_df);

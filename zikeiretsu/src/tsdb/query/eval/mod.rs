@@ -10,6 +10,7 @@ use crate::tsdb::query::parser::{parse_query, ParserError};
 use crate::tsdb::query::QuerySetting;
 use crate::tsdb::{DBConfig, DBContext};
 pub use output::*;
+use polars::prelude::PolarsError;
 use std::io::Error as IoError;
 use thiserror::Error;
 
@@ -42,6 +43,9 @@ pub enum EvalError {
 
     #[error("metrics not found: {0}")]
     MetricsNotFoundError(String),
+
+    #[error("polars dataframe error: {0}")]
+    PolarsError(#[from] PolarsError),
 
     #[error("no db dir")]
     DBDirNotSet,

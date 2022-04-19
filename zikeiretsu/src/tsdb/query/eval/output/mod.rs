@@ -1,4 +1,5 @@
 pub mod json;
+pub mod parquet;
 pub mod table;
 
 pub use json::*;
@@ -10,7 +11,7 @@ use polars::prelude::DataFrame as PDataFrame;
 use std::io::Write as IoWrite;
 
 pub trait DataSeriesRefsOutput {
-    fn output(&mut self, data: &PDataFrame) -> EvalResult<()>;
+    fn output(&mut self, data: &mut PDataFrame) -> EvalResult<()>;
 }
 
 pub fn new_data_series_refs_vec_output<'d, Dest>(
@@ -34,13 +35,13 @@ macro_rules! output_with_condition {
                 let out = std::io::BufWriter::new(out.lock());
                 let mut destination =
                     new_data_series_refs_vec_output(&$output_condition.output_format, out);
-                destination.output(&$df)?;
+                destination.output(&mut $df)?;
             }
             OutputWriter::File(f) => {
                 let out = std::io::BufWriter::new(f);
                 let mut destination =
                     new_data_series_refs_vec_output::<_>(&$output_condition.output_format, out);
-                destination.output(&$df)?;
+                destination.output(&mut $df)?;
             }
         }
     }};

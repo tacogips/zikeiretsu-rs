@@ -57,14 +57,17 @@ impl Args {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
         if let Some(table_width) = self.table_width {
+            // default 100
             env::set_var("POLARS_TABLE_WIDTH", table_width.to_string());
         }
 
         if let Some(table_row) = self.table_row {
+            //default 25
             env::set_var("POLARS_FMT_MAX_ROWS", table_row.to_string());
         }
 
         if let Some(table_col) = self.table_col {
+            //default 75
             env::set_var("POLARS_FMT_MAX_COLS", table_col.to_string());
         }
 

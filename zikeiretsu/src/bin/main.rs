@@ -42,8 +42,8 @@ pub async fn main() -> Result<()> {
     let _ = dotenv();
     setup_log();
 
-    let args = Args::parse();
-    args.setup()?;
+    let mut args = Args::parse();
+    args.init()?;
 
     log::debug!("current_dir :{:?}", std::env::current_dir());
 

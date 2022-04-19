@@ -1,5 +1,8 @@
+mod config;
 use ::zikeiretsu::{Bucket, CloudStorage, DBContext, SubDir};
+
 use clap::Parser;
+use config::*;
 use std::env;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -17,6 +20,12 @@ pub enum ArgsError {
 
     #[error("subpath required")]
     NoSubPath,
+
+    #[error("{0}")]
+    TomlError(#[from] toml::de::Error),
+
+    #[error("{0}")]
+    IoError(#[from] std::io::Error),
 }
 
 type Result<T> = std::result::Result<T, ArgsError>;
@@ -37,36 +46,78 @@ pub struct Args {
     bucket_sub_path: Option<String>,
 
     #[clap(long = "service_account", env = "ZDB_SERVICE_ACCOUNT")]
-    sevice_account_file_path: Option<PathBuf>,
+    service_account_file_path: Option<PathBuf>,
 
-    #[clap(long = "table_width", env = "ZDB_TABLE_WIDTH")]
-    table_width: Option<u16>,
+    #[clap(long = "df_width", env = "ZDB_DATAFRAME_WIDTH")]
+    df_width: Option<u16>,
 
-    #[clap(long = "table_row", env = "ZDB_TABLE_ROW")]
-    table_row: Option<usize>,
+    #[clap(long = "df_row", env = "ZDB_DATAFRAME_ROW")]
+    df_row_num: Option<usize>,
 
-    #[clap(long = "table_col", env = "ZDB_TABLE_COL")]
-    table_col: Option<usize>,
+    #[clap(long = "df_col", env = "ZDB_DATAFRAME_COL")]
+    df_col_num: Option<usize>,
+
+    #[clap(long = "config", short)]
+    config: Option<PathBuf>,
 
     pub query: Option<String>,
 }
 
 impl Args {
-    pub fn setup(&self) -> Result<()> {
-        if let Some(service_account) = self.sevice_account_file_path.as_ref() {
+    fn merge_with_config(&mut self, config: Config) {
+        if let Some(db_dir) = config.db_dir {
+            self.db_dir = Some(db_dir);
+        }
+
+        if let Some(cloud_type) = config.cloud_type {
+            self.cloud_type = Some(cloud_type);
+        }
+
+        if let Some(bucket) = config.bucket {
+            self.bucket = Some(bucket);
+        }
+
+        if let Some(bucket_sub_path) = config.bucket_sub_path {
+            self.bucket_sub_path = Some(bucket_sub_path);
+        }
+
+        if let Some(service_account_file_path) = config.service_account_file_path {
+            self.service_account_file_path = Some(service_account_file_path);
+        }
+
+        if let Some(df_width) = config.dataframe_width {
+            self.df_width = Some(df_width);
+        }
+
+        if let Some(df_row_num) = config.dataframe_row_num {
+            self.df_row_num = Some(df_row_num);
+        }
+
+        if let Some(df_col_num) = config.dataframe_col_num {
+            self.df_col_num = Some(df_col_num);
+        }
+    }
+
+    pub fn init(&mut self) -> Result<()> {
+        if let Some(config_path) = &self.config {
+            let config = Config::read(config_path.as_path())?;
+            self.merge_with_config(config);
+        }
+
+        if let Some(service_account) = self.service_account_file_path.as_ref() {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
-        if let Some(table_width) = self.table_width {
+        if let Some(table_width) = self.df_width {
             // default 100
             env::set_var("POLARS_TABLE_WIDTH", table_width.to_string());
         }
 
-        if let Some(table_row) = self.table_row {
+        if let Some(table_row) = self.df_row_num {
             //default 25
             env::set_var("POLARS_FMT_MAX_ROWS", table_row.to_string());
         }
 
-        if let Some(table_col) = self.table_col {
+        if let Some(table_col) = self.df_col_num {
             //default 75
             env::set_var("POLARS_FMT_MAX_COLS", table_col.to_string());
         }

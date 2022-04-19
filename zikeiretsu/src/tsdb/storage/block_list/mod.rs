@@ -164,7 +164,7 @@ impl BlockList {
     }
 
     pub fn add_timestamp(&mut self, new_block_timestamp: BlockTimestamp) -> Result<()> {
-        // in almost  all case,  the block_timestamp will be stored at the tail
+        // in almost case,  the new block_timestamp will be inserted at the tail
         let mut insert_at = 0;
         for (idx, each) in self.block_timestamps.iter().rev().enumerate() {
             if each.since_sec <= new_block_timestamp.since_sec {

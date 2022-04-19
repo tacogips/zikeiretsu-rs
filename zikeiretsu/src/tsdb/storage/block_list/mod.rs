@@ -540,7 +540,7 @@ mod test {
         assert!(result.is_some());
         assert_eq!(
             result.unwrap(),
-            block_timestamps!({11,30}, {11,30}, {12,30}, {15,30})
+            block_timestamps!({10,20},{10,20}, {10,20}, {11,30}, {11,30}, {12,30}, {15,30})
         );
     }
 
@@ -656,7 +656,7 @@ mod test {
     #[test]
     fn test_block_timestamps_search_7() {
         let block_timestamps =
-            block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
+            block_timestamps!({10,11},{10,12}, {10,13},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
 
         let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
@@ -669,7 +669,10 @@ mod test {
         assert!(result.is_ok());
         let result = result.unwrap();
         assert!(result.is_some());
-        assert_eq!(result.unwrap(), block_timestamps!({15,30},{21,30}));
+        assert_eq!(
+            result.unwrap(),
+            block_timestamps!({10,13},{11,30}, {11,30}, {12,30}, {15,30},{21,30})
+        );
     }
 
     #[test]
@@ -803,6 +806,40 @@ mod test {
         let result = result.unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap(), block_timestamps!({10,12},{21,23}));
+    }
+
+    #[test]
+    fn test_block_timestamps_search_15() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(None, Some(&TimestampSec::new(9)));
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_block_timestamps_search_16() {
+        let block_timestamps = block_timestamps!({10,12},{21,23},{30,36});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(Some(&TimestampSec::new(40)), None);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_none());
     }
 
     #[test]

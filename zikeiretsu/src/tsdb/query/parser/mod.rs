@@ -413,13 +413,14 @@ from trades
         let query = r#"with
 
         cols = [is_buy, volume, price],
- 	   tz = JST
-select *
+ 	   tz = JST select *
 from trades
 
  "#;
 
         let parsed_query = parse_query(query);
+        //TODO(tacogips) for debugging
+        println!("==== {:?}", parsed_query);
 
         assert!(parsed_query.is_ok());
     }

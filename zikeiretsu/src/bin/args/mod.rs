@@ -34,7 +34,7 @@ type Result<T> = std::result::Result<T, ArgsError>;
 #[clap(author, version, about)]
 pub struct Args {
     #[clap(long = "db_dir", short = 'd', env = "ZDB_DIR")]
-    db_dir: Option<String>,
+    db_dir: Option<PathBuf>,
 
     #[clap(long = "cloud_type", short = 't', env = "ZDB_CLOUD_TYPE")]
     cloud_type: Option<String>,

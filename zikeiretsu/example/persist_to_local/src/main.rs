@@ -76,4 +76,12 @@ async fn write_datas(temp_db_dir: &TempDir) {
 async fn main() {
     let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
     write_datas(&temp_db_dir).await;
+
+    //let db_context = DBContext {
+    //    pub db_dir: Option<String>,
+    //    pub cloud_storage: Option<CloudStorage>,
+    //}
+    //
+    //
+    //    execute_query()
 }

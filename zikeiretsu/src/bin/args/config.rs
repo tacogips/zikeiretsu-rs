@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Config {
-    pub db_dir: Option<String>,
+    pub db_dir: Option<PathBuf>,
     pub cloud_type: Option<String>,
     pub bucket: Option<String>,
     pub bucket_sub_path: Option<String>,
@@ -30,7 +30,6 @@ impl Config {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::path::PathBuf;
 
     #[test]
     fn parse_config() {
@@ -47,18 +46,15 @@ mod test {
 
             "#;
 
-        let mut pb = PathBuf::new();
-        pb.push("/path/to/service_account");
-
         let config: Config = Config::read_str(test_contents).unwrap();
         assert_eq!(
             config,
             Config {
-                db_dir: Some("/tmp/db_dir".to_string()),
+                db_dir: Some("/tmp/db_dir".into()),
                 cloud_type: Some("gcp".to_string()),
                 bucket: Some("test_bucket".to_string()),
                 bucket_sub_path: Some("some_path".to_string()),
-                service_account_file_path: Some(pb),
+                service_account_file_path: Some("/path/to/service_account".into()),
                 dataframe_width: Some(120),
                 dataframe_row_num: Some(9),
                 dataframe_col_num: Some(11),

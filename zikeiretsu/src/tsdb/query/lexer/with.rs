@@ -10,6 +10,7 @@ pub(crate) struct With<'q> {
     pub timezone: FixedOffset,
     pub output_format: OutputFormat,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
+    pub column_name_aliases: Option<Vec<String>>,
     pub output_file_path: Option<PathBuf>,
     pub cache_setting: CacheSetting,
     pub cloud_setting: CloudStorageSetting,
@@ -24,6 +25,7 @@ impl<'q> Default for With<'q> {
             timezone,
             output_format,
             column_index_map: None,
+            column_name_aliases: None,
             output_file_path: None,
             cache_setting: CacheSetting::default(),
             cloud_setting: CloudStorageSetting::default(),
@@ -42,15 +44,26 @@ pub(crate) fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> LexerRe
             for (idx, column) in def_columns.iter().enumerate() {
                 match column {
                     Column::Asterick => {
-                        return Err(LexerError::InvalidColumnDefinition("".to_string()))
+                        // never happened except bug.
+                        return Err(LexerError::InvalidColumnDefinition(
+                            "* is invali".to_string(),
+                        ));
                     }
                     Column::ColumnName(column_name) => {
                         column_index.insert(column_name.as_str(), idx);
                     }
                 }
             }
-            with.column_index_map = Some(column_index)
+            with.column_index_map = Some(column_index);
+
+            with.column_name_aliases = Some(
+                def_columns
+                    .iter()
+                    .map(|c| c.to_string())
+                    .collect::<Vec<String>>(),
+            )
         }
+
         // time zone
         if let Some(tz) = with_clause.def_timezone {
             with.timezone = tz

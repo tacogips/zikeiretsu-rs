@@ -4,7 +4,7 @@ use super::*;
 use crate::tsdb::time_series_dataframe::*;
 
 pub struct ReadonlyStore {
-    dataframe: TimeSeriesDataFrame,
+    time_series_dataframe: TimeSeriesDataFrame,
 }
 
 impl ReadonlyStore {
@@ -14,14 +14,16 @@ impl ReadonlyStore {
                 return Err(StoreError::UnsortedDataFrame(e.to_string()));
             }
         }
-        Ok(Self { dataframe })
+        Ok(Self {
+            time_series_dataframe: dataframe,
+        })
     }
 
     pub fn len(&self) -> usize {
-        self.dataframe.len()
+        self.time_series_dataframe.len()
     }
 
     pub fn as_dataframe(&self) -> &TimeSeriesDataFrame {
-        &self.dataframe
+        &self.time_series_dataframe
     }
 }

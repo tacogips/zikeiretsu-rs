@@ -33,6 +33,7 @@ pub enum Column<'q> {
     Asterick,
     ColumnName(ColumnName<'q>),
 }
+
 impl<'q> fmt::Display for Column<'q> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

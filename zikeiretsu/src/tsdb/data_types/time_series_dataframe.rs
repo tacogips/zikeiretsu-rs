@@ -292,8 +292,11 @@ impl TimeSeriesDataFrame {
             .inner_until_exclusive
             .map(|until| move |ts: &TimestampNano| ts.cmp(&until));
 
-        match binary_search_range_with_idx_by(&self.timestamp_nanos, since_inclusive_cond, until_exclusive_cond)
-        {
+        match binary_search_range_with_idx_by(
+            &self.timestamp_nanos,
+            since_inclusive_cond,
+            until_exclusive_cond,
+        ) {
             None => None,
             Some((tss, (start_idx, finish_idx))) => {
                 let selected_series = TimeSeriesDataFrameRef::new(

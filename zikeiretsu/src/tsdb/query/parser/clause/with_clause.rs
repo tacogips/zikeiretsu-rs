@@ -37,7 +37,6 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
         def_sync_cloud: true,
     };
     for each in pair.into_inner() {
-        //TODO(tacogips) for debugging
         match each.as_rule() {
             Rule::WITH_CLAUSE_DEFINES => {
                 for each_define in each.into_inner() {

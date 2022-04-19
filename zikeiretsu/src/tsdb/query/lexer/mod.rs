@@ -117,6 +117,14 @@ pub struct InterpretedQueryCondition {
     pub timezone: FixedOffset,
 }
 
+macro_rules! prepend_ts_column_to_head {
+    ($column_names:expr) => {{
+        let mut field_names_following_to_ts = vec!["ts".to_string()];
+        field_names_following_to_ts.append(&mut $column_names);
+        field_names_following_to_ts
+    }};
+}
+
 pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => {
@@ -133,12 +141,20 @@ pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Interpreted
     };
 
     // select columns
-    let (field_selectors, field_names) = match select::interpret_field_selector(
+    let (field_selectors, filtered_field_names) = match select::interpret_field_selector(
         with.column_index_map.as_ref(),
         parsed_query.select.as_ref(),
     )? {
         None => (None, None),
         Some((field_selectors, field_names)) => (Some(field_selectors), Some(field_names)),
+    };
+
+    let field_names = match filtered_field_names {
+        Some(mut field_names) => Some(prepend_ts_column_to_head!(field_names)),
+        None => match with.column_name_aliases {
+            Some(mut field_names) => Some(prepend_ts_column_to_head!(field_names)),
+            None => None,
+        },
     };
 
     let datetime_search_condition = r#where::interpret_datatime_search_condition(

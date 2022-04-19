@@ -101,7 +101,7 @@ impl DatetimeFilterValue {
             }
 
             Self::Function(build_func, delta) => {
-                let micro_sec_delta = delta
+                let delta_micro_seconds = delta
                     .as_ref()
                     .map(|delta| delta.as_micro_second())
                     .unwrap_or(0);
@@ -112,7 +112,16 @@ impl DatetimeFilterValue {
                     BuildinDatetimeFunction::Tomorrow => tomorrow(*offset).into(),
                 };
 
-                timestamp_nano + Duration::microseconds(micro_sec_delta)
+                //TODO(tacogips) for debugging
+                println!(
+                    "==== {} {} {},{}",
+                    timestamp_nano,
+                    delta_micro_seconds,
+                    Duration::microseconds(delta_micro_seconds),
+                    timestamp_nano + Duration::microseconds(delta_micro_seconds)
+                );
+
+                timestamp_nano + Duration::microseconds(delta_micro_seconds)
             }
         }
     }

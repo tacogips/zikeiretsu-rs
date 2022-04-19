@@ -7,14 +7,14 @@ pub enum BinaryRangeSearchType {
     AtMostExclusive,
 }
 
-/// - search at most eq 3 from [4,6,10] => None
-/// - search at most eq 5 from [4,6,10] => 4
-/// - search at most neq 4 from [4,5,6,10] => None
-/// - search at most neq 6 from [4,5,6,10] => 5
-/// - search at least eq 3 from [4,6,10] => 4
-/// - search at least eq 5 from [4,6,10] => 6
-/// - search at least eq 5 from [4,5,6,10] => 5
-/// - search at least eq 11 from [4,5,6,10] => None
+/// - search at most inclusive 3 from [4,6,10] => None
+/// - search at most inclusive 5 from [4,6,10] => 4
+/// - search at most exclusive 4 from [4,5,6,10] => None
+/// - search at most exclusive 6 from [4,5,6,10] => 5
+/// - search at least inclusive 3 from [4,6,10] => 4
+/// - search at least inclusive 5 from [4,6,10] => 6
+/// - search at least inclusive 5 from [4,5,6,10] => 5
+/// - search at least inclusive 11 from [4,5,6,10] => None
 pub fn binary_search_by<T, F>(
     datas: &[T],
     cond: F,
@@ -123,7 +123,11 @@ where
     F2: Fn(&T) -> Ordering,
 {
     let start_idx = if let Some(condition_at_least) = condition_at_least_eq {
-        match binary_search_by(datas, condition_at_least, BinaryRangeSearchType::AtLeastInclusive) {
+        match binary_search_by(
+            datas,
+            condition_at_least,
+            BinaryRangeSearchType::AtLeastInclusive,
+        ) {
             Some(idx) => idx,
             None => return None,
         }
@@ -133,7 +137,11 @@ where
 
     let last_index = datas.len() - 1;
     let end_idx = if let Some(condition_at_most) = condition_at_most_exclusive {
-        match binary_search_by(datas, condition_at_most, BinaryRangeSearchType::AtMostExclusive) {
+        match binary_search_by(
+            datas,
+            condition_at_most,
+            BinaryRangeSearchType::AtMostExclusive,
+        ) {
             Some(idx) => idx,
             None => return None,
         }
@@ -633,7 +641,8 @@ mod test {
         let until_exclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(40)));
 
         let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
-        let result = binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
+        let result =
+            binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
 
         assert!(result.is_some());
         let result = result.unwrap();
@@ -659,7 +668,8 @@ mod test {
         let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
         let since_inclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(30)));
         let until_exclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(60)));
-        let result = binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
+        let result =
+            binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
 
         assert!(result.is_some());
         let result = result.unwrap();
@@ -672,7 +682,8 @@ mod test {
         let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
         let since_inclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(0)));
         let until_exclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(20)));
-        let result = binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
+        let result =
+            binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
 
         assert!(result.is_some());
         let result = result.unwrap();
@@ -711,7 +722,8 @@ mod test {
         let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
         let since_inclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(2)));
         let until_exclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(10)));
-        let result = binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
+        let result =
+            binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
 
         assert!(result.is_none());
     }
@@ -731,7 +743,8 @@ mod test {
         let datapoints = tss!(10, 20, 20, 20, 30, 30, 40);
         let since_inclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(41)));
         let until_exclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(42)));
-        let result = binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
+        let result =
+            binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
 
         assert!(result.is_none());
     }
@@ -752,7 +765,8 @@ mod test {
 
         let since_inclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(0)));
         let until_exclusive_cond = Some(|ts: &TimestampNano| ts.cmp(&ts!(3)));
-        let result = binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
+        let result =
+            binary_search_range_by(&datapoints, since_inclusive_cond, until_exclusive_cond);
 
         assert!(result.is_some());
         let result = result.unwrap();

@@ -77,7 +77,7 @@ async fn write_datas(temp_db_dir: &TempDir) {
 async fn main() {
     let sub = tracing_subscriber::FmtSubscriber::builder()
         .with_writer(io::stderr)
-        .with_env_filter(tracing_subscriber::filter::EnvFilter::new("debug"))
+        .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .finish();
 
     tracing::subscriber::set_global_default(sub).unwrap();

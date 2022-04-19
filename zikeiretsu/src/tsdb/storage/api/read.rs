@@ -125,7 +125,15 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     let since_sec_ref = (&since_sec).as_ref();
     let until_sec_ref = (&until_sec).as_ref();
 
+    log::debug!(
+        "search_dataframe. block search range: ({:?} : {:?})",
+        since_sec_ref,
+        until_sec_ref
+    );
+
     let block_timestamps = block_list.search(since_sec_ref, until_sec_ref)?;
+
+    log::debug!("search_dataframe. block timestamps: {:?}", block_timestamps);
 
     let result = match block_timestamps {
         None => Ok(None),

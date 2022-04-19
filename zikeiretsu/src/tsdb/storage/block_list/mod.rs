@@ -108,7 +108,7 @@ impl From<Vec<TimestampSec>> for TimestampSecDeltas {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct BlockList {
-    pub metrics: Metrics, //TODO(tacogips) this metrics tobe a reference
+    pub metrics: Metrics,
     pub updated_timestamp_sec: TimestampNano,
     pub block_timestamps: Vec<BlockTimestamp>,
 }
@@ -224,6 +224,8 @@ impl BlockList {
         self.check_block_timestamp_is_sorted()?;
 
         let block_timestamps = self.block_timestamps.as_slice();
+
+        log::debug!("block_list. all block timestamps: {:?}", block_timestamps);
 
         match (since_inclusive, until_not_equal) {
             (Some(since), Some(until)) => {
@@ -745,6 +747,27 @@ mod test {
             result.unwrap(),
             block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30})
         );
+    }
+
+    #[test]
+    fn test_block_timestamps_search_12() {
+        let block_timestamps = block_timestamps!({1632735700,1632735903});
+
+        let metrics = Metrics::new("dummy").unwrap();
+        let block_list = BlockList {
+            metrics,
+            updated_timestamp_sec: TimestampNano::new(0),
+            block_timestamps,
+        };
+
+        let result = block_list.search(
+            Some(&TimestampSec::new(1632735720)),
+            Some(&TimestampSec::new(1632735903)),
+        );
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), block_timestamps!({1632735700,1632735903}));
     }
 
     #[test]

@@ -218,7 +218,7 @@ impl BlockList {
     pub fn search(
         &self,
         since_inclusive: Option<&TimestampSec>,
-        until_not_equal: Option<&TimestampSec>,
+        until_exclusive: Option<&TimestampSec>,
     ) -> Result<Option<&[BlockTimestamp]>> {
         debug_assert!(self.check_block_timestamp_is_sorted().is_ok());
 
@@ -226,7 +226,7 @@ impl BlockList {
 
         log::debug!("block_list. all block timestamps: {:?}", block_timestamps);
 
-        match (since_inclusive, until_not_equal) {
+        match (since_inclusive, until_exclusive) {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
@@ -247,7 +247,7 @@ impl BlockList {
                             Some(upper_idx) => {
                                 Ok(Some(&block_timestamps[lower_idx..upper_idx + 1]))
                             }
-                            None => Ok(Some(&block_timestamps[lower_idx..])),
+                            None => Ok(None),
                         }
                     }
                 }
@@ -678,7 +678,7 @@ mod test {
     #[test]
     fn test_block_timestamps_search_8() {
         let block_timestamps =
-            block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30},{21,30});
+            block_timestamps!({10,20},{10,20}, {10,20},{11,21}, {11,22}, {12,30}, {15,30},{21,30});
 
         let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
@@ -690,13 +690,17 @@ mod test {
         let result = block_list.search(Some(&ts!(22)), None);
         assert!(result.is_ok());
         let result = result.unwrap();
-        assert!(result.is_none());
+        assert!(result.is_some());
+        assert_eq!(
+            result.unwrap(),
+            block_timestamps!( {11,22}, {12,30}, {15,30},{21,30})
+        );
     }
 
     #[test]
     fn test_block_timestamps_search_9() {
         let block_timestamps =
-            block_timestamps!({10,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
+            block_timestamps!({9,20},{10,20}, {10,20},{11,30}, {11,30}, {12,30}, {15,30}, {21,30});
 
         let metrics = Metrics::new("dummy").unwrap();
         let block_list = BlockList {
@@ -708,7 +712,7 @@ mod test {
         let result = block_list.search(None, Some(&ts!(9)));
         assert!(result.is_ok());
         let result = result.unwrap();
-        assert!(result.is_none());
+        assert_eq!(result.unwrap(), block_timestamps!({9,20}));
     }
 
     #[test]

@@ -41,7 +41,6 @@ async fn write_datas(temp_db_dir: &TempDir) {
     let persistence = Persistence::Storage(temp_db_dir.path().to_path_buf(), None);
 
     let wr = Engine::writable_store_builder("price", fields.clone())
-        .unwrap()
         .persistence(persistence)
         //give the store specific sort function
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {

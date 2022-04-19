@@ -34,18 +34,18 @@ mod test {
 
     #[test]
     fn parse_config() {
-        let test_contents = "
+        let test_contents = r#"
 
-            db_dir = /tmp/db_dir
-            cloud_type = gcp
-            bucket = test_bucket
-            bucket_sub_path = some_path
-            service_account_file_path= /path/to/service_account
+            db_dir = "/tmp/db_dir"
+            cloud_type = "gcp"
+            bucket = "test_bucket"
+            bucket_sub_path = "some_path"
+            service_account_file_path= "/path/to/service_account"
             dataframe_width = 120
             dataframe_row_num = 9
             dataframe_col_num = 11
 
-            ";
+            "#;
 
         let mut pb = PathBuf::new();
         pb.push("/path/to/service_account");
@@ -57,7 +57,7 @@ mod test {
                 db_dir: Some("/tmp/db_dir".to_string()),
                 cloud_type: Some("gcp".to_string()),
                 bucket: Some("test_bucket".to_string()),
-                bucket_sub_path: Some("test_bucket".to_string()),
+                bucket_sub_path: Some("some_path".to_string()),
                 service_account_file_path: Some(pb),
                 dataframe_width: Some(120),
                 dataframe_row_num: Some(9),

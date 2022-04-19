@@ -20,7 +20,7 @@ pub async fn execute_search_metrics(
 
     let store = Engine::search(
         &db_dir,
-        condition.metrics.clone(),
+        &condition.metrics,
         condition
             .field_selectors
             .as_ref()

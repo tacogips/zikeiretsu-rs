@@ -130,33 +130,23 @@ impl Engine {
         Ok(block_list)
     }
 
-    pub fn writable_store_builder<M>(
-        metics: M,
+    pub fn writable_store_builder(
+        metics: Metrics,
         field_types: Vec<FieldType>,
-    ) -> Result<WritableStoreBuilder<DatapointDefaultSorter>>
-    where
-        M: TryInto<Metrics, Error = String>,
-    {
-        let store = WritableStore::builder(metics, field_types)?;
-        Ok(store)
+    ) -> WritableStoreBuilder<DatapointDefaultSorter> {
+        WritableStore::builder(metics, field_types)
     }
 
-    pub async fn search<P: AsRef<Path>, M, ME>(
+    pub async fn search<P: AsRef<Path>>(
         db_dir: P,
-        metrics: M,
+        metrics: &Metrics,
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
         db_config: &DBConfig,
-    ) -> Result<Option<ReadonlyStore>>
-    where
-        M: TryInto<Metrics, Error = ME>,
-        ME: std::fmt::Display,
-    {
+    ) -> Result<Option<ReadonlyStore>> {
         let dataframe = api::read::search_dataframe(
             db_dir,
-            &metrics
-                .try_into()
-                .map_err(|e| StorageApiError::InvalidMetricsName(format!("{}", e)))?,
+            &metrics,
             field_selectors,
             condition,
             &db_config.cache_setting,

@@ -78,6 +78,10 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                                     Rule::KW_DATAFRAME => {
                                         with_clause.def_output = Some(OutputFormat::DataFrame)
                                     }
+
+                                    Rule::KW_PARQUET => {
+                                        with_clause.def_output = Some(OutputFormat::Parquet)
+                                    }
                                     _ => { /* do nothing */ }
                                 }
                             }
@@ -213,5 +217,38 @@ mod test {
         assert_eq!(result.def_timezone, Some(FixedOffset::east(9 * 3600)));
         assert_eq!(result.def_output, None);
         assert_eq!(result.def_output_file_path, None);
+    }
+
+    #[test]
+    fn test_parse_with_7() {
+        let query = r"with format =   json          ";
+        let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
+        let result = parse(pairs.next().unwrap()).unwrap();
+        assert_eq!(result.def_columns, None);
+        assert_eq!(result.def_timezone, None);
+        assert_eq!(result.def_output, Some(OutputFormat::Json));
+        assert_eq!(result.def_output_file_path, None,);
+    }
+
+    #[test]
+    fn test_parse_with_8() {
+        let query = r"with format =  df           ";
+        let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
+        let result = parse(pairs.next().unwrap()).unwrap();
+        assert_eq!(result.def_columns, None);
+        assert_eq!(result.def_timezone, None);
+        assert_eq!(result.def_output, Some(OutputFormat::DataFrame));
+        assert_eq!(result.def_output_file_path, None,);
+    }
+
+    #[test]
+    fn test_parse_with_9() {
+        let query = r"with format =   parquet          ";
+        let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
+        let result = parse(pairs.next().unwrap()).unwrap();
+        assert_eq!(result.def_columns, None);
+        assert_eq!(result.def_timezone, None);
+        assert_eq!(result.def_output, Some(OutputFormat::Parquet));
+        assert_eq!(result.def_output_file_path, None,);
     }
 }

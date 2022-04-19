@@ -217,7 +217,7 @@ impl BlockList {
 
     pub fn search(
         &self,
-        since_eq: Option<&TimestampSec>,
+        since_inclusive: Option<&TimestampSec>,
         until_not_equal: Option<&TimestampSec>,
     ) -> Result<Option<&[BlockTimestamp]>> {
         //TODO(tacogis)  maybe redundunt
@@ -225,7 +225,7 @@ impl BlockList {
 
         let block_timestamps = self.block_timestamps.as_slice();
 
-        match (since_eq, until_not_equal) {
+        match (since_inclusive, until_not_equal) {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,

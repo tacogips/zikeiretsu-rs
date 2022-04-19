@@ -43,7 +43,7 @@ impl DataPoint {
         cond: &DatapointSearchCondition,
     ) -> Option<(&'a [DataPoint], (usize, usize))> {
         let since_cond = cond
-            .inner_since_eq
+            .inner_since_inclusive
             .map(|since| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&since));
 
         let until_cond = cond
@@ -75,55 +75,55 @@ impl DataPoint {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DatapointSearchCondition {
-    pub inner_since_eq: Option<TimestampNano>,
+    pub inner_since_inclusive: Option<TimestampNano>,
     pub inner_until_exclusive: Option<TimestampNano>,
 }
 
 impl DatapointSearchCondition {
     pub fn new(
-        inner_since_eq: Option<TimestampNano>,
+        inner_since_inclusive: Option<TimestampNano>,
         inner_until_exclusive: Option<TimestampNano>,
     ) -> Self {
         Self {
-            inner_since_eq,
+            inner_since_inclusive,
             inner_until_exclusive,
         }
     }
 
     pub fn all() -> Self {
         Self {
-            inner_since_eq: None,
+            inner_since_inclusive: None,
             inner_until_exclusive: None,
         }
     }
 
     pub fn as_ref(&self) -> (Option<&TimestampNano>, Option<&TimestampNano>) {
-        (self.inner_since_eq.as_ref(), self.inner_until_exclusive.as_ref())
+        (self.inner_since_inclusive.as_ref(), self.inner_until_exclusive.as_ref())
     }
 
     pub fn as_secs(&self) -> (Option<TimestampSec>, Option<TimestampSec>) {
         (
-            self.inner_since_eq.map(|i| i.as_timestamp_sec()),
+            self.inner_since_inclusive.map(|i| i.as_timestamp_sec()),
             self.inner_until_exclusive.map(|i| i.as_timestamp_sec()),
         )
     }
 
     pub fn since(since: TimestampNano) -> Self {
         Self {
-            inner_since_eq: Some(since),
+            inner_since_inclusive: Some(since),
             inner_until_exclusive: None,
         }
     }
 
     pub fn until(until: TimestampNano) -> Self {
         Self {
-            inner_since_eq: None,
+            inner_since_inclusive: None,
             inner_until_exclusive: Some(until),
         }
     }
 
     pub fn with_since(mut self, since: TimestampNano) -> Self {
-        self.inner_since_eq = Some(since);
+        self.inner_since_inclusive = Some(since);
         self
     }
 
@@ -133,8 +133,8 @@ impl DatapointSearchCondition {
     }
 
     pub fn contains_whole(&self, since: &TimestampNano, until: &TimestampNano) -> bool {
-        if let Some(since_eq) = self.inner_since_eq {
-            if since < &since_eq {
+        if let Some(since_inclusive) = self.inner_since_inclusive {
+            if since < &since_inclusive {
                 return false;
             }
         }
@@ -162,7 +162,7 @@ impl DatapointSearchCondition {
         };
 
         Ok(DatapointSearchCondition {
-            inner_since_eq: inner_since,
+            inner_since_inclusive: inner_since,
             inner_until_exclusive: inner_until,
         })
     }
@@ -173,7 +173,7 @@ impl fmt::Display for DatapointSearchCondition {
         write!(
             f,
             "({:?}, {:?})",
-            self.inner_since_eq.map(|s| s.to_string()),
+            self.inner_since_inclusive.map(|s| s.to_string()),
             self.inner_until_exclusive.map(|s| s.to_string()),
         )
     }

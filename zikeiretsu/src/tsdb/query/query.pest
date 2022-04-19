@@ -158,7 +158,7 @@ WHERE_CLAUSE  = { KW_WHERE ~ FILTER } // only simple condition is allowed now
 
 ORDER_CLAUSE = { KW_ORDER  ~ KW_BY ~  KW_TIMESTAMP ~ (KW_DESC | KW_ASC)?  }
 
-//TODO(tacogips) limit and offset are useless now.
+//TODO(tacogips) limit and offset are not supported yet.
 //LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
 //OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allowed now
 //ORDER_OR_LIMIT_CLAUSE = { (  ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE ) + }

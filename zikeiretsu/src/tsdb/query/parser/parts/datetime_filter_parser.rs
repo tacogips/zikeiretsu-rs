@@ -112,15 +112,6 @@ impl DatetimeFilterValue {
                     BuildinDatetimeFunction::Tomorrow => tomorrow(*offset).into(),
                 };
 
-                //TODO(tacogips) for debugging
-                println!(
-                    "==== {} {} {},{}",
-                    timestamp_nano,
-                    delta_micro_seconds,
-                    Duration::microseconds(delta_micro_seconds),
-                    timestamp_nano + Duration::microseconds(delta_micro_seconds)
-                );
-
                 timestamp_nano + Duration::microseconds(delta_micro_seconds)
             }
         }

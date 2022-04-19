@@ -15,6 +15,17 @@ pub struct PersistCondition {
     pub datapoint_search_condition: DatapointSearchCondition,
     pub remove_from_store_after_persisted: bool,
 }
+impl PersistCondition {
+    pub fn new(
+        datapoint_search_condition: DatapointSearchCondition,
+        remove_from_store_after_persisted: bool,
+    ) -> Self {
+        Self {
+            datapoint_search_condition,
+            remove_from_store_after_persisted,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub enum Persistence {

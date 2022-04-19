@@ -404,4 +404,20 @@ from trades
 
         assert!(parsed_query.is_ok());
     }
+
+    #[test]
+    fn parse_query_5() {
+        let query = r#"with
+
+        cols = [is_buy, volume, price],
+ 	   tz = JST
+select *
+from trades
+
+ "#;
+
+        let parsed_query = parse_query(query);
+
+        assert!(parsed_query.is_ok());
+    }
 }

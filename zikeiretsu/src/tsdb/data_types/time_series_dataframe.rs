@@ -430,8 +430,10 @@ mod test {
 
             TimeSeriesDataFrame::new(
                 timestamp_nanos,
-                vec![DataSeries::new(SeriesValues::Float64(values))],
-                vec![DataSeries::new(SeriesValues::Bool(values))],
+                vec![
+                    DataSeries::new(SeriesValues::Float64(values1)),
+                    DataSeries::new(SeriesValues::Bool(values2)),
+                ],
             )
         }};
     }
@@ -761,6 +763,33 @@ mod test {
             (10, 1010),
             (11, 1111),
             (12, 1212),
+        ]);
+
+        assert_eq!(df_1, expected);
+    }
+
+    #[tokio::test]
+    async fn dataframe_merge_multiple_columns_1() {
+        let mut df_1 = multi_dataframe!([
+            (4, 44, true),
+            (5, 55, false),
+            (6, 66, true),
+            (8, 88, true),
+            (10, 1010, true)
+        ]);
+        let mut df_2 = multi_dataframe!([(2, 22, true), (3, 33, false)]);
+
+        let result = df_1.merge(&mut df_2).await;
+        assert!(result.is_ok());
+
+        let expected = multi_dataframe!([
+            (2, 22, true),
+            (3, 33, false),
+            (4, 44, true),
+            (5, 55, false),
+            (6, 66, true),
+            (8, 88, true),
+            (10, 1010, true),
         ]);
 
         assert_eq!(df_1, expected);

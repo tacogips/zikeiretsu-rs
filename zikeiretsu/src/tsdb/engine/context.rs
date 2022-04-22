@@ -12,7 +12,7 @@ pub enum DBContextError {
 
 pub type Result<T> = std::result::Result<T, DBContextError>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Database {
     pub database_name: String,
     pub cloud_storage: Option<CloudStorage>,

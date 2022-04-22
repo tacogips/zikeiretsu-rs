@@ -30,7 +30,7 @@ pub enum ArgsError {
 
 type Result<T> = std::result::Result<T, ArgsError>;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Args {
     #[clap(long = "data_dir", short = 'd', env = "ZDB_DIR")]

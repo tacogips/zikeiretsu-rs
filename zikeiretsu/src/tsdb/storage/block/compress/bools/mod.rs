@@ -7,7 +7,7 @@ where
     W: Write,
 {
     let len = src.len();
-    let mut writer = BitsWriter::new();
+    let mut writer = BitsWriter::default();
     let bits: Vec<Bit> = src
         .into_iter()
         .map(|b| if *b { Bit::One } else { Bit::Zero })

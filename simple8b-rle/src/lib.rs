@@ -321,7 +321,7 @@ pub(crate) fn compress_simple_8b<W>(
 where
     W: Write,
 {
-    debug_assert!(src.len() > 0);
+    debug_assert!(!src.is_empty());
     let mut result: u64 = src[0];
     for each_val in src[1..].iter() {
         result <<= compression_set.meaningful_bitsize;
@@ -336,7 +336,7 @@ where
     }
     result |= compression_set.selector.val << DATA_AREA_BITS;
 
-    dst.write(result.to_be_bytes().as_ref())?;
+    dst.write_all(result.to_be_bytes().as_ref())?;
     Ok(())
 }
 
@@ -366,9 +366,7 @@ pub(crate) fn should_rle_compression(
     } else {
         //TODO(tacogips) think about leading zero 0111_1110
         let bitsize_of_val = meaningful_bitsize(value);
-        if bitsize_of_val > RLE_VALUE_BITS {
-            None
-        } else if repeat_num > MAX_RLE_REPEATABLE_NUMBER {
+        if bitsize_of_val > RLE_VALUE_BITS || repeat_num > MAX_RLE_REPEATABLE_NUMBER {
             None
         } else {
             let compress_set = search_fitting_compress_set_by_bitsize(values, start_idx)?;

@@ -41,7 +41,7 @@ where
         return Ok(());
     }
 
-    let mut writer = BitsWriter::new();
+    let mut writer = BitsWriter::default();
     let head = f64_to_u64(src[0]);
     writer.append(u64_bits_reader!(head, 64)?, 64)?;
 

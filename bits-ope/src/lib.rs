@@ -222,16 +222,22 @@ pub struct BitsWriter {
     current_bits_offset_in_current_byte: BitsIndex,
 }
 
-impl BitsWriter {
-    pub fn new() -> Self {
+impl Default for BitsWriter {
+    fn default() -> Self {
         Self {
             buffer: Vec::new(),
             current_bits_offset_in_current_byte: 8,
         }
     }
+}
 
+impl BitsWriter {
     pub fn len(&self) -> usize {
         self.buffer.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.len() == 0
     }
 
     pub fn as_inner(&self) -> &[u8] {
@@ -279,7 +285,7 @@ impl BitsWriter {
     where
         W: Write,
     {
-        dst.write(&self.buffer)?;
+        dst.write_all(&self.buffer)?;
         Ok(())
     }
 }
@@ -321,13 +327,8 @@ pub trait ByteArrayBitsReader {
     fn set_current_bits_offset_in_current_byte(&mut self, i: BytesIndex);
 
     fn at_tail(&self) -> bool {
-        if self.current_byte_index() == self.bytes_buffer_len() - 1
+        self.current_byte_index() == self.bytes_buffer_len() - 1
             && self.current_bits_offset_in_current_byte() >= 8
-        {
-            true
-        } else {
-            false
-        }
     }
 
     /// retaining bits size

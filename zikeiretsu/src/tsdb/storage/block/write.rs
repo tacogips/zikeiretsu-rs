@@ -50,7 +50,7 @@ where
         timestamps_nanoseconds,
     } = TimestampDeltas::from(datapoints);
     {
-        let mut bits_writer = BitsWriter::new();
+        let mut bits_writer = BitsWriter::default();
         bits_writer.append(u64_bits_reader!(*head_timestamp, 64)?, 64)?;
         bits_writer.flush(&mut block_file)?;
     }

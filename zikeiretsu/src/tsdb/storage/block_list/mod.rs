@@ -302,7 +302,7 @@ where
 
     //  (1) updated timestamp(8 byte)
     {
-        let mut bits_writer = BitsWriter::new();
+        let mut bits_writer = BitsWriter::default();
         bits_writer.append(u64_bits_reader!(*block_list.updated_timestamp_sec, 64)?, 64)?;
         bits_writer.flush(&mut block_list_file)?;
     }

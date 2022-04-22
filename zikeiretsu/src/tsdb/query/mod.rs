@@ -1,11 +1,11 @@
 pub mod context;
-pub mod eval;
+pub mod executor;
 pub mod lexer;
 pub mod parser;
 
 use crate::EngineError;
 pub use context::*;
-pub use eval::*;
+pub use executor::*;
 pub use lexer::*;
 use parser::*;
 use thiserror::Error;

@@ -2,12 +2,13 @@ pub mod file_path;
 
 pub mod gcp;
 
-use file_dougu::gcs::FileUtilGcsError;
+use file_dougu::gcs::{FileUtilGcsError, GcsFile};
 use file_dougu::FileUtilError;
 pub use file_path::*;
 use std::fmt::{Display, Formatter, Result as FormatterResult};
 use std::io;
 use thiserror::Error;
+use url::Url;
 
 type Result<T> = std::result::Result<T, CloudStorageError>;
 
@@ -36,9 +37,15 @@ pub enum CloudStorageError {
 
     #[error("invalid metrics name. {0}")]
     InvalidMetricsName(String),
+
+    #[error("invalid url. {0}")]
+    InvalidUrl(String),
+
+    #[error("unsupported cloud storage url. {0}")]
+    UnsupportedCloudStorageUrl(String),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Bucket(pub String);
 
 impl Display for Bucket {
@@ -47,7 +54,7 @@ impl Display for Bucket {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SubDir(pub String);
 
 impl Display for SubDir {
@@ -56,7 +63,7 @@ impl Display for SubDir {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CloudStorage {
     Gcp(Bucket, SubDir),
 }
@@ -89,6 +96,20 @@ impl CloudStorage {
             }
         }
     }
+
+    pub fn from_url(url: &str) -> Result<Self> {
+        let url = Url::parse(url)
+            .map_err(|e| CloudStorageError::InvalidUrl(format!("{} ({:?})", url, e)))?;
+
+        if let Ok(GcsFile { bucket, name, .. }) = GcsFile::new_with_url(&url) {
+            Ok(CloudStorage::new_gcp(&bucket, &name))
+        } else {
+            Err(CloudStorageError::UnsupportedCloudStorageUrl(format!(
+                "{}",
+                url
+            )))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -96,9 +117,39 @@ mod test {
     use super::*;
 
     #[test]
-    pub fn cloud_block_list_file_path() {
+    pub fn cloud_block_list_file_path_1() {
         let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
 
         assert_eq!("gs://some_bucket/some_dir/".to_string(), storage.as_url());
+    }
+
+    #[test]
+    pub fn cloud_block_list_file_path_2() {
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+
+        assert_eq!(
+            CloudStorage::from_url("gs://some_bucket/some_dir/").unwrap(),
+            storage
+        );
+    }
+
+    #[test]
+    pub fn cloud_block_list_file_path_3() {
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir/aaa");
+
+        assert_eq!(
+            CloudStorage::from_url("gs://some_bucket/some_dir/aaa").unwrap(),
+            storage
+        );
+    }
+
+    #[test]
+    pub fn cloud_block_list_file_path_5() {
+        let storage = CloudStorage::new_gcp("some_bucket", "some_dir/aaa");
+
+        assert_eq!(
+            CloudStorage::from_url("gs://some_bucket/some_dir/aaa/").unwrap(),
+            storage
+        );
     }
 }

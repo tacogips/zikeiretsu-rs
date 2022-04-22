@@ -64,17 +64,15 @@ where
             let compressed_bytes = rle_compression.to_u64().to_be_bytes();
             dst.write_all(compressed_bytes.as_ref())?;
             current_idx = rle_bound_idx;
+        } else if let Some((compression_set, bound_idx)) =
+            search_simple_8b_compress_set(src, current_idx)?
+        {
+            debug_assert!(current_idx < bound_idx);
+            debug_assert!(bound_idx <= src.len());
+            compress_simple_8b(&src[current_idx..bound_idx], dst, compression_set)?;
+            current_idx = bound_idx;
         } else {
-            if let Some((compression_set, bound_idx)) =
-                search_simple_8b_compress_set(src, current_idx)?
-            {
-                debug_assert!(current_idx < bound_idx);
-                debug_assert!(bound_idx <= src.len());
-                compress_simple_8b(&src[current_idx..bound_idx], dst, compression_set)?;
-                current_idx = bound_idx;
-            } else {
-                unreachable!("current idx out of bounds. (it should be a bug)")
-            }
+            unreachable!("current idx out of bounds. (it should be a bug)")
         }
     }
 }

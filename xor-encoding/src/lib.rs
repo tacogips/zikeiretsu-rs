@@ -1,4 +1,3 @@
-use std::mem;
 use thiserror::Error;
 
 use bits_ope::Error as BitsError;
@@ -26,11 +25,11 @@ const LEADING_ZERO_LENGTH_BITS_SIZE: usize = 6; // number of leading zeros: 0-63
 const DATA_LENGTH_BITS_SIZE: usize = 6; // data bits length value may be between 1-64, we will minus 1 from the value to make the value range 0-63 to fit into 6 bits
 
 pub(crate) fn f64_to_u64(v: f64) -> u64 {
-    unsafe { mem::transmute::<f64, u64>(v) }
+    v.to_bits()
 }
 
 pub(crate) fn u64_to_f64(v: u64) -> f64 {
-    unsafe { mem::transmute::<u64, f64>(v) }
+    f64::from_bits(v)
 }
 
 pub fn compress_f64<W>(src: &[f64], dst: &mut W) -> Result<()>

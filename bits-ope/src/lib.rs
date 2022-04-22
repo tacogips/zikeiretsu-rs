@@ -959,7 +959,7 @@ mod test {
         assert!(bytes_converter::from_u64(0b1010101100, 10, &mut v).is_ok());
         let input = RefBitsReader::new(v.as_slice());
 
-        let mut writer = BitsWriter::new();
+        let mut writer = BitsWriter::default();
         assert!(writer.append(input, 10).is_ok());
         let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 2);
@@ -973,7 +973,7 @@ mod test {
         assert!(bytes_converter::from_u64(0b1010101111, 10, &mut v).is_ok());
         let input = RefBitsReader::new(v.as_slice());
 
-        let mut writer = BitsWriter::new();
+        let mut writer = BitsWriter::default();
         assert!(writer.append(input, 10).is_ok());
         let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 2);
@@ -987,7 +987,7 @@ mod test {
         assert!(bytes_converter::from_u64(0b10101011, 8, &mut v).is_ok());
         let input = RefBitsReader::new(v.as_slice());
 
-        let mut writer = BitsWriter::new();
+        let mut writer = BitsWriter::default();
         assert!(writer.append(input, 8).is_ok());
         let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 1);

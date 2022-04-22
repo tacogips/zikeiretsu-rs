@@ -29,9 +29,9 @@ where
     for i in 0..byte_size {
         let is_last = i == byte_size - 1;
         if is_last {
-            dst.write(&[(src >> i * 7) as u8; 1])?;
+            dst.write_all(&[(src >> i * 7) as u8; 1])?;
         } else {
-            dst.write(&[((src >> i * 7) as u8) | CONTINUE_CONTROL_BIT])?;
+            dst.write_all(&[((src >> i * 7) as u8) | CONTINUE_CONTROL_BIT])?;
         }
     }
 

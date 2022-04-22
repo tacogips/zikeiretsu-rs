@@ -41,7 +41,7 @@ pub async fn start(ctx: &mut DBContext) -> Result<()> {
     let _ = editor.load_history(history_file_path.as_path());
 
     loop {
-        println!("");
+        println!();
         let readline = editor.readline("query> ");
 
         match readline {

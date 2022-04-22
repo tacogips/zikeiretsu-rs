@@ -47,27 +47,14 @@ impl DatetimeAccuracy {
                 (_, _, 0) => DatetimeAccuracy::Minute,
                 _ => DatetimeAccuracy::Second,
             }
+        } else if nano_sec % 1_000 != 0 {
+            DatetimeAccuracy::MicroSecond
+        } else if nano_sec % 1_000_000 != 0 {
+            DatetimeAccuracy::MilliSecond
         } else {
-            if nano_sec % 1_000 != 0 {
-                DatetimeAccuracy::MicroSecond
-            } else if nano_sec % 1_000_000 != 0 {
-                DatetimeAccuracy::MilliSecond
-            } else {
-                DatetimeAccuracy::NanoSecond
-            }
+            DatetimeAccuracy::NanoSecond
         }
     }
-
-    /////// Returns the number of nanoseconds since the whole non-leap second.
-    /////// The range from 1,000,000,000 to 1,999,999,999 represents
-    /////// the [leap second](./naive/struct.NaiveTime.html#leap-second-handling).
-    //fn nanosecond(&self) -> u32;
-
-    //    dt.hour()
-    //    let naive_local_datetime = dt.naive_local();
-    //    naive_local_datetime.hour();
-    //    unimplemented!()
-    //}
 }
 
 static DATETIME_FORMATS: OnceCell<Vec<(chrono_format::StrftimeItems<'static>, bool)>> =

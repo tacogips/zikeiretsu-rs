@@ -2,7 +2,6 @@ pub mod executor;
 pub mod lexer;
 pub mod parser;
 
-use super::engine::context::*;
 use crate::EngineError;
 pub use executor::*;
 pub use lexer::*;

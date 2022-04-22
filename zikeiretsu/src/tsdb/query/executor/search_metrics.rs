@@ -3,7 +3,6 @@ use super::EvalError;
 
 use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::{InterpretedQueryCondition, OutputWriter};
-use crate::tsdb::query::DBContext;
 use crate::tsdb::DBConfig;
 use crate::tsdb::DataSeriesRefs;
 use polars::prelude::DataFrame as PDataFrame;

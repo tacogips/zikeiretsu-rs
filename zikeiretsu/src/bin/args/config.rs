@@ -1,18 +1,37 @@
 use super::Result;
+use ::zikeiretsu::{CloudStorage, Database};
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Config {
-    pub db_dir: Option<PathBuf>,
-    pub cloud_type: Option<String>,
-    pub bucket: Option<String>,
-    pub bucket_sub_path: Option<String>,
+    pub data_dir: Option<PathBuf>,
+    pub databases: Option<Vec<DatabaseConfig>>,
     pub service_account_file_path: Option<PathBuf>,
     pub dataframe_width: Option<u16>,
     pub dataframe_row_num: Option<usize>,
     pub dataframe_col_num: Option<usize>,
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+pub struct DatabaseConfig {
+    database_name: String,
+    cloud_storage_url: Option<String>,
+}
+
+impl DatabaseConfig {
+    pub fn into_database(self) -> Result<Database> {
+        let cloud_storage = match self.cloud_storage_url {
+            None => None,
+            Some(cloud_storage_url) => Some(CloudStorage::from_url(cloud_storage_url.as_str())?),
+        };
+
+        Ok(Database {
+            database_name: self.database_name,
+            cloud_storage,
+        })
+    }
 }
 
 impl Config {
@@ -50,7 +69,7 @@ mod test {
         assert_eq!(
             config,
             Config {
-                db_dir: Some("/tmp/db_dir".into()),
+                data_dir: Some("/tmp/db_dir".into()),
                 cloud_type: Some("gcp".to_string()),
                 bucket: Some("test_bucket".to_string()),
                 bucket_sub_path: Some("some_path".to_string()),

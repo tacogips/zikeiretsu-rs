@@ -165,7 +165,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                 }
             }
             Rule::KW_TIMESTAMP => column_name = Some(ColumnName(each.as_str())),
-            r @ _ => {
+            r => {
                 return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
                 )))
@@ -229,7 +229,7 @@ pub fn parse_datetime_range_close<'q>(
                     )));
                 }
             }
-            r @ _ => {
+            r => {
                 return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
                 )))
@@ -286,7 +286,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                 datetime_delta = Some(parse_datetime_delta(each)?);
             }
 
-            r @ _ => {
+            r => {
                 return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in datetime : {r:?}"
                 )))

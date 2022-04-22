@@ -98,7 +98,9 @@ mod test {
         };
 
         assert_eq!(
-            db.as_local_db_dir("/data_dir").display().to_string(),
+            db.as_local_db_dir(Path::new("/data_dir"))
+                .display()
+                .to_string(),
             "/data_dir/test_db_test_bucket/test_dir/aaa".to_string()
         );
     }

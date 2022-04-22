@@ -54,14 +54,15 @@ mod test {
     fn parse_config() {
         let test_contents = r#"
 
-            db_dir = "/tmp/db_dir"
-            cloud_type = "gcp"
-            bucket = "test_bucket"
-            bucket_sub_path = "some_path"
+            data_dir = "/tmp/db_dir"
             service_account_file_path= "/path/to/service_account"
             dataframe_width = 120
             dataframe_row_num = 9
             dataframe_col_num = 11
+
+            [[databases]]
+            database_name="test_db"
+            cloud_storage_url ="gs://some/where"
 
             "#;
 
@@ -70,13 +71,15 @@ mod test {
             config,
             Config {
                 data_dir: Some("/tmp/db_dir".into()),
-                cloud_type: Some("gcp".to_string()),
-                bucket: Some("test_bucket".to_string()),
-                bucket_sub_path: Some("some_path".to_string()),
                 service_account_file_path: Some("/path/to/service_account".into()),
                 dataframe_width: Some(120),
                 dataframe_row_num: Some(9),
                 dataframe_col_num: Some(11),
+
+                databases: Some(vec![DatabaseConfig {
+                    database_name: "test_db".to_string(),
+                    cloud_storage_url: Some("gs://some/where".to_string()),
+                }])
             }
         );
     }

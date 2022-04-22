@@ -17,7 +17,7 @@ pub async fn execute_describe_metrics(
     output_condition: Option<OutputCondition>,
     show_block_list: bool,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
-    let db_dir = match &ctx.db_dir {
+    let db_dir = match &ctx.data_dir {
         Some(db_dir) => db_dir,
         None => return Err(EvalError::DBDirNotSet),
     };
@@ -59,7 +59,7 @@ async fn load_metrics_describes(
     db_config: &DBConfig,
     metricses: Vec<Metrics>,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
-    let db_dir = match &ctx.db_dir {
+    let db_dir = match &ctx.data_dir {
         Some(db_dir) => db_dir,
         None => return Err(EvalError::DBDirNotSet),
     };

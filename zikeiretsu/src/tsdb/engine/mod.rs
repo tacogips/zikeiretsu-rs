@@ -1,9 +1,11 @@
+pub mod context;
 use crate::tsdb::cloudstorage::CloudStorage;
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::store::writable_store::DatapointDefaultSorter;
 use crate::tsdb::{datapoint::DatapointSearchCondition, storage::*, store::*};
 use crate::tsdb::{storage::api as storage_api, store};
+pub use context::*;
 use std::path::Path;
 use thiserror::Error;
 

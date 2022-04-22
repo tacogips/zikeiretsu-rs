@@ -12,7 +12,7 @@ pub async fn execute_metrics_list(
     db_config: &DBConfig,
     output_condition: Option<OutputCondition>,
 ) -> Result<Vec<Metrics>, EvalError> {
-    let metricses = Engine::list_metrics(ctx.db_dir.as_ref(), &db_config).await?;
+    let metricses = Engine::list_metrics(ctx.data_dir.as_ref(), &db_config).await?;
     let metricses_strs = metricses
         .clone()
         .into_iter()

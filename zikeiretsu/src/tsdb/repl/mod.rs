@@ -1,6 +1,6 @@
 mod validator;
 
-use super::query::*;
+use super::engine::*;
 use crate::tsdb::query::executor::execute_query;
 use crate::EngineError;
 use dirs::home_dir;

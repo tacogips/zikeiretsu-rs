@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 pub(crate) struct With<'q> {
     pub timezone: FixedOffset,
+    pub database: Option<&'q str>,
     pub output_format: OutputFormat,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
     pub column_name_aliases: Option<Vec<String>>,
@@ -24,6 +25,7 @@ impl<'q> Default for With<'q> {
         Self {
             timezone,
             output_format,
+            database: None,
             column_index_map: None,
             column_name_aliases: None,
             output_file_path: None,
@@ -63,6 +65,9 @@ pub(crate) fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> LexerRe
                     .collect::<Vec<String>>(),
             )
         }
+
+        // database
+        with.database = with_clause.def_database;
 
         // time zone
         if let Some(tz) = with_clause.def_timezone {
@@ -104,6 +109,7 @@ mod test {
                 Column::ColumnName(ColumnName("c3")),
             ]),
 
+            def_database: None,
             def_timezone: None,
             def_output: None,
             def_output_file_path: None,

@@ -9,15 +9,10 @@ use crate::tsdb::DataSeriesRefs;
 use polars::prelude::DataFrame as PDataFrame;
 
 pub async fn execute_search_metrics(
-    ctx: &DBContext,
+    db_dir: &str,
     db_config: &DBConfig,
     condition: InterpretedQueryCondition,
 ) -> Result<Option<PDataFrame>, EvalError> {
-    let db_dir = match &ctx.data_dir {
-        Some(db_dir) => db_dir,
-        None => return Err(EvalError::DBDirNotSet),
-    };
-
     let store = Engine::search(
         &db_dir,
         &condition.metrics,

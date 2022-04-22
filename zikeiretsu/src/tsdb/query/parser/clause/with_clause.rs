@@ -13,6 +13,7 @@ pub enum OutputFormat {
 #[derive(Debug)]
 pub struct WithClause<'q> {
     pub def_columns: Option<Vec<Column<'q>>>,
+    pub def_database: Option<&'q str>,
     pub def_timezone: Option<FixedOffset>,
     pub def_output: Option<OutputFormat>,
     pub def_output_file_path: Option<PathBuf>,
@@ -31,6 +32,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
 
     let mut with_clause = WithClause {
         def_columns: None,
+        def_database: None,
         def_timezone: None,
         def_output: None,
         def_output_file_path: None,
@@ -49,6 +51,15 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
                                         columns_parser::parse(each_in_define_columns, false)?;
 
                                     with_clause.def_columns = Some(columns);
+                                }
+                            }
+                        }
+
+                        Rule::DEFINE_DATABASE => {
+                            for each_in_define_database in each_define.into_inner() {
+                                if each_in_define_database.as_rule() == Rule::DB_NAME {
+                                    with_clause.def_database =
+                                        Some(each_in_define_database.as_str());
                                 }
                             }
                         }

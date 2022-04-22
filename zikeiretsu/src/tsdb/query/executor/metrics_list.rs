@@ -2,17 +2,16 @@ use super::output::*;
 use super::EvalError;
 use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
-use crate::tsdb::query::DBContext;
 use crate::tsdb::DBConfig;
 use crate::tsdb::Metrics;
 use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs};
 
 pub async fn execute_metrics_list(
-    ctx: &DBContext,
+    db_dir: Option<&str>,
     db_config: &DBConfig,
     output_condition: Option<OutputCondition>,
 ) -> Result<Vec<Metrics>, EvalError> {
-    let metricses = Engine::list_metrics(ctx.data_dir.as_ref(), &db_config).await?;
+    let metricses = Engine::list_metrics(db_dir, &db_config).await?;
     let metricses_strs = metricses
         .clone()
         .into_iter()

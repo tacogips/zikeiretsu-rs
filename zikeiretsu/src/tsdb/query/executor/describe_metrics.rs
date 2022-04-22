@@ -11,17 +11,12 @@ use crate::tsdb::{
 use futures::future;
 
 pub async fn execute_describe_metrics(
-    ctx: &DBContext,
+    db_dir: &str,
     db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
     output_condition: Option<OutputCondition>,
     show_block_list: bool,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
-    let db_dir = match &ctx.data_dir {
-        Some(db_dir) => db_dir,
-        None => return Err(EvalError::DBDirNotSet),
-    };
-
     let metricses = Engine::list_metrics(Some(&db_dir), &db_config).await?;
     let metricses = match metrics_filter {
         Some(metrics_filter) => metricses
@@ -40,7 +35,7 @@ pub async fn execute_describe_metrics(
         return Err(EvalError::MetricsNotFoundError("[empty]".to_string()));
     }
 
-    let describes = load_metrics_describes(&ctx, &db_config, metricses).await?;
+    let describes = load_metrics_describes(&db_dir, &db_config, metricses).await?;
     let (df, column_names) = if show_block_list {
         describes_to_dataframe_with_block_list(describes.as_slice())?
     } else {
@@ -55,15 +50,10 @@ pub async fn execute_describe_metrics(
 }
 
 async fn load_metrics_describes(
-    ctx: &DBContext,
+    db_dir: &str,
     db_config: &DBConfig,
     metricses: Vec<Metrics>,
 ) -> Result<Vec<MetricsDescribe>, EvalError> {
-    let db_dir = match &ctx.data_dir {
-        Some(db_dir) => db_dir,
-        None => return Err(EvalError::DBDirNotSet),
-    };
-
     let metrics_descibes = metricses.into_iter().map(|metrics| async move {
         Engine::block_list_data(&db_dir, &metrics, &db_config)
             .await

@@ -55,11 +55,23 @@ pub enum OutputError {
 }
 
 #[derive(Debug)]
+pub struct DatabaseName(String);
+impl DatabaseName {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+#[derive(Debug)]
 pub enum InterpretedQuery {
-    ListMetrics(OutputCondition, QuerySetting),
-    DescribeMetrics(DescribeMetrics, QuerySetting),
-    DescribeBlockList(DescribeBlockList, QuerySetting),
-    SearchMetrics(InterpretedQueryCondition, QuerySetting),
+    ListMetrics(Option<DatabaseName>, OutputCondition, QuerySetting),
+    DescribeMetrics(Option<DatabaseName>, DescribeMetrics, QuerySetting),
+    DescribeBlockList(Option<DatabaseName>, DescribeBlockList, QuerySetting),
+    SearchMetrics(
+        Option<DatabaseName>,
+        InterpretedQueryCondition,
+        QuerySetting,
+    ),
 }
 
 #[derive(Debug)]
@@ -197,7 +209,12 @@ pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Interpreted
         output_condition,
         timezone: with.timezone,
     };
+    let database_name = with
+        .database
+        .map(|database_name| DatabaseName(database_name.to_string()));
+
     Ok(InterpretedQuery::SearchMetrics(
+        database_name,
         query_context,
         query_setting,
     ))
@@ -213,11 +230,15 @@ pub(crate) fn interpret_buildin_metrics<'q>(
         cache_setting: with.cache_setting,
         cloud_setting: with.cloud_setting,
     };
+    let database_name = with
+        .database
+        .map(|database_name| DatabaseName(database_name.to_string()));
 
     match buildin_metrics {
         from::BuildinMetrics::ListMetrics => {
             invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
             Ok(InterpretedQuery::ListMetrics(
+                database_name,
                 OutputCondition {
                     output_format: with.output_format,
                     output_file_path: with.output_file_path,
@@ -238,6 +259,7 @@ pub(crate) fn interpret_buildin_metrics<'q>(
             };
 
             Ok(InterpretedQuery::DescribeMetrics(
+                database_name,
                 DescribeMetrics {
                     output_condition,
                     metrics_filter,
@@ -258,6 +280,7 @@ pub(crate) fn interpret_buildin_metrics<'q>(
             };
 
             Ok(InterpretedQuery::DescribeBlockList(
+                database_name,
                 DescribeBlockList {
                     output_condition,
                     metrics_filter,

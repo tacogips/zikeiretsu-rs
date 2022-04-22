@@ -5,7 +5,7 @@ pub mod search_metrics;
 
 use crate::tsdb::data_types::DataSeriesRefsError;
 use crate::tsdb::engine::EngineError;
-use crate::tsdb::lexer::{interpret, InterpretedQuery, LexerError, OutputError};
+use crate::tsdb::lexer::{interpret, DatabaseName, InterpretedQuery, LexerError, OutputError};
 use crate::tsdb::query::parser::{parse_query, ParserError};
 use crate::tsdb::query::QuerySetting;
 use crate::tsdb::{DBConfig, DBContext};
@@ -57,15 +57,16 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
     let parsed_query = parse_query(query)?;
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {
-        InterpretedQuery::ListMetrics(output_condition, query_setting) => {
-            let db_config = to_db_config(&ctx, query_setting);
-            metrics_list::execute_metrics_list(ctx, &db_config, Some(output_condition)).await?;
+        InterpretedQuery::ListMetrics(database_name, output_condition, query_setting) => {
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
+            metrics_list::execute_metrics_list(Some(db_dir), &db_config, Some(output_condition))
+                .await?;
         }
 
-        InterpretedQuery::DescribeMetrics(describe_condition, query_setting) => {
-            let db_config = to_db_config(&ctx, query_setting);
+        InterpretedQuery::DescribeMetrics(database_name, describe_condition, query_setting) => {
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
             describe_metrics::execute_describe_metrics(
-                ctx,
+                db_dir,
                 &db_config,
                 describe_condition.metrics_filter,
                 Some(describe_condition.output_condition),
@@ -74,10 +75,10 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
             .await?;
         }
 
-        InterpretedQuery::DescribeBlockList(describe_condition, query_setting) => {
-            let db_config = to_db_config(&ctx, query_setting);
+        InterpretedQuery::DescribeBlockList(database_name, describe_condition, query_setting) => {
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
             describe_metrics::execute_describe_metrics(
-                ctx,
+                db_dir,
                 &db_config,
                 describe_condition.metrics_filter,
                 Some(describe_condition.output_condition),
@@ -86,19 +87,25 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
             .await?;
         }
 
-        InterpretedQuery::SearchMetrics(query_condition, query_setting) => {
-            let db_config = to_db_config(&ctx, query_setting);
-            search_metrics::execute_search_metrics(ctx, &db_config, query_condition).await?;
+        InterpretedQuery::SearchMetrics(database_name, query_condition, query_setting) => {
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
+            search_metrics::execute_search_metrics(db_dir, &db_config, query_condition).await?;
         }
     }
 
     Ok(())
 }
 
-fn to_db_config(ctx: &DBContext, query_setting: QuerySetting) -> DBConfig {
-    DBConfig {
-        cache_setting: query_setting.cache_setting,
-        cloud_storage: ctx.cloud_storage.clone(),
-        cloud_setting: query_setting.cloud_setting,
-    }
+fn to_db_config_and_db_dir<'a>(
+    database_name: Option<DatabaseName>,
+    ctx: &'a DBContext,
+    query_setting: QuerySetting,
+) -> Result<(DBConfig, &'a str)> {
+    unimplemented!()
+
+    //DBConfig {
+    //    cache_setting: query_setting.cache_setting,
+    //    cloud_storage: ctx.cloud_storage.clone(),
+    //    cloud_setting: query_setting.cloud_setting,
+    //}
 }

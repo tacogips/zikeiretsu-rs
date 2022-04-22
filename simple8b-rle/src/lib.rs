@@ -49,7 +49,7 @@ pub fn compress<W>(src: &[u64], dst: &mut W) -> Result<()>
 where
     W: Write,
 {
-    if src.len() == 0 {
+    if src.is_empty() {
         return Ok(());
     }
 
@@ -62,7 +62,7 @@ where
 
         if let Some((rle_compression, rle_bound_idx)) = should_rle_compression(src, current_idx)? {
             let compressed_bytes = rle_compression.to_u64().to_be_bytes();
-            dst.write(compressed_bytes.as_ref())?;
+            dst.write_all(compressed_bytes.as_ref())?;
             current_idx = rle_bound_idx;
         } else {
             if let Some((compression_set, bound_idx)) =
@@ -84,7 +84,7 @@ pub fn decompress(src: &[u8], dst: &mut Vec<u64>, num_of_value: Option<usize>) -
         return Ok(0);
     }
 
-    let max_num = num_of_value.unwrap_or_else(|| std::usize::MAX);
+    let max_num = num_of_value.unwrap_or(std::usize::MAX);
     let mut current_index = 0;
     let mut decompressed_num: usize = 0;
 
@@ -127,14 +127,14 @@ const MAX_RLE_REPEATABLE_NUMBER: DataNum = (1 << 28) - 1;
 #[derive(Debug, Eq, PartialEq)]
 enum Simple8BOrRLESelector {
     Simple8B(&'static CompressionSet),
-    RLE,
+    Rle,
 }
 
 impl Simple8BOrRLESelector {
     fn from_u64(compressed_data: u64) -> Result<Self> {
         let selector = compressed_data >> DATA_AREA_BITS;
         if selector == SELECTOR_FOR_RLE {
-            Ok(Self::RLE)
+            Ok(Self::Rle)
         } else {
             for each in COMPRESSION_SETS.iter() {
                 if each.selector.val == selector {
@@ -261,7 +261,7 @@ pub(crate) fn decompress_single_compressed_data(compressed_data: u64) -> Result<
         Simple8BOrRLESelector::Simple8B(compress_set) => {
             decompress_simple_8b(compressed_data, compress_set)
         }
-        Simple8BOrRLESelector::RLE => decompress_rle(compressed_data),
+        Simple8BOrRLESelector::Rle => decompress_rle(compressed_data),
     }
 }
 

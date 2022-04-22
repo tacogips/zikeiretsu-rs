@@ -67,7 +67,7 @@ pub fn decompress_u64(src: &[u8]) -> Result<(u64, usize)> {
     }
 
     for i in (0..variants_size).rev() {
-        result = result | ((variants[i] as u64) << i * 7);
+        result |= (variants[i] as u64) << i * 7;
     }
 
     Ok((result, variants_size))

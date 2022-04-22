@@ -48,12 +48,9 @@ pub mod bytes_converter {
         for chunk_bits in src.chunks(8) {
             let mut each_byte: u8 = 0;
             for (idx, bit) in chunk_bits.iter().enumerate() {
-                match bit {
-                    Bit::One => {
-                        let lshift_bits = 8 - idx - 1;
-                        each_byte = each_byte | (1 << lshift_bits)
-                    }
-                    _ => { /*do nothing*/ }
+                if bit == &Bit::One {
+                    let lshift_bits = 8 - idx - 1;
+                    each_byte |= 1 << lshift_bits
                 }
             }
             dst.push(each_byte);

@@ -1,6 +1,6 @@
 use crate::tsdb::{Bucket, CloudStorage, SubDir};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use thiserror::Error;
 
@@ -18,19 +18,24 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn as_local_db_dir(&self, data_dir: &str) -> PathBuf {
+    pub fn as_local_db_dir(&self, data_dir: &Path) -> PathBuf {
         let mut pb = PathBuf::new();
         let dir_str = match &self.cloud_storage {
             Some(cloud_storage) => match cloud_storage {
                 CloudStorage::Gcp(Bucket(bucket), SubDir(subdir)) => {
                     format!(
                         "{data_dir}/{db_name}_{bucket}/{subdir}",
+                        data_dir = data_dir.display(),
                         db_name = self.db_name
                     )
                 }
             },
             None => {
-                format!("{data_dir}/{db_name}", db_name = self.db_name)
+                format!(
+                    "{data_dir}/{db_name}",
+                    data_dir = data_dir.display(),
+                    db_name = self.db_name
+                )
             }
         };
         pb.push(dir_str);

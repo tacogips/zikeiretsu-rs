@@ -20,10 +20,10 @@ where
     }
 
     #[cfg(feature = "validate")]
-    DataPoint::check_datapoints_is_sorted(&datapoints).map_err(|s| BlockError::UnKnownError(s))?;
+    DataPoint::check_datapoints_is_sorted(datapoints).map_err(BlockError::UnKnownError)?;
 
     #[cfg(feature = "validate")]
-    check_fields_are_valid(&datapoints)?;
+    check_fields_are_valid(datapoints)?;
 
     let head_datapoint = datapoints.get(0).unwrap();
     let data_field_num = head_datapoint.field_values.len();
@@ -87,9 +87,7 @@ where
             }
 
             unsupported_field_type => {
-                return Err(BlockError::UnsupportedFieldType(
-                    unsupported_field_type.clone(),
-                ))
+                return Err(BlockError::UnsupportedFieldType(unsupported_field_type))
             }
         }
     }

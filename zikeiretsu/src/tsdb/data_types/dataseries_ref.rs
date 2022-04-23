@@ -91,7 +91,7 @@ pub trait DataSeriesRefs {
                         column_names.len(),
                     ));
                 }
-                column_names.into_iter().map(|s| s.to_string()).collect()
+                column_names.into_iter().collect()
             }
             None => (0..data_series_vec.len())
                 .into_iter()

@@ -43,7 +43,7 @@ pub async fn main() -> Result<()> {
     setup_log();
 
     let mut args = Args::parse();
-    args.init()?;
+    args.init(true)?;
 
     log::debug!("current_dir :{:?}", std::env::current_dir());
 

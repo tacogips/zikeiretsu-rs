@@ -28,16 +28,6 @@ use crate::tsdb::dataframe::DataframeError;
 use execute_results::*;
 
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
-#[serde(rename = "ocr")]
-pub struct OutputConditionResult {
-    #[serde(rename = "output_condition")]
-    pub output_condition: OutputCondition,
-
-    #[serde(rename = "column_names")]
-    pub column_names: Option<Vec<String>>,
-}
-
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct ExecuteResult {
     data: Option<ExecuteResultData>,
     error_message: Option<String>,
@@ -52,9 +42,9 @@ impl ExecuteResult {
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "t", content = "c")]
 pub enum ExecuteResultData {
-    MetricsList(Vec<Metrics>, OutputConditionResult),
-    DescribeMetrics(DataFrame, OutputConditionResult),
-    SearchMetrics(Option<TimeSeriesDataFrame>, OutputConditionResult),
+    MetricsList(DataFrame, OutputCondition),
+    DescribeMetrics(DataFrame, OutputCondition),
+    SearchMetrics(Option<TimeSeriesDataFrame>, OutputCondition),
 }
 
 pub async fn execute_query(ctx: &DBContext, query: &str) -> ExecuteResult {
@@ -76,22 +66,15 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
         InterpretedQuery::ListMetrics(database_name, output_condition, query_setting) => {
             let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
-            let (metrics, column_names) =
-                metrics_list::execute_metrics_list(Some(&db_dir), &db_config).await?;
+            let metrics = metrics_list::execute_metrics_list(Some(&db_dir), &db_config).await?;
 
-            Ok(ExecuteResultData::MetricsList(
-                metrics,
-                OutputConditionResult {
-                    output_condition,
-                    column_names: Some(column_names),
-                },
-            ))
+            Ok(ExecuteResultData::MetricsList(metrics, output_condition))
         }
 
         InterpretedQuery::DescribeMetrics(database_name, describe_condition, query_setting) => {
             let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
-            let (df, column_names) = describe_metrics::execute_describe_metrics(
+            let df = describe_metrics::execute_describe_metrics(
                 &db_dir,
                 &db_config,
                 describe_condition.metrics_filter,
@@ -101,17 +84,14 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
 
             Ok(ExecuteResultData::DescribeMetrics(
                 df,
-                OutputConditionResult {
-                    output_condition: describe_condition.output_condition,
-                    column_names: Some(column_names),
-                },
+                describe_condition.output_condition,
             ))
         }
 
         InterpretedQuery::DescribeBlockList(database_name, describe_condition, query_setting) => {
             let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
-            let (df, column_names) = describe_metrics::execute_describe_metrics(
+            let df = describe_metrics::execute_describe_metrics(
                 &db_dir,
                 &db_config,
                 describe_condition.metrics_filter,
@@ -121,10 +101,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
 
             Ok(ExecuteResultData::DescribeMetrics(
                 df,
-                OutputConditionResult {
-                    output_condition: describe_condition.output_condition,
-                    column_names: Some(column_names),
-                },
+                describe_condition.output_condition,
             ))
         }
 
@@ -132,16 +109,13 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
 
-            let (query_result_df, column_names) =
+            let query_result_df =
                 search_metrics::execute_search_metrics(&db_dir, &db_config, &query_condition)
                     .await?;
 
             Ok(ExecuteResultData::SearchMetrics(
                 query_result_df,
-                OutputConditionResult {
-                    output_condition: query_condition.output_condition,
-                    column_names,
-                },
+                query_condition.output_condition,
             ))
         }
     }

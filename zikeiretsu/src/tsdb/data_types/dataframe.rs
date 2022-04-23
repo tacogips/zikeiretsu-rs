@@ -90,4 +90,8 @@ impl DataSeriesRefs for DataFrame {
             .map(|ds| ds.as_dataseries_ref())
             .collect()
     }
+
+    fn column_names(&self) -> Option<&Vec<String>> {
+        self.column_names.as_ref()
+    }
 }

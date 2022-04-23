@@ -36,8 +36,8 @@ impl TimeSeriesDataFrame {
         }
     }
 
-    pub fn set_column_names(&mut self, column_names: Vec<String>) {
-        self.column_names = Some(column_names);
+    pub fn set_column_names(&mut self, column_names: Option<Vec<String>>) {
+        self.column_names = column_names;
     }
 
     pub fn empty() -> Self {
@@ -368,6 +368,10 @@ impl From<TimeSeriesDataFrameRef<'_>> for TimeSeriesDataFrame {
 }
 
 impl DataSeriesRefs for TimeSeriesDataFrame {
+    fn column_names(&self) -> Option<&Vec<String>> {
+        self.column_names.as_ref()
+    }
+
     fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>> {
         let mut vs: Vec<DataSeriesRef<'_>> = self
             .columns
@@ -874,7 +878,11 @@ mod test {
 
         assert_eq!(
             prefix,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
 
         assert_eq!(df, dataframe!([(2, 22)]));
@@ -917,7 +925,11 @@ mod test {
 
         assert_eq!(
             suffix,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
     }
 
@@ -952,12 +964,20 @@ mod test {
 
         assert_eq!(
             df,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
 
         assert_eq!(
             suffix,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
     }
 
@@ -978,7 +998,11 @@ mod test {
 
         assert_eq!(
             prefix,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
         assert_eq!(
             suffix,
@@ -996,7 +1020,11 @@ mod test {
 
         assert_eq!(
             df,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
     }
 
@@ -1017,7 +1045,11 @@ mod test {
 
         assert_eq!(
             prefix,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
         assert_eq!(
             suffix,
@@ -1035,7 +1067,11 @@ mod test {
 
         assert_eq!(
             df,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
     }
 
@@ -1070,12 +1106,20 @@ mod test {
 
         assert_eq!(
             df,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
 
         assert_eq!(
             suffix,
-            TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
+            TimeSeriesDataFrame::new(
+                vec![],
+                vec![DataSeries::new(SeriesValues::Float64(vec![]))],
+                None
+            )
         );
     }
 
@@ -1096,6 +1140,5 @@ mod test {
         let serialized_df: TimeSeriesDataFrame = serde_json::from_str(&serilized).unwrap();
 
         assert_eq!(df, serialized_df);
-        assert!(false)
     }
 }

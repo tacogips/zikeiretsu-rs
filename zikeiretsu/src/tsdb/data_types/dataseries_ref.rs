@@ -76,14 +76,11 @@ pub enum DataSeriesRefsError {
 #[async_trait]
 pub trait DataSeriesRefs {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>>;
+    fn column_names(&self) -> Option<&Vec<String>>;
 
-    async fn as_polar_dataframes(
-        &self,
-        column_names: Option<Vec<String>>,
-        timezone: Option<&FixedOffset>,
-    ) -> Result<PDataFrame> {
+    async fn as_polar_dataframes(&self, timezone: Option<&FixedOffset>) -> Result<PDataFrame> {
         let data_series_vec = self.as_data_serieses_ref_vec();
-        let field_names: Vec<String> = match column_names {
+        let field_names: Vec<String> = match self.column_names() {
             Some(column_names) => {
                 if data_series_vec.len() != column_names.len() {
                     return Err(DataSeriesRefsError::UnmatchedColumnNameNumber(
@@ -91,7 +88,10 @@ pub trait DataSeriesRefs {
                         column_names.len(),
                     ));
                 }
-                column_names.into_iter().collect()
+                column_names
+                    .into_iter()
+                    .map(|name| name.to_string())
+                    .collect()
             }
             None => (0..data_series_vec.len())
                 .into_iter()
@@ -109,29 +109,5 @@ pub trait DataSeriesRefs {
             .into_iter()
             .collect::<Vec<PSeries>>();
         Ok(PDataFrame::new(serieses)?)
-    }
-}
-
-pub type StringSeriesRef<'a> = &'a Vec<String>;
-#[derive(Default)]
-pub struct StringDataSeriesRefs<'a> {
-    values: Vec<StringSeriesRef<'a>>,
-}
-
-impl<'a> StringDataSeriesRefs<'a> {
-    pub fn push(&mut self, series: StringSeriesRef<'a>) {
-        self.values.push(series);
-    }
-}
-
-impl<'a> DataSeriesRefs for StringDataSeriesRefs<'a> {
-    fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'a>> {
-        let vs: Vec<DataSeriesRef<'_>> = self
-            .values
-            .iter()
-            .map(|strs| DataSeriesRef::new(SeriesValuesRef::String(&strs[..])))
-            .collect();
-
-        vs
     }
 }

@@ -4,8 +4,8 @@ use crate::tsdb::data_types::{DataFrame, DataSeries, SeriesValues};
 use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::DBConfig;
+use crate::tsdb::DataSeriesRefs;
 use crate::tsdb::Metrics;
-use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs};
 
 pub async fn execute_metrics_list(
     db_dir: Option<&str>,

@@ -91,16 +91,18 @@ impl Args {
         Ok(())
     }
 
-    pub fn init(&mut self) -> Result<()> {
+    pub fn init(&mut self, load_default_config: bool) -> Result<()> {
         self.parse_database_args()?;
 
         if let Some(config_path) = &self.config {
             let config = Config::read(config_path.as_path())?;
             self.merge_with_config(config)?;
         } else {
-            if let Some(config) = Config::try_load_default() {
-                log::info!("loading default config");
-                self.merge_with_config(config)?;
+            if load_default_config {
+                if let Some(config) = Config::try_load_default() {
+                    log::info!("loading default config");
+                    self.merge_with_config(config)?;
+                }
             }
         }
 
@@ -225,7 +227,7 @@ mod test {
         data_dir.push("/tmp/test_dir/");
         args.data_dir = Some(data_dir.clone());
         args.databases = Some("t_db=gs://some/thing".to_string());
-        args.init().unwrap();
+        args.init(false).unwrap();
 
         let db_context = args.as_db_context().unwrap();
         assert_eq!(
@@ -248,7 +250,7 @@ mod test {
         args.data_dir = Some(data_dir.clone());
         args.databases =
             Some("t_db=gs://some/thing,t_db2, t_db_3 = gs://some/thing/else".to_string());
-        args.init().unwrap();
+        args.init(false).unwrap();
 
         let db_context = args.as_db_context().unwrap();
         assert_eq!(

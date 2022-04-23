@@ -9,7 +9,7 @@ pub async fn execute_search_metrics(
     db_dir: &str,
     db_config: &DBConfig,
     condition: &InterpretedQueryCondition,
-) -> Result<(Option<TimeSeriesDataFrame>, Option<Vec<String>>), EvalError> {
+) -> Result<Option<TimeSeriesDataFrame>, EvalError> {
     let dataframe = Engine::search(
         &db_dir,
         &condition.metrics,
@@ -19,7 +19,10 @@ pub async fn execute_search_metrics(
     )
     .await?;
     match dataframe {
-        None => Ok((None, None)),
-        Some(dataframe) => Ok((Some(dataframe), condition.field_names.clone())),
+        None => Ok(None),
+        Some(mut dataframe) => {
+            dataframe.set_column_names(condition.field_names.clone());
+            Ok(Some(dataframe))
+        }
     }
 }

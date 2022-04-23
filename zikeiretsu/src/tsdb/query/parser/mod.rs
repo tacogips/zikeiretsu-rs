@@ -126,10 +126,7 @@ pub fn parse_query<'q>(query_str: &'q str) -> Result<ParsedQuery<'q>> {
     let query = query
         .into_iter()
         .next()
-        .ok_or(ParserError::InvalidGrammer(format!(
-            "invalid query: {}",
-            query_str
-        )))?;
+        .ok_or_else(|| ParserError::InvalidGrammer(format!("invalid query: {}", query_str)))?;
 
     #[cfg(debug_assertions)]
     if query.as_rule() != Rule::QUERY {

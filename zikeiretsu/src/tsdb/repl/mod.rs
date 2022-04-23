@@ -48,7 +48,7 @@ pub async fn start(ctx: &mut DBContext) -> Result<()> {
             Ok(line) => {
                 log::debug!("qeury:{}", line);
                 editor.add_history_entry(line.as_str());
-                if let Err(e) = execute_query(&ctx, &line).await {
+                if let Err(e) = execute_query(ctx, &line).await {
                     eprintln!("query error: {e}")
                 }
             }

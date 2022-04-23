@@ -31,7 +31,7 @@ fn timeoffset_sec_from_str(offset_str: &str) -> Result<i32> {
     let sec = time_sec_from_clock_str(&offset_str[1..])?;
 
     if is_nagative {
-        Ok(sec * -1)
+        Ok(-sec)
     } else {
         Ok(sec)
     }
@@ -49,7 +49,7 @@ pub fn parse_timezone_name<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
         .get(pair.as_str().trim().to_uppercase().as_str())
         .map_or_else(
             || Err(ParserError::InvalidTimeZoneAbberv(pair.to_string())),
-            |fixed_offset| Ok(fixed_offset.clone()),
+            |fixed_offset| Ok(*fixed_offset),
         )
 }
 static TIMEZONE_ABBREVS: OnceCell<HashMap<&'static str, FixedOffset>> = OnceCell::new();

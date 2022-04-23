@@ -117,7 +117,7 @@ async fn write_datas_to_local(
     data_points: &[DataPoint],
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<WrittenBlockInfo> {
-    let lock_file_path = lockfile_path(&db_dir, metrics);
+    let lock_file_path = lockfile_path(db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
 
@@ -138,7 +138,7 @@ async fn write_datas_to_local(
     let block_list_file_path = {
         let block_list = super::read::read_block_list(
             db_dir,
-            &metrics,
+            metrics,
             &cache_setting,
             cloud_storage_and_setting,
         )
@@ -155,7 +155,7 @@ async fn write_datas_to_local(
         block_list.add_timestamp(block_timestamp)?;
         block_list.update_updated_at(TimestampNano::now());
 
-        let block_list_file_path = block_list_file_path(&db_dir, &metrics);
+        let block_list_file_path = block_list_file_path(db_dir, metrics);
         block_list::write_to_block_listfile(&block_list_file_path, block_list)?;
         block_list_file_path
     };
@@ -178,7 +178,7 @@ async fn write_datas_to_local(
     Ok(WrittenBlockInfo {
         block_list_file_path: block_list_file_path.to_path_buf(),
         block_file_dir: block_file_dir.to_path_buf(),
-        block_file_path: block_file_path.to_path_buf(),
+        block_file_path,
         block_timestamp,
     })
 }

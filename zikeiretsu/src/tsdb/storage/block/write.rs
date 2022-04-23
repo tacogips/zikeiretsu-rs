@@ -32,7 +32,7 @@ where
     base_128_variants::compress_u64(datapoints.len() as u64, &mut block_file)?;
 
     // (2). data field num
-    block_file.write(&[data_field_num as u8])?;
+    block_file.write_all(&[data_field_num as u8])?;
 
     // (3). write field types
     let field_types: Vec<FieldType> = head_datapoint
@@ -60,7 +60,7 @@ where
         simple8b_rle::compress(&timestamps_deltas_second, &mut block_file)?;
 
         // (6) common trailing zero num of timestamp nano
-        block_file.write(&[common_trailing_zero_bits])?;
+        block_file.write_all(&[common_trailing_zero_bits])?;
 
         // (7) timestamp nano sec(n bytes)
         simple8b_rle::compress(&timestamps_nanoseconds, &mut block_file)?;
@@ -103,7 +103,7 @@ where
 {
     for each_field_type in field_types.iter() {
         let field_type_val = field_type_convert::type_to_val(each_field_type);
-        w.write(&[field_type_val])?;
+        w.write_all(&[field_type_val])?;
     }
     Ok(())
 }

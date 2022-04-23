@@ -71,12 +71,12 @@ pub(crate) struct TimestampSecDeltas {
 }
 
 impl TimestampSecDeltas {
-    pub fn as_timestamp_secs(self) -> Vec<TimestampSec> {
+    pub fn as_timestamp_secs(&self) -> Vec<TimestampSec> {
         let mut timestamps = vec![self.head_timestamp_sec];
         let mut prev_timestamp = self.head_timestamp_sec;
 
-        for each_delta in self.timestamps_deltas_second {
-            let each_timestmap = prev_timestamp + each_delta;
+        for each_delta in self.timestamps_deltas_second.iter() {
+            let each_timestmap = prev_timestamp + *each_delta;
             timestamps.push(each_timestmap);
             prev_timestamp = each_timestmap
         }

@@ -55,10 +55,7 @@ where
             if let Some(new_idx) = linear_search_last_index_which_match_rule(
                 datas,
                 latest_choice_idx - 1,
-                |data| match cond(data) {
-                    Ordering::Equal | Ordering::Greater => true,
-                    _ => false,
-                },
+                |data| matches!(cond(data), Ordering::Equal | Ordering::Greater),
                 LinearSearchDirection::Desc,
             ) {
                 latest_hit_idx.replace(new_idx);
@@ -69,10 +66,7 @@ where
             if let Some(new_idx) = linear_search_last_index_which_match_rule(
                 datas,
                 latest_choice_idx + 1,
-                |data| match cond(data) {
-                    Ordering::Equal | Ordering::Less => true,
-                    _ => false,
-                },
+                |data| matches!(cond(data), Ordering::Equal | Ordering::Less),
                 LinearSearchDirection::Asc,
             ) {
                 latest_hit_idx.replace(new_idx);
@@ -81,10 +75,7 @@ where
             match linear_search_first_index_which_match_rule(
                 datas,
                 latest_choice_idx,
-                |data| match cond(data) {
-                    Ordering::Less => true,
-                    _ => false,
-                },
+                |data| matches!(cond(data), Ordering::Less),
                 LinearSearchDirection::Desc,
             ) {
                 Some(new_idx) => {

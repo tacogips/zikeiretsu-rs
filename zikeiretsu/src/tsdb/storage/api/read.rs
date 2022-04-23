@@ -30,14 +30,14 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
     //TODO(tacogips) need some lock
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if cloud_setting.update_block_list {
-            let block_file_urls = CloudBlockListFilePath::list_files_urls(&cloud_storage).await?;
+            let block_file_urls = CloudBlockListFilePath::list_files_urls(cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
 
             for each_block_file_url in block_file_urls.iter() {
                 match CloudBlockListFilePath::extract_metrics_from_url(
                     each_block_file_url,
-                    &cloud_storage,
+                    cloud_storage,
                 ) {
                     Ok(metrics) => {
                         result.push(metrics);

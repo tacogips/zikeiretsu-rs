@@ -12,7 +12,7 @@ pub async fn execute_search_metrics(
     db_config: &DBConfig,
     condition: InterpretedQueryCondition,
 ) -> Result<Option<PDataFrame>, EvalError> {
-    let store = Engine::search(
+    let dataframe = Engine::search(
         &db_dir,
         &condition.metrics,
         condition
@@ -23,11 +23,10 @@ pub async fn execute_search_metrics(
         &db_config,
     )
     .await?;
-    match store {
+    match dataframe {
         None => Ok(None),
-        Some(store) => {
-            let mut p_df = store
-                .as_dataframe()
+        Some(dataframe) => {
+            let mut p_df = dataframe
                 .as_polar_dataframes(condition.field_names, Some(&condition.timezone))
                 .await?;
 

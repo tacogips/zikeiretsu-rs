@@ -1,5 +1,6 @@
 pub mod context;
 use crate::tsdb::cloudstorage::CloudStorage;
+use crate::tsdb::data_types::TimeSeriesDataFrame;
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::store::writable_store::DatapointDefaultSorter;
@@ -145,7 +146,7 @@ impl Engine {
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
         db_config: &DBConfig,
-    ) -> Result<Option<ReadonlyStore>> {
+    ) -> Result<Option<TimeSeriesDataFrame>> {
         let dataframe = api::read::search_dataframe(
             db_dir,
             &metrics,
@@ -155,12 +156,6 @@ impl Engine {
             db_config.cloud_storage_and_setting(),
         )
         .await?;
-        match dataframe {
-            None => Ok(None),
-            Some(dataframe) => {
-                let store = ReadonlyStore::new(dataframe, false)?;
-                Ok(Some(store))
-            }
-        }
+        Ok(dataframe)
     }
 }

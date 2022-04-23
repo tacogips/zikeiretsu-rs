@@ -311,7 +311,8 @@ impl TimeSeriesDataFrame {
         }
     }
 
-    pub(crate) fn check_dataframe_is_sorted(dataframe: &TimeSeriesDataFrame) -> Result<()> {
+    #[allow(dead_code)]
+    pub fn check_dataframe_is_sorted(dataframe: &TimeSeriesDataFrame) -> Result<()> {
         if dataframe.is_empty() {
             Ok(())
         } else {

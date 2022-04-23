@@ -71,14 +71,14 @@ pub enum CloudStorage {
 impl CloudStorage {
     pub fn new_gcp(bucket: &str, sub_dir: &str) -> Self {
         let sub_dir = {
-            let sub_dir: &str = if sub_dir.ends_with('/') {
-                &sub_dir[..sub_dir.len() - 1]
+            let sub_dir: &str = if let Some(stripped) = sub_dir.strip_suffix('/') {
+                stripped
             } else {
                 sub_dir
             };
 
-            let sub_dir: &str = if sub_dir.starts_with('/') {
-                &sub_dir[1..]
+            let sub_dir: &str = if let Some(stripped) = sub_dir.strip_prefix('/') {
+                stripped
             } else {
                 sub_dir
             };

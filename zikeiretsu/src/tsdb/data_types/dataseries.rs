@@ -445,7 +445,7 @@ impl DataSeries {
         }
     }
 
-    pub fn as_dataseries_ref<'a>(&'a self) -> DataSeriesRef<'a> {
+    pub fn as_dataseries_ref(&self) -> DataSeriesRef<'_> {
         let vs = match &self.values {
             SeriesValues::Float64(vs) => SeriesValuesRef::Float64(vs),
             SeriesValues::UInt64(vs) => SeriesValuesRef::UInt64(vs),

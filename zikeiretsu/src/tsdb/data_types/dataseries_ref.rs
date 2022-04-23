@@ -113,13 +113,9 @@ pub trait DataSeriesRefs {
 }
 
 pub type StringSeriesRef<'a> = &'a Vec<String>;
+#[derive(Default)]
 pub struct StringDataSeriesRefs<'a> {
     values: Vec<StringSeriesRef<'a>>,
-}
-impl<'a> Default for StringDataSeriesRefs<'a> {
-    fn default() -> Self {
-        Self { values: vec![] }
-    }
 }
 
 impl<'a> StringDataSeriesRefs<'a> {

@@ -1,5 +1,6 @@
-use super::Result;
+use super::{ArgsError, Result};
 use ::zikeiretsu::{CloudStorage, Database};
+use dirs::home_dir;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -35,15 +36,38 @@ impl DatabaseConfig {
 }
 
 impl Config {
+    pub fn try_load_default() -> Option<Self> {
+        default_config_path()
+            .as_ref()
+            .and_then(|f| match Self::read(f) {
+                Err(_) => None,
+                Ok(c) => Some(c),
+            })
+    }
+
     pub fn read(config_path: &Path) -> Result<Self> {
-        let config_file_contents = fs::read_to_string(config_path)?;
-        Self::read_str(config_file_contents.as_ref())
+        if config_path.exists() && config_path.is_file() {
+            let config_file_contents = fs::read_to_string(config_path)?;
+            Self::read_str(config_file_contents.as_ref())
+        } else {
+            Err(ArgsError::NoSuchConfigFile(
+                config_path.display().to_string(),
+            ))
+        }
     }
 
     pub fn read_str(contents: &str) -> Result<Self> {
         let config: Config = toml::from_str(contents)?;
         Ok(config)
     }
+}
+
+fn default_config_path() -> Option<PathBuf> {
+    let dir = home_dir();
+    dir.map(|mut d| {
+        d.push(".config/zikeiretsu/config.toml");
+        d
+    })
 }
 
 #[cfg(test)]

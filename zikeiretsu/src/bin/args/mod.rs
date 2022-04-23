@@ -26,11 +26,14 @@ pub enum ArgsError {
 
     #[error("not database definition.")]
     NoDatabaseDefinition,
+
+    #[error("no such config file.")]
+    NoSuchConfigFile(String),
 }
 
 type Result<T> = std::result::Result<T, ArgsError>;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 #[clap(author, version, about)]
 pub struct Args {
     #[clap(long = "data_dir", short = 'd', env = "ZDB_DIR")]
@@ -120,6 +123,11 @@ impl Args {
         if let Some(config_path) = &self.config {
             let config = Config::read(config_path.as_path())?;
             self.merge_with_config(config)?;
+        } else {
+            if let Some(config) = Config::try_load_default() {
+                log::info!("loading default config");
+                self.merge_with_config(config)?;
+            }
         }
 
         if let Some(service_account) = self.service_account_file_path.as_ref() {
@@ -201,5 +209,66 @@ impl Args {
 
         let ctx = DBContext::new(data_dir, parsed_databases);
         Ok(ctx)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_parse_databases_1() {
+        let mut args = Args::default();
+        let mut data_dir = PathBuf::new();
+        data_dir.push("/tmp/test_dir/");
+        args.data_dir = Some(data_dir.clone());
+        args.databases = Some("t_db=gs://some/thing".to_string());
+        args.init().unwrap();
+
+        let db_context = args.as_db_context().unwrap();
+        assert_eq!(
+            db_context,
+            DBContext::new(
+                data_dir,
+                vec![Database {
+                    database_name: "t_db".to_string(),
+                    cloud_storage: Some(CloudStorage::new_gcp("some", "thing")),
+                }]
+            )
+        )
+    }
+
+    #[test]
+    fn test_parse_databases_2() {
+        let mut args = Args::default();
+        let mut data_dir = PathBuf::new();
+        data_dir.push("/tmp/test_dir/");
+        args.data_dir = Some(data_dir.clone());
+        args.databases =
+            Some("t_db=gs://some/thing,t_db2, t_db_3 = gs://some/thing/else".to_string());
+        args.init().unwrap();
+
+        let db_context = args.as_db_context().unwrap();
+        assert_eq!(
+            db_context,
+            DBContext::new(
+                data_dir,
+                vec![
+                    Database {
+                        database_name: "t_db".to_string(),
+                        cloud_storage: Some(CloudStorage::new_gcp("some", "thing")),
+                    },
+                    Database {
+                        database_name: "t_db2".to_string(),
+                        cloud_storage: None
+                    },
+                    Database {
+                        database_name: "t_db_3".to_string(),
+                        cloud_storage: Some(CloudStorage::new_gcp("some", "thing/else")),
+                    },
+                ]
+            )
+        )
     }
 }

@@ -30,10 +30,10 @@ use execute_results::*;
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename = "ocr")]
 pub struct OutputConditionResult {
-    #[serde(rename = "oc")]
+    #[serde(rename = "output_condition")]
     pub output_condition: OutputCondition,
 
-    #[serde(rename = "cns")]
+    #[serde(rename = "column_names")]
     pub column_names: Option<Vec<String>>,
 }
 

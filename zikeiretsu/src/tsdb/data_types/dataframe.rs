@@ -32,11 +32,15 @@ pub type Result<T> = std::result::Result<T, DataframeError>;
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataFrame {
     pub data_serieses: Vec<DataSeries>,
+    pub column_names: Option<Vec<String>>,
 }
 
 impl DataFrame {
-    pub fn new(data_serieses: Vec<DataSeries>) -> Self {
-        Self { data_serieses }
+    pub fn new(data_serieses: Vec<DataSeries>, column_names: Option<Vec<String>>) -> Self {
+        Self {
+            data_serieses,
+            column_names,
+        }
     }
 
     pub fn merge(&mut self, other: &mut Self) -> Result<()> {
@@ -75,7 +79,7 @@ impl DataFrame {
 }
 impl Default for DataFrame {
     fn default() -> Self {
-        Self::new(vec![])
+        Self::new(vec![], None)
     }
 }
 

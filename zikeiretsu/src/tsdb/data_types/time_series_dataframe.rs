@@ -15,22 +15,36 @@ use serde::{Deserialize, Serialize};
 pub struct TimeSeriesDataFrame {
     #[serde(rename = "ts")]
     pub timestamp_nanos: Vec<TimestampNano>,
-    #[serde(rename = "cs")]
+
+    #[serde(rename = "columns")]
     pub columns: Vec<DataSeries>,
+
+    #[serde(rename = "column_names")]
+    column_names: Option<Vec<String>>,
 }
 
 impl TimeSeriesDataFrame {
-    pub fn new(timestamp_nanos: Vec<TimestampNano>, data_serieses: Vec<DataSeries>) -> Self {
+    pub fn new(
+        timestamp_nanos: Vec<TimestampNano>,
+        data_serieses: Vec<DataSeries>,
+        column_names: Option<Vec<String>>,
+    ) -> Self {
         Self {
             timestamp_nanos,
             columns: data_serieses,
+            column_names,
         }
+    }
+
+    pub fn set_column_names(&mut self, column_names: Vec<String>) {
+        self.column_names = Some(column_names);
     }
 
     pub fn empty() -> Self {
         Self {
             timestamp_nanos: vec![],
             columns: vec![],
+            column_names: None,
         }
     }
 
@@ -257,8 +271,16 @@ impl TimeSeriesDataFrame {
             suffix_data_serieses.push(each_suffix_data_series);
         }
         Ok((
-            TimeSeriesDataFrame::new(timestamps_prefix, prefix_data_serieses),
-            TimeSeriesDataFrame::new(timestamps_suffix, suffix_data_serieses),
+            TimeSeriesDataFrame::new(
+                timestamps_prefix,
+                prefix_data_serieses,
+                self.column_names.clone(),
+            ),
+            TimeSeriesDataFrame::new(
+                timestamps_suffix,
+                suffix_data_serieses,
+                self.column_names.clone(),
+            ),
         ))
     }
 
@@ -304,6 +326,9 @@ impl TimeSeriesDataFrame {
                         .iter()
                         .map(|series| series.as_sub_dataseries(start_idx, finish_idx))
                         .collect(),
+                    self.column_names
+                        .as_ref()
+                        .map(|column_names| column_names.as_slice()),
                 );
                 Some((selected_series, (start_idx, finish_idx)))
             }
@@ -336,6 +361,8 @@ impl From<TimeSeriesDataFrameRef<'_>> for TimeSeriesDataFrame {
         TimeSeriesDataFrame::new(
             df.timestamp_nanos.to_vec(),
             df.data_serieses.into_iter().map(|e| e.into()).collect(),
+            df.column_names
+                .map(|e| e.into_iter().map(|s| s.to_string()).collect()),
         )
     }
 }
@@ -359,16 +386,19 @@ impl DataSeriesRefs for TimeSeriesDataFrame {
 pub struct TimeSeriesDataFrameRef<'a> {
     timestamp_nanos: &'a [TimestampNano],
     data_serieses: Vec<DataSeriesRef<'a>>,
+    column_names: Option<&'a [String]>,
 }
 
 impl<'a> TimeSeriesDataFrameRef<'a> {
     pub fn new(
         timestamp_nanos: &'a [TimestampNano],
         data_serieses: Vec<DataSeriesRef<'a>>,
+        column_names: Option<&'a [String]>,
     ) -> Self {
         Self {
             timestamp_nanos,
             data_serieses,
+            column_names,
         }
     }
 
@@ -420,6 +450,7 @@ mod test {
             TimeSeriesDataFrame::new(
                 timestamp_nanos,
                 vec![DataSeries::new(SeriesValues::Float64(values))],
+                None,
             )
         }};
     }
@@ -441,6 +472,7 @@ mod test {
                     DataSeries::new(SeriesValues::Float64(values1)),
                     DataSeries::new(SeriesValues::Bool(values2)),
                 ],
+                None,
             )
         }};
     }

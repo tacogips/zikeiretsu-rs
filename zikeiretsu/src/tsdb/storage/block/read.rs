@@ -202,6 +202,7 @@ pub(crate) fn read_from_block_with_specific_fields(
             .into_iter()
             .map(DataSeries::new)
             .collect(),
+        None,
     );
     Ok(dataframe)
 }

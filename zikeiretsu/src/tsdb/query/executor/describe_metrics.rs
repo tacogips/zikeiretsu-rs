@@ -15,7 +15,7 @@ pub async fn execute_describe_metrics(
     db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
     show_block_list: bool,
-) -> Result<(DataFrame, Vec<String>), EvalError> {
+) -> Result<DataFrame, EvalError> {
     let metricses = Engine::list_metrics(Some(&db_dir), db_config).await?;
     let metricses = match metrics_filter {
         Some(metrics_filter) => metricses
@@ -35,12 +35,12 @@ pub async fn execute_describe_metrics(
     }
 
     let describes = load_metrics_describes(db_dir, db_config, metricses).await?;
-    let (df, column_names) = if show_block_list {
+    let df = if show_block_list {
         describes_to_dataframe_with_block_list(describes.as_slice())?
     } else {
         describes_to_dataframe(describes.as_slice())?
     };
-    Ok((df, column_names))
+    Ok(df)
 }
 
 async fn load_metrics_describes(
@@ -71,9 +71,7 @@ pub struct MetricsDescribe {
 }
 
 //TODO(tacogips) return DataFrameRef instead
-fn describes_to_dataframe(
-    describes: &[MetricsDescribe],
-) -> Result<(DataFrame, Vec<String>), EvalError> {
+fn describes_to_dataframe(describes: &[MetricsDescribe]) -> Result<DataFrame, EvalError> {
     let mut metrics_names = Vec::<String>::new();
     let mut update_ats = Vec::<TimestampNano>::new();
     let mut block_num = Vec::<u64>::new();
@@ -104,22 +102,22 @@ fn describes_to_dataframe(
         SeriesValues::TimestampSec(data_range_ends).into(),
     ];
 
-    Ok((
-        DataFrame::new(data_serieses),
-        vec![
+    Ok(DataFrame::new(
+        data_serieses,
+        Some(vec![
             "metrics".to_string(),
             "updated_at".to_string(),
             "block_num".to_string(),
             "from".to_string(),
             "end".to_string(),
-        ],
+        ]),
     ))
 }
 
 //TODO(tacogips) return DataFrameRef instead
 fn describes_to_dataframe_with_block_list(
     describes: &[MetricsDescribe],
-) -> Result<(DataFrame, Vec<String>), EvalError> {
+) -> Result<DataFrame, EvalError> {
     let mut metrics_names = Vec::<String>::new();
     let mut update_ats = Vec::<TimestampNano>::new();
     let mut block_num = Vec::<u64>::new();
@@ -150,15 +148,15 @@ fn describes_to_dataframe_with_block_list(
         SeriesValues::TimestampSec(block_list_end).into(),
     ];
 
-    Ok((
-        DataFrame::new(data_serieses),
-        vec![
+    Ok(DataFrame::new(
+        data_serieses,
+        Some(vec![
             "metrics".to_string(),
             "updated_at".to_string(),
             "block_num".to_string(),
             "seq".to_string(),
             "block_list_start".to_string(),
             "block_list_end".to_string(),
-        ],
+        ]),
     ))
 }

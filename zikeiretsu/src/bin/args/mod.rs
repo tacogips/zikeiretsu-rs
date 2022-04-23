@@ -7,32 +7,6 @@ use std::env;
 use std::path::PathBuf;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
-pub enum ArgsError {
-    #[error("not data dir path ")]
-    NoDataDir,
-
-    #[error("{0}")]
-    TomlError(#[from] toml::de::Error),
-
-    #[error("{0}")]
-    IoError(#[from] std::io::Error),
-
-    #[error("{0}")]
-    CloudStorageError(#[from] CloudStorageError),
-
-    #[error("invalid database definition.{0}")]
-    InvalidDatabaseDefinition(String),
-
-    #[error("not database definition.")]
-    NoDatabaseDefinition,
-
-    #[error("no such config file.")]
-    NoSuchConfigFile(String),
-}
-
-type Result<T> = std::result::Result<T, ArgsError>;
-
 #[derive(Parser, Debug, Default)]
 #[clap(author, version, about)]
 pub struct Args {
@@ -211,6 +185,32 @@ impl Args {
         Ok(ctx)
     }
 }
+
+#[derive(Error, Debug)]
+pub enum ArgsError {
+    #[error("not data dir path ")]
+    NoDataDir,
+
+    #[error("{0}")]
+    TomlError(#[from] toml::de::Error),
+
+    #[error("{0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("{0}")]
+    CloudStorageError(#[from] CloudStorageError),
+
+    #[error("invalid database definition.{0}")]
+    InvalidDatabaseDefinition(String),
+
+    #[error("not database definition.")]
+    NoDatabaseDefinition,
+
+    #[error("no such config file.")]
+    NoSuchConfigFile(String),
+}
+
+type Result<T> = std::result::Result<T, ArgsError>;
 
 #[cfg(test)]
 mod test {

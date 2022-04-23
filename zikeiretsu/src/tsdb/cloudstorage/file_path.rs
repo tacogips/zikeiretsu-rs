@@ -42,13 +42,13 @@ impl<'a> CloudBlockFilePath<'a> {
 
     pub async fn upload(&self, src: &Path) -> Result<()> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::upload_block_file(src, &self).await,
+            CloudStorage::Gcp(_, _) => gcp::upload_block_file(src, self).await,
         }
     }
 
     pub async fn download(&self, dest: &Path) -> Result<Option<()>> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::download_block_file(&self, dest).await,
+            CloudStorage::Gcp(_, _) => gcp::download_block_file(self, dest).await,
         }
     }
 }

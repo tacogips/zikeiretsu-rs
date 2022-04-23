@@ -41,7 +41,7 @@ impl Config {
     }
 
     pub fn read_str(contents: &str) -> Result<Self> {
-        let config: Config = toml::from_str(contents.as_ref())?;
+        let config: Config = toml::from_str(contents)?;
         Ok(config)
     }
 }

@@ -45,7 +45,7 @@ pub async fn download_block_file<'a>(
                 OpenOptions::new().create(true).write(true).open(dest)?
             };
 
-            block_file.write(&contents_data)?;
+            block_file.write_all(&contents_data)?;
             Ok(Some(()))
         }
         None => Ok(None),
@@ -86,7 +86,7 @@ pub async fn download_block_list_file<'a>(
                 OpenOptions::new().create(true).write(true).open(dest)?
             };
 
-            block_list_file.write(&contents_data)?;
+            block_list_file.write_all(&contents_data)?;
             Ok(Some(()))
         }
         None => Ok(None),

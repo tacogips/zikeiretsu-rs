@@ -146,9 +146,9 @@ impl Args {
     fn parse_database_args(&mut self) -> Result<()> {
         if let Some(database) = &self.databases {
             let mut parsed_databases = Vec::<Database>::new();
-            for each_database_config in database.split(",").into_iter() {
+            for each_database_config in database.split(',') {
                 let database_name_and_cloud_storage =
-                    each_database_config.split("=").collect::<Vec<&str>>();
+                    each_database_config.split('=').collect::<Vec<&str>>();
                 match database_name_and_cloud_storage.len() {
                     1 => {
                         let db = Database::new(

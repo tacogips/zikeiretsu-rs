@@ -25,8 +25,8 @@ fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
     };
 
     let mut white_space_count = 0;
-    for i in 1..parsing_offset.len() {
-        if !is_space(parsing_offset[i]) {
+    for each_offset in parsing_offset.iter().skip(1) {
+        if !is_space(*each_offset) {
             break;
         }
         white_space_count += 1;

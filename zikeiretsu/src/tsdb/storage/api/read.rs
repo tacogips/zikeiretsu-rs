@@ -209,7 +209,7 @@ async fn read_block(
         if !block_file_path.exists() {
             if cloud_setting.download_block_if_not_exits {
                 let cloud_block_file_path =
-                    CloudBlockFilePath::new(&metrics, &block_timestamp, &cloud_storage);
+                    CloudBlockFilePath::new(metrics, block_timestamp, cloud_storage);
 
                 let download_result = cloud_block_file_path.download(&block_file_path).await?;
 
@@ -243,14 +243,14 @@ pub(crate) async fn read_block_list<'a>(
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<block_list::BlockList> {
-    let block_list_path = block_list_file_path(&db_dir, &metrics);
+    let block_list_path = block_list_file_path(db_dir, metrics);
     let downloaded_from_cloud = if let Some((cloud_storage, cloud_setting)) =
         cloud_storage_and_setting
     {
         if cloud_setting.update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
         {
-            let cloud_block_list_file_path = CloudBlockListFilePath::new(&metrics, &cloud_storage);
+            let cloud_block_list_file_path = CloudBlockListFilePath::new(metrics, cloud_storage);
 
             let download_result = cloud_block_list_file_path
                 .download(&block_list_path)
@@ -272,8 +272,8 @@ pub(crate) async fn read_block_list<'a>(
 
     let block_list = if use_cache {
         let cache = CACHE.read().await;
-        let block_list = cache.block_list_cache.get(&metrics).await;
-        block_list.map(|e| e.clone())
+        let block_list = cache.block_list_cache.get(metrics).await;
+        block_list.cloned()
     } else {
         None
     };

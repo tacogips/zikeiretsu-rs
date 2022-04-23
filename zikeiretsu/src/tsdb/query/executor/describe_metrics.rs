@@ -8,6 +8,7 @@ use crate::tsdb::{
     DataFrame, DataSeries, DataSeriesRefs, SeriesValues, TimestampNano, TimestampSec,
 };
 use futures::future;
+use serde::{Deserialize, Serialize};
 
 pub async fn execute_describe_metrics(
     db_dir: &str,
@@ -69,6 +70,7 @@ async fn load_metrics_describes(
     Ok(describes)
 }
 
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct MetricsDescribe {
     metrics: Metrics,
     block_list: block_list::BlockList,

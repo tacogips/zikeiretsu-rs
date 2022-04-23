@@ -11,9 +11,17 @@ use crate::tsdb::query::QuerySetting;
 use crate::tsdb::{DBConfig, DBContext};
 pub use output::*;
 use polars::prelude::PolarsError;
+use serde::{Deserialize, Serialize};
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use thiserror::Error;
+
+pub mod execute_results {
+    pub use crate::describe_metrics::MetricsDescribe;
+    pub use crate::tsdb::Metrics;
+}
+
+use execute_results::*;
 
 use crate::tsdb::dataframe::DataframeError;
 #[derive(Error, Debug)]
@@ -56,6 +64,13 @@ pub enum EvalError {
 }
 
 pub type Result<T> = std::result::Result<T, EvalError>;
+
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(tag = "t", content = "c")]
+pub enum ExecuteResult {
+    MetricsList(Vec<Metrics>),
+    DescribeMetrics(Vec<MetricsDescribe>),
+}
 
 pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
     let parsed_query = parse_query(query)?;

@@ -35,7 +35,7 @@ fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
     let sec = time_sec_from_clock_str(&clock_delta_str[white_space_count + 1..])?;
 
     if is_nagative {
-        Ok(sec * -1)
+        Ok(-sec)
     } else {
         Ok(sec)
     }
@@ -43,7 +43,7 @@ fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
 
 // 00:00 => 0 as i32
 pub(crate) fn time_sec_from_clock_str(clock_str: &str) -> Result<i32> {
-    let mut parsing_offset: &[u8] = &clock_str.as_bytes();
+    let mut parsing_offset: &[u8] = clock_str.as_bytes();
     //parse hours
     let hour_num = if parsing_offset.is_empty() {
         return Err(ParserError::InvalidTimeOffset(clock_str.to_string()));

@@ -31,9 +31,9 @@ impl<'q> DatetimeFilter<'q> {
                             DatetimeFilterValue::Function(build_in_func, tz),
                         ))
                     } else {
-                        Err(ParserError::InvalidGrammer(format!(
-                            "'in' needs datetime range or buildin function "
-                        )))
+                        Err(ParserError::InvalidGrammer(
+                            "'in' needs datetime range or buildin function ".to_string(),
+                        ))
                     }
                 }
                 Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
@@ -94,7 +94,7 @@ impl DatetimeFilterValue {
                         .map(|delta| delta.as_micro_second())
                         .unwrap_or(0),
                 );
-                naive_datetime = naive_datetime + delta_micro_seconds;
+                naive_datetime += delta_micro_seconds;
 
                 let datetime = offset.from_local_datetime(&naive_datetime).unwrap();
                 TimestampNano::new(datetime.timestamp_nanos() as u64)
@@ -139,9 +139,9 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                 match rel_ope.next() {
                     Some(rel_ope) => relation_op = Some(rel_ope.as_str().trim()),
                     None => {
-                        return Err(ParserError::InvalidGrammer(format!(
-                            "empty relation operator in datetime filter"
-                        )))
+                        return Err(ParserError::InvalidGrammer(
+                            "empty relation operator in datetime filter".to_string(),
+                        ))
                     }
                 }
             }
@@ -185,8 +185,8 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     }
 }
 
-pub fn parse_datetime_range_close<'q>(
-    pair: Pair<'q, Rule>,
+pub fn parse_datetime_range_close(
+    pair: Pair<'_, Rule>,
     base_datetime: Option<&DatetimeFilterValue>,
 ) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
@@ -210,7 +210,7 @@ pub fn parse_datetime_range_close<'q>(
                     let calced_datetime = match base_datetime {
                         DatetimeFilterValue::DateString(dt, base_delta) => {
                             DatetimeFilterValue::DateString(
-                                dt.clone(),
+                                *dt,
                                 Some(datetime_delta.to_composit_if_some(base_delta.clone())),
                             )
                         }

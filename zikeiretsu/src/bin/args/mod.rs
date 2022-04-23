@@ -107,6 +107,7 @@ impl Args {
         if let Some(service_account) = self.service_account_file_path.as_ref() {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
+
         if let Some(table_width) = self.df_width {
             // default 100
             env::set_var("POLARS_TABLE_WIDTH", table_width.to_string());

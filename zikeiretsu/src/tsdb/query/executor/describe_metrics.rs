@@ -14,9 +14,8 @@ pub async fn execute_describe_metrics(
     db_dir: &str,
     db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
-    output_condition: Option<OutputCondition>,
     show_block_list: bool,
-) -> Result<Vec<MetricsDescribe>, EvalError> {
+) -> Result<(DataFrame, Vec<String>), EvalError> {
     let metricses = Engine::list_metrics(Some(&db_dir), db_config).await?;
     let metricses = match metrics_filter {
         Some(metrics_filter) => metricses
@@ -41,12 +40,7 @@ pub async fn execute_describe_metrics(
     } else {
         describes_to_dataframe(describes.as_slice())?
     };
-    let mut p_df = df.as_polar_dataframes(Some(column_names), None).await?;
-
-    if let Some(output_condition) = output_condition {
-        output_with_condition!(output_condition, p_df);
-    }
-    Ok(describes)
+    Ok((df, column_names))
 }
 
 async fn load_metrics_describes(

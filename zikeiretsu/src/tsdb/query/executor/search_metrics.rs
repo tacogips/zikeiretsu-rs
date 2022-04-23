@@ -1,17 +1,15 @@
-use super::output::*;
 use super::EvalError;
 
 use crate::tsdb::engine::Engine;
-use crate::tsdb::query::lexer::{InterpretedQueryCondition, OutputWriter};
+use crate::tsdb::query::lexer::InterpretedQueryCondition;
 use crate::tsdb::DBConfig;
-use crate::tsdb::DataSeriesRefs;
-use polars::prelude::DataFrame as PDataFrame;
+use crate::tsdb::TimeSeriesDataFrame;
 
 pub async fn execute_search_metrics(
     db_dir: &str,
     db_config: &DBConfig,
-    condition: InterpretedQueryCondition,
-) -> Result<Option<PDataFrame>, EvalError> {
+    condition: &InterpretedQueryCondition,
+) -> Result<(Option<TimeSeriesDataFrame>, Option<Vec<String>>), EvalError> {
     let dataframe = Engine::search(
         &db_dir,
         &condition.metrics,
@@ -21,16 +19,7 @@ pub async fn execute_search_metrics(
     )
     .await?;
     match dataframe {
-        None => Ok(None),
-        Some(dataframe) => {
-            let mut p_df = dataframe
-                .as_polar_dataframes(condition.field_names, Some(&condition.timezone))
-                .await?;
-
-            if let Some(output_condition) = condition.output_condition {
-                output_with_condition!(output_condition, p_df);
-            }
-            Ok(Some(p_df))
-        }
+        None => Ok((None, None)),
+        Some(dataframe) => Ok((Some(dataframe), condition.field_names.clone())),
     }
 }

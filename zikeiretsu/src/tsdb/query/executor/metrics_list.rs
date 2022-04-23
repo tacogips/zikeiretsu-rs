@@ -9,8 +9,7 @@ use crate::tsdb::{DataSeriesRefs, StringDataSeriesRefs};
 pub async fn execute_metrics_list(
     db_dir: Option<&str>,
     db_config: &DBConfig,
-    output_condition: Option<OutputCondition>,
-) -> Result<Vec<Metrics>, EvalError> {
+) -> Result<(Vec<Metrics>, Vec<String>), EvalError> {
     let metricses = Engine::list_metrics(db_dir, db_config).await?;
     let metricses_strs = metricses
         .clone()
@@ -20,12 +19,5 @@ pub async fn execute_metrics_list(
     let mut series = StringDataSeriesRefs::default();
     series.push(&metricses_strs);
 
-    let mut p_df = series
-        .as_polar_dataframes(Some(vec!["metrics".to_string()]), None)
-        .await?;
-
-    if let Some(output_condition) = output_condition {
-        output_with_condition!(output_condition, p_df);
-    }
-    Ok(metricses)
+    Ok((metricses, vec!["metrics".to_string()]))
 }

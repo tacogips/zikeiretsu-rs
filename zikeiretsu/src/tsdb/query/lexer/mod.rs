@@ -10,13 +10,14 @@ use crate::tsdb::query::parser::*;
 use crate::tsdb::{CacheSetting, CloudStorageSetting};
 use chrono::FixedOffset;
 use either::Either;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::result::Result as StdResult;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize, Deserialize)]
 pub enum LexerError {
     #[error("invalid datertime range. start:{0}, end: {1}")]
     InvalidDatetimeRange(String, String),
@@ -80,7 +81,7 @@ pub struct QuerySetting {
     pub cloud_setting: CloudStorageSetting,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct OutputCondition {
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
@@ -145,7 +146,7 @@ pub struct InterpretedQueryCondition {
     pub field_selectors: Option<Vec<usize>>,
     pub field_names: Option<Vec<String>>,
     pub datetime_search_condition: DatapointSearchCondition,
-    pub output_condition: Option<OutputCondition>,
+    pub output_condition: OutputCondition,
     pub timezone: FixedOffset,
 }
 
@@ -195,10 +196,10 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
 
     invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
 
-    let output_condition = Some(OutputCondition {
+    let output_condition = OutputCondition {
         output_format: with.output_format,
         output_file_path: with.output_file_path,
-    });
+    };
 
     let query_context = InterpretedQueryCondition {
         metrics,

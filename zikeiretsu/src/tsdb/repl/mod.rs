@@ -1,7 +1,8 @@
 mod validator;
 
 use super::engine::*;
-use crate::tsdb::query::executor::execute_query;
+//use crate::tsdb::query::executor::execute_query;
+use crate::tsdb::query::executor_interface::ExecutorInterface;
 use crate::EngineError;
 use dirs::home_dir;
 use rustyline::error::ReadlineError;
@@ -25,7 +26,7 @@ pub enum ZikeiretsuReplError {
 }
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuReplError>;
-pub async fn start(ctx: &mut DBContext) -> Result<()> {
+pub async fn start(ctx: &mut DBContext, executer: impl ExecutorInterface) -> Result<()> {
     let config = Config::builder()
         .history_ignore_space(true)
         .completion_type(CompletionType::List)
@@ -48,8 +49,8 @@ pub async fn start(ctx: &mut DBContext) -> Result<()> {
             Ok(line) => {
                 log::debug!("qeury:{}", line);
                 editor.add_history_entry(line.as_str());
-                if let Err(e) = execute_query(ctx, &line).await {
-                    eprintln!("query error: {e}")
+                if let Err(e) = executer.execute_query(ctx, &line).await {
+                    eprintln!("query error: {e:?}")
                 }
             }
 

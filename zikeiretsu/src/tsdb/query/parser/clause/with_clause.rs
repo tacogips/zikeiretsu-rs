@@ -1,9 +1,10 @@
 use super::super::boolean::parse_bool;
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum OutputFormat {
     Json,
     DataFrame,

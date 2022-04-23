@@ -55,10 +55,9 @@ impl DBConfig {
     }
 
     pub fn cloud_storage_and_setting(&self) -> Option<(&CloudStorage, &CloudStorageSetting)> {
-        match &self.cloud_storage {
-            None => None,
-            Some(cloud_storage) => Some((cloud_storage, &self.cloud_setting)),
-        }
+        self.cloud_storage
+            .as_ref()
+            .map(|cloud_storage| (cloud_storage, &self.cloud_setting))
     }
 }
 

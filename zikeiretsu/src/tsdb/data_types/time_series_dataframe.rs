@@ -52,7 +52,7 @@ impl TimeSeriesDataFrame {
                 for (column_idx, each_column_series) in self.columns.iter_mut().enumerate() {
                     match row_to_insert.get(column_idx) {
                         Some(field_to_insert) => {
-                            each_column_series.insert(target_index, &field_to_insert)?
+                            each_column_series.insert(target_index, field_to_insert)?
                         }
                         None => {
                             return Err(DataframeError::UnmatchedFieldNumError(
@@ -69,7 +69,7 @@ impl TimeSeriesDataFrame {
                 self.timestamp_nanos.push(timestamp_nano_to_insert);
                 for (column_idx, each_column_series) in self.columns.iter_mut().enumerate() {
                     match row_to_insert.get(column_idx) {
-                        Some(column_to_insert) => each_column_series.push(&column_to_insert)?,
+                        Some(column_to_insert) => each_column_series.push(column_to_insert)?,
                         None => {
                             return Err(DataframeError::UnmatchedFieldNumError(
                                 column_len,
@@ -113,10 +113,8 @@ impl TimeSeriesDataFrame {
 
         let first_timestamp = self.timestamp_nanos.first().unwrap();
         let last_timestamp = self.timestamp_nanos.last().unwrap();
-        let self_time_range = DatapointSearchCondition::new(
-            Some(first_timestamp.clone()),
-            Some(last_timestamp.clone()),
-        );
+        let self_time_range =
+            DatapointSearchCondition::new(Some(*first_timestamp), Some(*last_timestamp));
 
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
@@ -129,7 +127,6 @@ impl TimeSeriesDataFrame {
                 self.insert(*ts, field_values)?;
             }
         }
-        drop(other);
         if !suffix_data_frames.is_empty() {
             self.append(&mut suffix_data_frames)?;
         }

@@ -176,8 +176,8 @@ async fn write_datas_to_local(
         (block_file_dir, block_file_path)
     };
     Ok(WrittenBlockInfo {
-        block_list_file_path: block_list_file_path.to_path_buf(),
-        block_file_dir: block_file_dir.to_path_buf(),
+        block_list_file_path,
+        block_file_dir,
         block_file_path,
         block_timestamp,
     })

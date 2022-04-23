@@ -60,7 +60,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
     task::spawn(async move {
         loop {
             let waiting_shutdown = time::timeout(interval_duration, shutdown_rx.recv()).await;
-            if !waiting_shutdown.is_err() {
+            if waiting_shutdown.is_ok() {
                 log::info!("breaking the periodicaly persistence loop");
 
                 let datapoint_search_condition = DatapointSearchCondition::new(

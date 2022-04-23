@@ -88,7 +88,7 @@ impl TimestampSecDeltas {
 impl From<Vec<TimestampSec>> for TimestampSecDeltas {
     fn from(timestamp_secs: Vec<TimestampSec>) -> TimestampSecDeltas {
         debug_assert!(!timestamp_secs.is_empty());
-        let head_timestamp_sec = unsafe { timestamp_secs.get_unchecked(0) }.clone();
+        let head_timestamp_sec = *unsafe { timestamp_secs.get_unchecked(0) };
         let mut prev = &head_timestamp_sec;
 
         let mut timestamps_deltas_second = Vec::<u64>::new();
@@ -230,7 +230,7 @@ impl BlockList {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.until_sec.cmp(&since),
+                    |block_timestamp| block_timestamp.until_sec.cmp(since),
                     BinaryRangeSearchType::AtLeastInclusive,
                 );
 
@@ -239,7 +239,7 @@ impl BlockList {
                     Some(lower_idx) => {
                         let upper_idx = binary_search_by(
                             block_timestamps,
-                            |block_timestamp| block_timestamp.since_sec.cmp(&until),
+                            |block_timestamp| block_timestamp.since_sec.cmp(until),
                             BinaryRangeSearchType::AtMostInclusive,
                         );
 
@@ -256,7 +256,7 @@ impl BlockList {
             (Some(since), None) => {
                 let lower_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.until_sec.cmp(&since),
+                    |block_timestamp| block_timestamp.until_sec.cmp(since),
                     BinaryRangeSearchType::AtLeastInclusive,
                 );
 
@@ -269,7 +269,7 @@ impl BlockList {
             (None, Some(until)) => {
                 let upper_idx = binary_search_by(
                     block_timestamps,
-                    |block_timestamp| block_timestamp.since_sec.cmp(&until),
+                    |block_timestamp| block_timestamp.since_sec.cmp(until),
                     BinaryRangeSearchType::AtMostInclusive,
                 );
 
@@ -367,7 +367,7 @@ pub(crate) fn write_to_block_listfile<P: AsRef<Path>>(
     Ok(())
 }
 
-pub(crate) fn read_from_blocklist<'a>(metrics: &Metrics, block_data: &[u8]) -> Result<BlockList> {
+pub(crate) fn read_from_blocklist(metrics: &Metrics, block_data: &[u8]) -> Result<BlockList> {
     //  (1) updated timestamp(8 byte)
     let mut block_idx = 0;
     let (updated_timestamp_sec, consumed_idx): (TimestampNano, usize) = {

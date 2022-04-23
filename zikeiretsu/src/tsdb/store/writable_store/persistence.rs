@@ -59,8 +59,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
     let interval_duration = interval_duration.to_std().unwrap();
     task::spawn(async move {
         loop {
-            let waiting_shutdown =
-                time::timeout(interval_duration.clone(), shutdown_rx.recv()).await;
+            let waiting_shutdown = time::timeout(interval_duration, shutdown_rx.recv()).await;
             if !waiting_shutdown.is_err() {
                 log::info!("breaking the periodicaly persistence loop");
 

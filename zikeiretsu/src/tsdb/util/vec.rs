@@ -49,7 +49,7 @@ pub fn remove_range<T>(datas: &mut Vec<T>, range: (usize, usize)) -> Result<Vec<
     //}
 }
 
-pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut Vec<T>) {
+pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut [T]) {
     let orig_len = datas.len();
     let new_data_len = new_datas.len();
     datas.reserve(new_data_len);

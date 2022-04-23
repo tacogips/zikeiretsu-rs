@@ -183,10 +183,9 @@ pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Interpreted
 
     let field_names = match filtered_field_names {
         Some(mut field_names) => Some(prepend_ts_column_to_head!(field_names)),
-        None => match with.column_name_aliases {
-            Some(mut field_names) => Some(prepend_ts_column_to_head!(field_names)),
-            None => None,
-        },
+        None => with
+            .column_name_aliases
+            .map(|mut field_names| prepend_ts_column_to_head!(field_names)),
     };
 
     let datetime_search_condition = r#where::interpret_datatime_search_condition(
@@ -220,8 +219,8 @@ pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Interpreted
     ))
 }
 
-pub(crate) fn interpret_buildin_metrics<'q>(
-    parsed_query: ParsedQuery<'q>,
+pub(crate) fn interpret_buildin_metrics(
+    parsed_query: ParsedQuery<'_>,
     buildin_metrics: from::BuildinMetrics,
 ) -> Result<InterpretedQuery> {
     let with = with::interpret_with(parsed_query.with)?;

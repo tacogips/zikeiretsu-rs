@@ -1,7 +1,7 @@
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
 
-pub fn parse_bool<'q>(pair: Pair<'q, Rule>) -> Result<bool> {
+pub fn parse_bool(pair: Pair<'_, Rule>) -> Result<bool> {
     if pair.as_rule() != Rule::BOOLEAN_VALUE {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::BOOLEAN_VALUE),

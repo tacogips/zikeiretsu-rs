@@ -4,7 +4,7 @@ use super::is_space;
 use chrono::FixedOffset;
 use pest::iterators::Pair;
 
-pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
+pub fn parse_clock_delta(pair: Pair<'_, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::CLOCK_DELTA {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::CLOCK_DELTA),
@@ -17,7 +17,7 @@ pub fn parse_clock_delta<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
 
 // [+|-]01:00 => 0 as i32
 fn clock_delta_sec_from_str(clock_delta_str: &str) -> Result<i32> {
-    let parsing_offset: &[u8] = &clock_delta_str.as_bytes();
+    let parsing_offset: &[u8] = clock_delta_str.as_bytes();
     let is_nagative = match parsing_offset.first() {
         Some(b'+') => false,
         Some(b'-') => true,

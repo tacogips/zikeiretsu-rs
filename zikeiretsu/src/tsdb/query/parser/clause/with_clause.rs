@@ -112,22 +112,16 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
 
                         Rule::DEFINE_CACHE => {
                             for each_inner in each_define.into_inner() {
-                                match each_inner.as_rule() {
-                                    Rule::BOOLEAN_VALUE => {
-                                        with_clause.def_use_cache = parse_bool(each_inner)?;
-                                    }
-                                    _ => { /* do nothing */ }
+                                if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
+                                    with_clause.def_use_cache = parse_bool(each_inner)?;
                                 }
                             }
                         }
 
                         Rule::DEFINE_CLOUD => {
                             for each_inner in each_define.into_inner() {
-                                match each_inner.as_rule() {
-                                    Rule::BOOLEAN_VALUE => {
-                                        with_clause.def_sync_cloud = parse_bool(each_inner)?;
-                                    }
-                                    _ => { /* do nothing */ }
+                                if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
+                                    with_clause.def_sync_cloud = parse_bool(each_inner)?;
                                 }
                             }
                         }

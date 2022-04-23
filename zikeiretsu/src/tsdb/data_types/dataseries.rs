@@ -96,28 +96,26 @@ impl DataSeries {
                 DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
             }
             SeriesValues::Float64(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::Float64(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::Float64(&vs[data_range]))
             }
 
             SeriesValues::UInt64(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range]))
             }
 
             SeriesValues::String(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range]))
             }
 
             SeriesValues::TimestampNano(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::TimestampNano(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::TimestampNano(&vs[data_range]))
             }
 
             SeriesValues::TimestampSec(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::TimestampSec(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::TimestampSec(&vs[data_range]))
             }
 
-            SeriesValues::Bool(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range.clone()]))
-            }
+            SeriesValues::Bool(vs) => DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range])),
         }
     }
 

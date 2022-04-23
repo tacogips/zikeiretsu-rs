@@ -50,7 +50,7 @@ impl DataPoint {
             .inner_until_exclusive
             .map(|until| move |datapoint: &DataPoint| datapoint.timestamp_nano.cmp(&until));
 
-        binary_search_range_with_idx_by(&datapoints, since_cond, until_cond)
+        binary_search_range_with_idx_by(datapoints, since_cond, until_cond)
     }
 
     pub(crate) fn check_datapoints_is_sorted(datapoints: &[DataPoint]) -> Result<(), String> {

@@ -101,13 +101,13 @@ pub(crate) struct TimestampDeltas {
 }
 
 impl TimestampDeltas {
-    pub fn as_timestamps(self) -> Vec<TimestampNano> {
+    pub fn as_timestamps(&self) -> Vec<TimestampNano> {
         debug_assert_eq!(
             self.timestamps_deltas_second.len(),
             self.timestamps_nanoseconds.len()
         );
 
-        let mut timestamps = vec![self.head_timestamp.clone()];
+        let mut timestamps = vec![self.head_timestamp];
         let mut prev_timestamp = self.head_timestamp;
 
         for data_idx in 0..self.timestamps_deltas_second.len() {

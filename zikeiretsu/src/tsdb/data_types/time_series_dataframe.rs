@@ -126,7 +126,7 @@ impl TimeSeriesDataFrame {
         if !other.is_empty() {
             for row_idx_of_other in 0..other.len() {
                 let (ts, field_values) = other.get_row(row_idx_of_other).unwrap();
-                self.insert(ts.clone(), field_values)?;
+                self.insert(*ts, field_values)?;
             }
         }
         drop(other);
@@ -318,7 +318,7 @@ impl TimeSeriesDataFrame {
         } else {
             let mut prev = unsafe { dataframe.timestamp_nanos.get_unchecked(0) };
             for each in dataframe.timestamp_nanos[1..].iter() {
-                if each.cmp(&prev) == Ordering::Less {
+                if each.cmp(prev) == Ordering::Less {
                     return Err(DataframeError::UnsortedDataframe(format!(
                         "{:?}, {:?}",
                         each, prev
@@ -375,6 +375,10 @@ impl<'a> TimeSeriesDataFrameRef<'a> {
 
     pub fn len(&self) -> usize {
         self.timestamp_nanos.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {

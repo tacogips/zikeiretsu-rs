@@ -163,7 +163,7 @@ async fn write_datas_to_local(
     // write block file
     let (block_file_dir, block_file_path) = {
         let (block_file_dir, block_file_path) =
-            block_timestamp_to_block_file_path(db_dir, &metrics, &block_timestamp);
+            block_timestamp_to_block_file_path(db_dir, metrics, &block_timestamp);
         if block_file_path.exists() {
             return Err(StorageApiError::UnsupportedStorageStatus(format!(
                 "block file already exists at {block_file_path}. merging block files is not supported yet...",
@@ -171,9 +171,8 @@ async fn write_datas_to_local(
             )));
         }
 
-        create_dir_all(block_file_dir.as_path())
-            .map_err(|e| StorageApiError::CreateBlockFileError(e))?;
-        block::write_to_block_file(&block_file_path, &data_points)?;
+        create_dir_all(block_file_dir.as_path()).map_err(StorageApiError::CreateBlockFileError)?;
+        block::write_to_block_file(&block_file_path, data_points)?;
         (block_file_dir, block_file_path)
     };
     Ok(WrittenBlockInfo {
@@ -219,7 +218,7 @@ async fn write_error_file(
         error_time,
         Some(metrics.clone()),
         error_type,
-        Some(block_timestamp.clone()),
+        Some(block_timestamp),
         detail,
     );
 

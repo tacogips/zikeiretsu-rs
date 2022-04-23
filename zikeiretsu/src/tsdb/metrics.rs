@@ -13,7 +13,7 @@ impl Metrics {
     }
 
     fn validate(s: &str) -> Result<(), String> {
-        if s.starts_with(".") {
+        if s.starts_with('.') {
             return Err("metrics name can't starts with '.'".to_string());
         }
         Ok(())

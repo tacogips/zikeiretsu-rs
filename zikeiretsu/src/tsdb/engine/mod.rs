@@ -57,7 +57,7 @@ impl DBConfig {
     pub fn cloud_storage_and_setting(&self) -> Option<(&CloudStorage, &CloudStorageSetting)> {
         match &self.cloud_storage {
             None => None,
-            Some(cloud_storage) => Some((&cloud_storage, &self.cloud_setting)),
+            Some(cloud_storage) => Some((cloud_storage, &self.cloud_setting)),
         }
     }
 }
@@ -124,7 +124,7 @@ impl Engine {
     ) -> Result<block_list::BlockList> {
         let block_list = api::read::read_block_list(
             db_dir.as_ref(),
-            &metrics,
+            metrics,
             &config.cache_setting,
             config.cloud_storage_and_setting(),
         )
@@ -149,7 +149,7 @@ impl Engine {
     ) -> Result<Option<TimeSeriesDataFrame>> {
         let dataframe = api::read::search_dataframe(
             db_dir,
-            &metrics,
+            metrics,
             field_selectors,
             condition,
             &db_config.cache_setting,

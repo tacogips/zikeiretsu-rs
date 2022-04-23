@@ -285,7 +285,7 @@ pub(crate) async fn read_block_list<'a>(
                 //TODO(tacogips) fetch from  cloud storage hear??
                 return Err(StorageApiError::NoBlockListFile(metrics.to_string()));
             }
-            block_list::read_from_blocklist_file(&metrics, block_list_path)?
+            block_list::read_from_blocklist_file(metrics, block_list_path)?
         }
     };
 
@@ -293,7 +293,7 @@ pub(crate) async fn read_block_list<'a>(
         let mut cache = CACHE.write().await;
         cache
             .block_list_cache
-            .write(&metrics, block_list.clone())
+            .write(metrics, block_list.clone())
             .await;
     }
 

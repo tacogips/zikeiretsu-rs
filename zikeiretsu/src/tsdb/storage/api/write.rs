@@ -21,11 +21,11 @@ pub async fn write_datas<P: AsRef<Path>>(
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<()> {
     debug_assert!(!data_points.is_empty());
-    debug_assert!(DataPoint::check_datapoints_is_sorted(&data_points).is_ok());
+    debug_assert!(DataPoint::check_datapoints_is_sorted(data_points).is_ok());
 
     let cloud_infos = if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if cloud_setting.upload_data_after_write {
-            let cloud_lock_file_path = CloudLockfilePath::new(metrics, &cloud_storage);
+            let cloud_lock_file_path = CloudLockfilePath::new(metrics, cloud_storage);
             if cloud_lock_file_path.exists().await? {
                 return Err(StorageApiError::CreateLockfileError(format!(
                     "cloud lock file already exists at {lock_file_url} ",
@@ -50,7 +50,7 @@ pub async fn write_datas<P: AsRef<Path>>(
             block_file_dir,
             block_file_path,
             block_timestamp,
-        } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_storage_and_setting)
+        } = match write_datas_to_local(db_dir, metrics, data_points, cloud_storage_and_setting)
             .await
         {
             Ok(r) => r,
@@ -64,9 +64,9 @@ pub async fn write_datas<P: AsRef<Path>>(
             let upload_result = upload_to_cloud(
                 &block_list_file_path,
                 &block_file_path,
-                &metrics,
+                metrics,
                 &block_timestamp,
-                &cloud_storage,
+                cloud_storage,
             )
             .await;
             match upload_result {
@@ -85,7 +85,7 @@ pub async fn write_datas<P: AsRef<Path>>(
                     write_error_file(
                         db_dir,
                         TimestampNano::now(),
-                        &metrics,
+                        metrics,
                         persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
                         block_timestamp,
                         Some(format!("error:{e:?}")),

@@ -21,7 +21,7 @@ pub struct WithClause<'q> {
     pub def_sync_cloud: bool,
 }
 
-pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
+pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::WITH_CLAUSE {
         return Err(ParserError::UnexpectedPair(

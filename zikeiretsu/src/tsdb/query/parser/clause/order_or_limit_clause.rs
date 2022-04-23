@@ -62,11 +62,9 @@ pub fn parse_order<'q>(pair: Pair<'q, Rule>) -> Result<Order<'q>> {
     }
 
     match column_name {
-        None => {
-            return Err(ParserError::InvalidGrammer(format!(
-                "no column name which order by "
-            )))
-        }
+        None => Err(ParserError::InvalidGrammer(
+            "no column name which order by ".to_string(),
+        )),
 
         Some(column_name) => {
             if is_desc {

@@ -379,7 +379,7 @@ impl<'a> TimeSeriesDataFrameRef<'a> {
 
     pub fn into_datapoints(self) -> Result<Vec<DataPoint>> {
         let mut result = Vec::<DataPoint>::new();
-        for (idx, ts) in self.timestamp_nanos.into_iter().enumerate() {
+        for (idx, ts) in self.timestamp_nanos.iter().enumerate() {
             let mut field_values = Vec::<FieldValue>::new();
             for (ds_idx, each_dataseries) in self.data_serieses.iter().enumerate() {
                 match each_dataseries.get(idx) {

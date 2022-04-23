@@ -89,7 +89,7 @@ pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
             datetime_str.to_string(),
         ));
     }
-    if !datetime_str.starts_with("'") || !datetime_str.ends_with("'") {
+    if !datetime_str.starts_with('\'') || !datetime_str.ends_with('\'') {
         return Err(DatetimeUtilError::InvalidDatetimeFormat(
             datetime_str.to_string(),
         ));
@@ -100,7 +100,7 @@ pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
     for (each_format, is_naive_date) in datetime_formats() {
         let mut parsed = chrono_format::Parsed::new();
 
-        if let Ok(_) = chrono_format::parse(&mut parsed, datetime_str, each_format.clone()) {
+        if chrono_format::parse(&mut parsed, datetime_str, each_format.clone()).is_ok() {
             if *is_naive_date {
                 let naive = parsed.to_naive_date()?;
                 let naive = NaiveDateTime::new(naive, NaiveTime::from_hms(0, 0, 0));

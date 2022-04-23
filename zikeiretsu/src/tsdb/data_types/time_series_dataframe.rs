@@ -13,9 +13,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct TimeSeriesDataFrame {
-    #[serde(alias = "ts")]
+    #[serde(rename = "ts")]
     pub timestamp_nanos: Vec<TimestampNano>,
-    #[serde(alias = "cs")]
+    #[serde(rename = "cs")]
     pub columns: Vec<DataSeries>,
 }
 
@@ -1045,5 +1045,25 @@ mod test {
             suffix,
             TimeSeriesDataFrame::new(vec![], vec![DataSeries::new(SeriesValues::Float64(vec![]))])
         );
+    }
+
+    #[tokio::test]
+    async fn dataframe_serde_1() {
+        use serde_json;
+        let df = multi_dataframe!([
+            (2, 22, true),
+            (3, 33, false),
+            (4, 44, true),
+            (5, 55, false),
+            (6, 66, true),
+            (8, 88, true),
+            (10, 1010, true),
+        ]);
+        let serilized = serde_json::to_string(&df).unwrap();
+        println!("{serilized}");
+        let serialized_df: TimeSeriesDataFrame = serde_json::from_str(&serilized).unwrap();
+
+        assert_eq!(df, serialized_df);
+        assert!(false)
     }
 }

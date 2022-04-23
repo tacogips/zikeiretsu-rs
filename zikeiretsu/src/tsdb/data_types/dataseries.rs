@@ -82,7 +82,7 @@ macro_rules! unmatch_series_error {
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataSeries {
-    #[serde(alias = "v")]
+    #[serde(rename = "v")]
     pub values: SeriesValues,
 }
 

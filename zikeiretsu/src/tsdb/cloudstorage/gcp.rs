@@ -97,8 +97,8 @@ pub fn extract_metrics_from_url(dest_url: &str) -> Result<Metrics> {
     let captured = BLOCK_LIST_FILE_PATTERN.captures(dest_url);
     if let Some(captured) = captured {
         if let Some(matched) = captured.get(1) {
-            let metrics = Metrics::new(matched.as_str())
-                .map_err(|e| CloudStorageError::InvalidMetricsName(e))?;
+            let metrics =
+                Metrics::new(matched.as_str()).map_err(CloudStorageError::InvalidMetricsName)?;
             return Ok(metrics);
         }
     }

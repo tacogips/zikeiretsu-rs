@@ -96,19 +96,19 @@ impl<'a> CloudBlockListFilePath<'a> {
 
     pub async fn upload(&self, src: &Path) -> Result<()> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::upload_block_list_file(src, &self).await,
+            CloudStorage::Gcp(_, _) => gcp::upload_block_list_file(src, self).await,
         }
     }
 
     pub async fn download(&self, dest: &Path) -> Result<Option<()>> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::download_block_list_file(&self, dest).await,
+            CloudStorage::Gcp(_, _) => gcp::download_block_list_file(self, dest).await,
         }
     }
 }
 
 pub struct CloudLockfilePath<'a> {
-    metrics: &'a Metrics, //TODO(tacogips) tobe reference
+    metrics: &'a Metrics,
     cloud_storage: &'a CloudStorage,
 }
 
@@ -130,19 +130,19 @@ impl<'a> CloudLockfilePath<'a> {
 
     pub async fn exists(&self) -> Result<bool> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::is_lock_file_exists(&self).await,
+            CloudStorage::Gcp(_, _) => gcp::is_lock_file_exists(self).await,
         }
     }
 
     pub async fn create(&self) -> Result<()> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::create_lock_file(&self).await,
+            CloudStorage::Gcp(_, _) => gcp::create_lock_file(self).await,
         }
     }
 
     pub async fn remove(&self) -> Result<()> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::remove_lock_file(&self).await,
+            CloudStorage::Gcp(_, _) => gcp::remove_lock_file(self).await,
         }
     }
 }

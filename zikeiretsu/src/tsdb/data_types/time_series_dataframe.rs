@@ -13,7 +13,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct TimeSeriesDataFrame {
+    #[serde(alias = "ts")]
     pub timestamp_nanos: Vec<TimestampNano>,
+    #[serde(alias = "cs")]
     pub columns: Vec<DataSeries>,
 }
 

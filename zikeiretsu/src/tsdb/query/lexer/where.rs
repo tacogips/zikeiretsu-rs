@@ -14,7 +14,7 @@ pub(crate) fn interpret_datatime_search_condition<'q>(
         None => Ok(DatapointSearchCondition::all()),
         Some(where_clause) => match &where_clause.datetime_filter {
             None => Ok(DatapointSearchCondition::all()),
-            Some(datetime_filter) => datetime_filter_to_condition(timezone, &datetime_filter),
+            Some(datetime_filter) => datetime_filter_to_condition(timezone, datetime_filter),
         },
     }
 }

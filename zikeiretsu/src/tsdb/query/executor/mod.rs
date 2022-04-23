@@ -62,14 +62,14 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {
         InterpretedQuery::ListMetrics(database_name, output_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
             metrics_list::execute_metrics_list(Some(&db_dir), &db_config, Some(output_condition))
                 .await?;
         }
 
         InterpretedQuery::DescribeMetrics(database_name, describe_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
             describe_metrics::execute_describe_metrics(
                 &db_dir,
@@ -82,7 +82,7 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
         }
 
         InterpretedQuery::DescribeBlockList(database_name, describe_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
             describe_metrics::execute_describe_metrics(
                 &db_dir,
@@ -95,7 +95,7 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<()> {
         }
 
         InterpretedQuery::SearchMetrics(database_name, query_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, &ctx, query_setting)?;
+            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
 
             search_metrics::execute_search_metrics(&db_dir, &db_config, query_condition).await?;

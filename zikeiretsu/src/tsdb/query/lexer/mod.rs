@@ -157,7 +157,7 @@ macro_rules! prepend_ts_column_to_head {
     }};
 }
 
-pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
+pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuery> {
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => {
             return interpret_buildin_metrics(parsed_query, buildin_metrics)

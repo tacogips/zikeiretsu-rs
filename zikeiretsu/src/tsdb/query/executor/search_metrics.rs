@@ -15,12 +15,9 @@ pub async fn execute_search_metrics(
     let dataframe = Engine::search(
         &db_dir,
         &condition.metrics,
-        condition
-            .field_selectors
-            .as_ref()
-            .map(|indices| indices.as_slice()),
+        condition.field_selectors.as_deref(),
         &condition.datetime_search_condition,
-        &db_config,
+        db_config,
     )
     .await?;
     match dataframe {

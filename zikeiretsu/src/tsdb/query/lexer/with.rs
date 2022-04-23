@@ -35,7 +35,7 @@ impl<'q> Default for With<'q> {
     }
 }
 
-pub(crate) fn interpret_with<'q>(with_clause: Option<WithClause<'q>>) -> LexerResult<With<'q>> {
+pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult<With<'_>> {
     let mut with = With::default();
 
     // with

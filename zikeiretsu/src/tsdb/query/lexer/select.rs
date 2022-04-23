@@ -14,8 +14,7 @@ pub(crate) fn interpret_field_selector<'q>(
             if select
                 .select_columns
                 .iter()
-                .find(|each| *each == &Column::Asterick)
-                .is_some()
+                .any(|each| each == &Column::Asterick)
             {
                 Ok(None)
             } else {
@@ -42,10 +41,9 @@ pub(crate) fn interpret_field_selector<'q>(
                                         field_names.push(column_name.as_string());
                                     }
                                     None => {
-                                        return Err(LexerError::NoColumnDef(format!(
-                                            "{}",
-                                            column_name.as_str()
-                                        )))
+                                        return Err(LexerError::NoColumnDef(
+                                            column_name.as_string(),
+                                        ))
                                     }
                                 }
                             }

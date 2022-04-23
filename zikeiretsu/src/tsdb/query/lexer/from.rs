@@ -20,8 +20,8 @@ impl BuildinMetrics {
     }
 }
 
-pub(crate) fn parse_from<'q>(
-    from_clause: Option<&FromClause<'q>>,
+pub(crate) fn parse_from(
+    from_clause: Option<&FromClause<'_>>,
 ) -> LexerResult<Either<Metrics, BuildinMetrics>> {
     match from_clause {
         None => Err(LexerError::NoFrom),

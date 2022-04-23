@@ -25,11 +25,11 @@ fn datetime_filter_to_condition<'q>(
 ) -> LexerResult<DatapointSearchCondition> {
     match &datetime_filter {
         DatetimeFilter::In(_, from, to) => Ok(DatapointSearchCondition::new(
-            Some(from.to_timestamp_nano(&timezone)),
-            Some(to.to_timestamp_nano(&timezone)),
+            Some(from.to_timestamp_nano(timezone)),
+            Some(to.to_timestamp_nano(timezone)),
         )),
         DatetimeFilter::Gte(_, from) => Ok(DatapointSearchCondition::new(
-            Some(from.to_timestamp_nano(&timezone)),
+            Some(from.to_timestamp_nano(timezone)),
             None,
         )),
         DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(

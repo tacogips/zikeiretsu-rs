@@ -224,9 +224,9 @@ pub fn parse_datetime_range_close<'q>(
 
                     datetime = Some(calced_datetime)
                 } else {
-                    return Err(ParserError::InvalidGrammer(format!(
-                        " datetime filter val1  is needed. "
-                    )));
+                    return Err(ParserError::InvalidGrammer(
+                        " datetime filter val1  is needed. ".to_string(),
+                    ));
                 }
             }
             r => {
@@ -238,14 +238,14 @@ pub fn parse_datetime_range_close<'q>(
     }
 
     match datetime {
-        None => Err(ParserError::InvalidGrammer(format!(
-            "invalid datetime filter close. "
-        ))),
+        None => Err(ParserError::InvalidGrammer(
+            "invalid datetime filter close. ".to_string(),
+        )),
         Some(datetime) => Ok(datetime),
     }
 }
 
-pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
+pub fn parse_datetime(pair: Pair<'_, Rule>) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME {
         return Err(ParserError::UnexpectedPair(
@@ -303,7 +303,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
     }
 }
 
-pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
+pub fn parse_datetime_delta(pair: Pair<'_, Rule>) -> Result<DatetimeDelta> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME_DELTA {
         return Err(ParserError::UnexpectedPair(

@@ -5,7 +5,7 @@ use once_cell::sync::OnceCell;
 use pest::iterators::Pair;
 use std::collections::HashMap;
 
-pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
+pub fn parse_timezone_offset(pair: Pair<'_, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::TIMEZONE_OFFSET_VAL {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::TIMEZONE_OFFSET_VAL),
@@ -18,7 +18,7 @@ pub fn parse_timezone_offset<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
 
 // [+|-]01:00 => 0 as i32
 fn timeoffset_sec_from_str(offset_str: &str) -> Result<i32> {
-    let parsing_offset: &[u8] = &offset_str.as_bytes();
+    let parsing_offset: &[u8] = offset_str.as_bytes();
     if offset_str == "00:00" {
         return Ok(0i32);
     }
@@ -37,7 +37,7 @@ fn timeoffset_sec_from_str(offset_str: &str) -> Result<i32> {
     }
 }
 
-pub fn parse_timezone_name<'q>(pair: Pair<'q, Rule>) -> Result<FixedOffset> {
+pub fn parse_timezone_name(pair: Pair<'_, Rule>) -> Result<FixedOffset> {
     if pair.as_rule() != Rule::TIMEZONE_NAME {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::TIMEZONE_NAME),

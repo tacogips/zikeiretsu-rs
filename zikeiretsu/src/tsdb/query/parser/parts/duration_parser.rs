@@ -12,7 +12,7 @@ impl Deref for DeltaInMicroSeconds {
     }
 }
 
-pub fn parse_duration_delta<'q>(pair: Pair<'q, Rule>) -> Result<DeltaInMicroSeconds> {
+pub fn parse_duration_delta(pair: Pair<'_, Rule>) -> Result<DeltaInMicroSeconds> {
     if pair.as_rule() != Rule::DURATION_DELTA {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::DURATION_DELTA),
@@ -85,7 +85,7 @@ impl DurationUnit {
     }
 }
 
-pub fn parse_duration<'q>(pair: Pair<'q, Rule>) -> Result<DurationUnit> {
+pub fn parse_duration(pair: Pair<'_, Rule>) -> Result<DurationUnit> {
     if pair.as_rule() != Rule::DURATION_UNIT {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::DURATION_UNIT),
@@ -94,11 +94,9 @@ pub fn parse_duration<'q>(pair: Pair<'q, Rule>) -> Result<DurationUnit> {
     }
     let duration_unit = pair.into_inner().next();
     match duration_unit {
-        None => {
-            return Err(ParserError::InvalidGrammer(format!(
-                "invalid empty duration unit "
-            )))
-        }
+        None => Err(ParserError::InvalidGrammer(
+            "invalid empty duration unit ".to_string(),
+        )),
         Some(duration_unit) => match duration_unit.as_rule() {
             Rule::KW_MICROSECOND => Ok(DurationUnit::MicroSecond),
             Rule::KW_MILLISECOND => Ok(DurationUnit::Millisecond),

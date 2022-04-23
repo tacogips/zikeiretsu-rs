@@ -313,9 +313,9 @@ pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
     }
 
     match pair.into_inner().next() {
-        None => Err(ParserError::InvalidGrammer(format!(
-            "invalid datetime delta"
-        ))),
+        None => Err(ParserError::InvalidGrammer(
+            "invalid datetime delta".to_string(),
+        )),
 
         Some(date_time_delta) => match date_time_delta.as_rule() {
             Rule::DURATION_DELTA => {

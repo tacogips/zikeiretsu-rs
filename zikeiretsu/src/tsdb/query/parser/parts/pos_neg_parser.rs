@@ -14,7 +14,7 @@ impl PosNeg {
     }
 }
 
-pub fn parse_pos_neg<'q>(pair: Pair<'q, Rule>) -> Result<PosNeg> {
+pub fn parse_pos_neg(pair: Pair<'_, Rule>) -> Result<PosNeg> {
     if pair.as_rule() != Rule::POS_NEG {
         return Err(ParserError::UnexpectedPair(
             format!("{:?}", Rule::POS_NEG),

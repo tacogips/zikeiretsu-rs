@@ -10,7 +10,7 @@ pub(crate) fn read_from_block_with_specific_fields(
 ) -> Result<TimeSeriesDataFrame> {
     // 1. number  of data
     let (number_of_data, mut block_idx): (u64, usize) =
-        base_128_variants::decompress_u64(&block_data)?;
+        base_128_variants::decompress_u64(block_data)?;
     let number_of_datapoints = number_of_data as usize;
 
     // 2. data field num
@@ -149,7 +149,7 @@ pub(crate) fn read_from_block_with_specific_fields(
         if field_selectors_map.is_empty() {
             Some(idx)
         } else {
-            field_selectors_map.get(&idx).map(|v| *v)
+            field_selectors_map.get(&idx).copied()
         }
     };
 

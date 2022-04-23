@@ -33,19 +33,19 @@ fn datetime_filter_to_condition<'q>(
             None,
         )),
         DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(
-            Some(from.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+            Some(from.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
             None,
         )),
         DatetimeFilter::Lte(_, to) => Ok(DatapointSearchCondition::new(
             None,
-            Some(to.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+            Some(to.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
         )),
         DatetimeFilter::Lt(_, to) => Ok(DatapointSearchCondition::new(
             None,
-            Some(to.to_timestamp_nano(&timezone)),
+            Some(to.to_timestamp_nano(timezone)),
         )),
         DatetimeFilter::Equal(_, datetime_value) => {
-            let from_dt_nano = datetime_value.to_timestamp_nano(&timezone);
+            let from_dt_nano = datetime_value.to_timestamp_nano(timezone);
             let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
             let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
                 DatetimeAccuracy::NanoSecond => Duration::nanoseconds(1),

@@ -7,7 +7,7 @@ pub struct SelectClause<'q> {
     pub select_columns: Vec<Column<'q>>,
 }
 
-pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
+pub fn parse(pair: Pair<'_, Rule>) -> Result<SelectClause<'_>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::SELECT_CLAUSE {
         return Err(ParserError::UnexpectedPair(
@@ -16,7 +16,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<SelectClause<'q>> {
         ));
     }
 
-    let mut select_columns: Option<Vec<Column<'q>>> = None;
+    let mut select_columns: Option<Vec<Column<'_>>> = None;
     for each in pair.into_inner() {
         match each.as_rule() {
             Rule::COLUMNS => {

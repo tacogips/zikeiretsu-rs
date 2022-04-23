@@ -48,12 +48,9 @@ pub mod bytes_converter {
         for chunk_bits in src.chunks(8) {
             let mut each_byte: u8 = 0;
             for (idx, bit) in chunk_bits.iter().enumerate() {
-                match bit {
-                    Bit::One => {
-                        let lshift_bits = 8 - idx - 1;
-                        each_byte = each_byte | (1 << lshift_bits)
-                    }
-                    _ => { /*do nothing*/ }
+                if bit == &Bit::One {
+                    let lshift_bits = 8 - idx - 1;
+                    each_byte |= 1 << lshift_bits
                 }
             }
             dst.push(each_byte);
@@ -222,16 +219,22 @@ pub struct BitsWriter {
     current_bits_offset_in_current_byte: BitsIndex,
 }
 
-impl BitsWriter {
-    pub fn new() -> Self {
+impl Default for BitsWriter {
+    fn default() -> Self {
         Self {
             buffer: Vec::new(),
             current_bits_offset_in_current_byte: 8,
         }
     }
+}
 
+impl BitsWriter {
     pub fn len(&self) -> usize {
         self.buffer.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.len() == 0
     }
 
     pub fn as_inner(&self) -> &[u8] {
@@ -279,7 +282,7 @@ impl BitsWriter {
     where
         W: Write,
     {
-        dst.write(&self.buffer)?;
+        dst.write_all(&self.buffer)?;
         Ok(())
     }
 }
@@ -321,13 +324,8 @@ pub trait ByteArrayBitsReader {
     fn set_current_bits_offset_in_current_byte(&mut self, i: BytesIndex);
 
     fn at_tail(&self) -> bool {
-        if self.current_byte_index() == self.bytes_buffer_len() - 1
+        self.current_byte_index() == self.bytes_buffer_len() - 1
             && self.current_bits_offset_in_current_byte() >= 8
-        {
-            true
-        } else {
-            false
-        }
     }
 
     /// retaining bits size
@@ -961,7 +959,7 @@ mod test {
         assert!(bytes_converter::from_u64(0b1010101100, 10, &mut v).is_ok());
         let input = RefBitsReader::new(v.as_slice());
 
-        let mut writer = BitsWriter::new();
+        let mut writer = BitsWriter::default();
         assert!(writer.append(input, 10).is_ok());
         let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 2);
@@ -975,7 +973,7 @@ mod test {
         assert!(bytes_converter::from_u64(0b1010101111, 10, &mut v).is_ok());
         let input = RefBitsReader::new(v.as_slice());
 
-        let mut writer = BitsWriter::new();
+        let mut writer = BitsWriter::default();
         assert!(writer.append(input, 10).is_ok());
         let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 2);
@@ -989,7 +987,7 @@ mod test {
         assert!(bytes_converter::from_u64(0b10101011, 8, &mut v).is_ok());
         let input = RefBitsReader::new(v.as_slice());
 
-        let mut writer = BitsWriter::new();
+        let mut writer = BitsWriter::default();
         assert!(writer.append(input, 8).is_ok());
         let inner_value = writer.as_inner();
         assert_eq!(inner_value.len(), 1);

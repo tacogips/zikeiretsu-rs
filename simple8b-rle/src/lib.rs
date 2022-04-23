@@ -49,7 +49,7 @@ pub fn compress<W>(src: &[u64], dst: &mut W) -> Result<()>
 where
     W: Write,
 {
-    if src.len() == 0 {
+    if src.is_empty() {
         return Ok(());
     }
 
@@ -62,19 +62,17 @@ where
 
         if let Some((rle_compression, rle_bound_idx)) = should_rle_compression(src, current_idx)? {
             let compressed_bytes = rle_compression.to_u64().to_be_bytes();
-            dst.write(compressed_bytes.as_ref())?;
+            dst.write_all(compressed_bytes.as_ref())?;
             current_idx = rle_bound_idx;
+        } else if let Some((compression_set, bound_idx)) =
+            search_simple_8b_compress_set(src, current_idx)?
+        {
+            debug_assert!(current_idx < bound_idx);
+            debug_assert!(bound_idx <= src.len());
+            compress_simple_8b(&src[current_idx..bound_idx], dst, compression_set)?;
+            current_idx = bound_idx;
         } else {
-            if let Some((compression_set, bound_idx)) =
-                search_simple_8b_compress_set(src, current_idx)?
-            {
-                debug_assert!(current_idx < bound_idx);
-                debug_assert!(bound_idx <= src.len());
-                compress_simple_8b(&src[current_idx..bound_idx], dst, compression_set)?;
-                current_idx = bound_idx;
-            } else {
-                unreachable!("current idx out of bounds. (it should be a bug)")
-            }
+            unreachable!("current idx out of bounds. (it should be a bug)")
         }
     }
 }
@@ -84,7 +82,7 @@ pub fn decompress(src: &[u8], dst: &mut Vec<u64>, num_of_value: Option<usize>) -
         return Ok(0);
     }
 
-    let max_num = num_of_value.unwrap_or_else(|| std::usize::MAX);
+    let max_num = num_of_value.unwrap_or(std::usize::MAX);
     let mut current_index = 0;
     let mut decompressed_num: usize = 0;
 
@@ -127,14 +125,14 @@ const MAX_RLE_REPEATABLE_NUMBER: DataNum = (1 << 28) - 1;
 #[derive(Debug, Eq, PartialEq)]
 enum Simple8BOrRLESelector {
     Simple8B(&'static CompressionSet),
-    RLE,
+    Rle,
 }
 
 impl Simple8BOrRLESelector {
     fn from_u64(compressed_data: u64) -> Result<Self> {
         let selector = compressed_data >> DATA_AREA_BITS;
         if selector == SELECTOR_FOR_RLE {
-            Ok(Self::RLE)
+            Ok(Self::Rle)
         } else {
             for each in COMPRESSION_SETS.iter() {
                 if each.selector.val == selector {
@@ -261,7 +259,7 @@ pub(crate) fn decompress_single_compressed_data(compressed_data: u64) -> Result<
         Simple8BOrRLESelector::Simple8B(compress_set) => {
             decompress_simple_8b(compressed_data, compress_set)
         }
-        Simple8BOrRLESelector::RLE => decompress_rle(compressed_data),
+        Simple8BOrRLESelector::Rle => decompress_rle(compressed_data),
     }
 }
 
@@ -321,7 +319,7 @@ pub(crate) fn compress_simple_8b<W>(
 where
     W: Write,
 {
-    debug_assert!(src.len() > 0);
+    debug_assert!(!src.is_empty());
     let mut result: u64 = src[0];
     for each_val in src[1..].iter() {
         result <<= compression_set.meaningful_bitsize;
@@ -336,7 +334,7 @@ where
     }
     result |= compression_set.selector.val << DATA_AREA_BITS;
 
-    dst.write(result.to_be_bytes().as_ref())?;
+    dst.write_all(result.to_be_bytes().as_ref())?;
     Ok(())
 }
 
@@ -366,9 +364,7 @@ pub(crate) fn should_rle_compression(
     } else {
         //TODO(tacogips) think about leading zero 0111_1110
         let bitsize_of_val = meaningful_bitsize(value);
-        if bitsize_of_val > RLE_VALUE_BITS {
-            None
-        } else if repeat_num > MAX_RLE_REPEATABLE_NUMBER {
+        if bitsize_of_val > RLE_VALUE_BITS || repeat_num > MAX_RLE_REPEATABLE_NUMBER {
             None
         } else {
             let compress_set = search_fitting_compress_set_by_bitsize(values, start_idx)?;

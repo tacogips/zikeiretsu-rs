@@ -84,7 +84,7 @@ impl fmt::Display for FieldValue {
     }
 }
 
-pub fn same_field_types(types: &Vec<FieldType>, values: &Vec<FieldValue>) -> bool {
+pub fn same_field_types(types: &[FieldType], values: &[FieldValue]) -> bool {
     if types.len() == values.len() {
         (0..types.len())
             .all(|i| unsafe { *types.get_unchecked(i) == values.get_unchecked(i).as_type() })

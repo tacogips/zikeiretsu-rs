@@ -29,9 +29,9 @@ where
     for i in 0..byte_size {
         let is_last = i == byte_size - 1;
         if is_last {
-            dst.write(&[(src >> i * 7) as u8; 1])?;
+            dst.write_all(&[(src >> (i * 7)) as u8; 1])?;
         } else {
-            dst.write(&[((src >> i * 7) as u8) | CONTINUE_CONTROL_BIT])?;
+            dst.write_all(&[((src >> (i * 7)) as u8) | CONTINUE_CONTROL_BIT])?;
         }
     }
 
@@ -58,16 +58,16 @@ pub fn decompress_u64(src: &[u8]) -> Result<(u64, usize)> {
         return Err(Error::ValueOutOfBound(format!(
             "variants size out of bound of u64 size:{variants_size}"
         )));
-    } else if variants_size >= 10 {
-        if variants.last().unwrap().leading_zeros() <= 6 {
-            return Err(Error::ValueOutOfBound(format!(
-                "variants size out of bound of u64 size:{variants_size}"
-            )));
-        }
+    }
+
+    if variants_size >= 10 && variants.last().unwrap().leading_zeros() <= 6 {
+        return Err(Error::ValueOutOfBound(format!(
+            "variants size out of bound of u64 size:{variants_size}"
+        )));
     }
 
     for i in (0..variants_size).rev() {
-        result = result | ((variants[i] as u64) << i * 7);
+        result |= (variants[i] as u64) << (i * 7);
     }
 
     Ok((result, variants_size))

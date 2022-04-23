@@ -55,11 +55,23 @@ pub enum OutputError {
 }
 
 #[derive(Debug)]
+pub struct DatabaseName(String);
+impl DatabaseName {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+#[derive(Debug)]
 pub enum InterpretedQuery {
-    ListMetrics(OutputCondition, QuerySetting),
-    DescribeMetrics(DescribeMetrics, QuerySetting),
-    DescribeBlockList(DescribeBlockList, QuerySetting),
-    SearchMetrics(InterpretedQueryCondition, QuerySetting),
+    ListMetrics(Option<DatabaseName>, OutputCondition, QuerySetting),
+    DescribeMetrics(Option<DatabaseName>, DescribeMetrics, QuerySetting),
+    DescribeBlockList(Option<DatabaseName>, DescribeBlockList, QuerySetting),
+    SearchMetrics(
+        Option<DatabaseName>,
+        InterpretedQueryCondition,
+        QuerySetting,
+    ),
 }
 
 #[derive(Debug)]
@@ -145,7 +157,7 @@ macro_rules! prepend_ts_column_to_head {
     }};
 }
 
-pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<InterpretedQuery> {
+pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuery> {
     let metrics = match from::parse_from(parsed_query.from.as_ref())? {
         Either::Right(buildin_metrics) => {
             return interpret_buildin_metrics(parsed_query, buildin_metrics)
@@ -171,10 +183,9 @@ pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Interpreted
 
     let field_names = match filtered_field_names {
         Some(mut field_names) => Some(prepend_ts_column_to_head!(field_names)),
-        None => match with.column_name_aliases {
-            Some(mut field_names) => Some(prepend_ts_column_to_head!(field_names)),
-            None => None,
-        },
+        None => with
+            .column_name_aliases
+            .map(|mut field_names| prepend_ts_column_to_head!(field_names)),
     };
 
     let datetime_search_condition = r#where::interpret_datatime_search_condition(
@@ -197,14 +208,19 @@ pub(crate) fn interpret<'q>(parsed_query: ParsedQuery<'q>) -> Result<Interpreted
         output_condition,
         timezone: with.timezone,
     };
+    let database_name = with
+        .database
+        .map(|database_name| DatabaseName(database_name.to_string()));
+
     Ok(InterpretedQuery::SearchMetrics(
+        database_name,
         query_context,
         query_setting,
     ))
 }
 
-pub(crate) fn interpret_buildin_metrics<'q>(
-    parsed_query: ParsedQuery<'q>,
+pub(crate) fn interpret_buildin_metrics(
+    parsed_query: ParsedQuery<'_>,
     buildin_metrics: from::BuildinMetrics,
 ) -> Result<InterpretedQuery> {
     let with = with::interpret_with(parsed_query.with)?;
@@ -213,11 +229,15 @@ pub(crate) fn interpret_buildin_metrics<'q>(
         cache_setting: with.cache_setting,
         cloud_setting: with.cloud_setting,
     };
+    let database_name = with
+        .database
+        .map(|database_name| DatabaseName(database_name.to_string()));
 
     match buildin_metrics {
         from::BuildinMetrics::ListMetrics => {
             invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
             Ok(InterpretedQuery::ListMetrics(
+                database_name,
                 OutputCondition {
                     output_format: with.output_format,
                     output_file_path: with.output_file_path,
@@ -238,6 +258,7 @@ pub(crate) fn interpret_buildin_metrics<'q>(
             };
 
             Ok(InterpretedQuery::DescribeMetrics(
+                database_name,
                 DescribeMetrics {
                     output_condition,
                     metrics_filter,
@@ -258,6 +279,7 @@ pub(crate) fn interpret_buildin_metrics<'q>(
             };
 
             Ok(InterpretedQuery::DescribeBlockList(
+                database_name,
                 DescribeBlockList {
                     output_condition,
                     metrics_filter,

@@ -1,9 +1,12 @@
+pub mod context;
 use crate::tsdb::cloudstorage::CloudStorage;
+use crate::tsdb::data_types::TimeSeriesDataFrame;
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::store::writable_store::DatapointDefaultSorter;
 use crate::tsdb::{datapoint::DatapointSearchCondition, storage::*, store::*};
 use crate::tsdb::{storage::api as storage_api, store};
+pub use context::*;
 use std::path::Path;
 use thiserror::Error;
 
@@ -52,10 +55,9 @@ impl DBConfig {
     }
 
     pub fn cloud_storage_and_setting(&self) -> Option<(&CloudStorage, &CloudStorageSetting)> {
-        match &self.cloud_storage {
-            None => None,
-            Some(cloud_storage) => Some((&cloud_storage, &self.cloud_setting)),
-        }
+        self.cloud_storage
+            .as_ref()
+            .map(|cloud_storage| (cloud_storage, &self.cloud_setting))
     }
 }
 
@@ -121,7 +123,7 @@ impl Engine {
     ) -> Result<block_list::BlockList> {
         let block_list = api::read::read_block_list(
             db_dir.as_ref(),
-            &metrics,
+            metrics,
             &config.cache_setting,
             config.cloud_storage_and_setting(),
         )
@@ -143,22 +145,16 @@ impl Engine {
         field_selectors: Option<&[usize]>,
         condition: &DatapointSearchCondition,
         db_config: &DBConfig,
-    ) -> Result<Option<ReadonlyStore>> {
+    ) -> Result<Option<TimeSeriesDataFrame>> {
         let dataframe = api::read::search_dataframe(
             db_dir,
-            &metrics,
+            metrics,
             field_selectors,
             condition,
             &db_config.cache_setting,
             db_config.cloud_storage_and_setting(),
         )
         .await?;
-        match dataframe {
-            None => Ok(None),
-            Some(dataframe) => {
-                let store = ReadonlyStore::new(dataframe, false)?;
-                Ok(Some(store))
-            }
-        }
+        Ok(dataframe)
     }
 }

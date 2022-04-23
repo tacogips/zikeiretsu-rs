@@ -80,7 +80,7 @@ impl Default for DataFrame {
 }
 
 impl DataSeriesRefs for DataFrame {
-    fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>> {
+    fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>> {
         self.data_serieses
             .iter()
             .map(|ds| ds.as_dataseries_ref())

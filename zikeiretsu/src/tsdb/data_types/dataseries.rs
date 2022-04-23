@@ -96,28 +96,26 @@ impl DataSeries {
                 DataSeriesRef::new(SeriesValuesRef::Vacant(finish_idx - start_idx))
             }
             SeriesValues::Float64(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::Float64(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::Float64(&vs[data_range]))
             }
 
             SeriesValues::UInt64(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::UInt64(&vs[data_range]))
             }
 
             SeriesValues::String(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::String(&vs[data_range]))
             }
 
             SeriesValues::TimestampNano(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::TimestampNano(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::TimestampNano(&vs[data_range]))
             }
 
             SeriesValues::TimestampSec(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::TimestampSec(&vs[data_range.clone()]))
+                DataSeriesRef::new(SeriesValuesRef::TimestampSec(&vs[data_range]))
             }
 
-            SeriesValues::Bool(vs) => {
-                DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range.clone()]))
-            }
+            SeriesValues::Bool(vs) => DataSeriesRef::new(SeriesValuesRef::Bool(&vs[data_range])),
         }
     }
 
@@ -171,8 +169,7 @@ impl DataSeries {
             },
 
             SeriesValues::Vacant(len) => {
-                //TODO(tacogips) invalid hwre
-                *len = *len + 1;
+                *len += 1;
                 Ok(())
             }
         }
@@ -229,7 +226,7 @@ impl DataSeries {
 
             SeriesValues::Vacant(len) => {
                 //TODO(tacogips) invalid hwre
-                *len = *len + 1;
+                *len += 1;
                 Ok(())
             }
         }
@@ -286,7 +283,7 @@ impl DataSeries {
 
             SeriesValues::Vacant(len) => match &other.values {
                 SeriesValues::Vacant(new_len) => {
-                    *len = *len + *new_len;
+                    *len += *new_len;
                     Ok(())
                 }
                 invalid => unmatch_series_error!(self.values, invalid),
@@ -446,14 +443,14 @@ impl DataSeries {
         }
     }
 
-    pub fn as_dataseries_ref<'a>(&'a self) -> DataSeriesRef<'a> {
+    pub fn as_dataseries_ref(&self) -> DataSeriesRef<'_> {
         let vs = match &self.values {
-            SeriesValues::Float64(vs) => SeriesValuesRef::Float64(&vs),
-            SeriesValues::UInt64(vs) => SeriesValuesRef::UInt64(&vs),
-            SeriesValues::Bool(vs) => SeriesValuesRef::Bool(&vs),
-            SeriesValues::String(vs) => SeriesValuesRef::String(&vs),
-            SeriesValues::TimestampNano(vs) => SeriesValuesRef::TimestampNano(&vs),
-            SeriesValues::TimestampSec(vs) => SeriesValuesRef::TimestampSec(&vs),
+            SeriesValues::Float64(vs) => SeriesValuesRef::Float64(vs),
+            SeriesValues::UInt64(vs) => SeriesValuesRef::UInt64(vs),
+            SeriesValues::Bool(vs) => SeriesValuesRef::Bool(vs),
+            SeriesValues::String(vs) => SeriesValuesRef::String(vs),
+            SeriesValues::TimestampNano(vs) => SeriesValuesRef::TimestampNano(vs),
+            SeriesValues::TimestampSec(vs) => SeriesValuesRef::TimestampSec(vs),
             SeriesValues::Vacant(len) => SeriesValuesRef::Vacant(*len),
         };
 

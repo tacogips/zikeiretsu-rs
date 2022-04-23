@@ -14,7 +14,7 @@ pub(crate) fn interpret_datatime_search_condition<'q>(
         None => Ok(DatapointSearchCondition::all()),
         Some(where_clause) => match &where_clause.datetime_filter {
             None => Ok(DatapointSearchCondition::all()),
-            Some(datetime_filter) => datetime_filter_to_condition(timezone, &datetime_filter),
+            Some(datetime_filter) => datetime_filter_to_condition(timezone, datetime_filter),
         },
     }
 }
@@ -25,27 +25,27 @@ fn datetime_filter_to_condition<'q>(
 ) -> LexerResult<DatapointSearchCondition> {
     match &datetime_filter {
         DatetimeFilter::In(_, from, to) => Ok(DatapointSearchCondition::new(
-            Some(from.to_timestamp_nano(&timezone)),
-            Some(to.to_timestamp_nano(&timezone)),
+            Some(from.to_timestamp_nano(timezone)),
+            Some(to.to_timestamp_nano(timezone)),
         )),
         DatetimeFilter::Gte(_, from) => Ok(DatapointSearchCondition::new(
-            Some(from.to_timestamp_nano(&timezone)),
+            Some(from.to_timestamp_nano(timezone)),
             None,
         )),
         DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(
-            Some(from.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+            Some(from.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
             None,
         )),
         DatetimeFilter::Lte(_, to) => Ok(DatapointSearchCondition::new(
             None,
-            Some(to.to_timestamp_nano(&timezone) + Duration::nanoseconds(1)),
+            Some(to.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
         )),
         DatetimeFilter::Lt(_, to) => Ok(DatapointSearchCondition::new(
             None,
-            Some(to.to_timestamp_nano(&timezone)),
+            Some(to.to_timestamp_nano(timezone)),
         )),
         DatetimeFilter::Equal(_, datetime_value) => {
-            let from_dt_nano = datetime_value.to_timestamp_nano(&timezone);
+            let from_dt_nano = datetime_value.to_timestamp_nano(timezone);
             let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
             let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
                 DatetimeAccuracy::NanoSecond => Duration::nanoseconds(1),

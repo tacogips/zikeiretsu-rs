@@ -22,25 +22,21 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
     let mut datetime_filter: Option<DatetimeFilter<'q>> = None;
     let mut metrics_filter: Option<Metrics> = None;
     for each in pair.into_inner() {
-        match each.as_rule() {
-            Rule::FILTER => {
-                for each_filter in each.into_inner() {
-                    match each_filter.as_rule() {
-                        Rule::DATETIME_FILTER => {
-                            let parsed_datetime_filter =
-                                datetime_filter_parser::parse(each_filter)?;
-                            datetime_filter = Some(parsed_datetime_filter);
-                        }
-
-                        Rule::METRICS_FILTER => {
-                            metrics_filter = Some(parse_metrics_filter(each_filter)?);
-                        }
-
-                        _ => {}
+        if each.as_rule() == Rule::FILTER {
+            for each_filter in each.into_inner() {
+                match each_filter.as_rule() {
+                    Rule::DATETIME_FILTER => {
+                        let parsed_datetime_filter = datetime_filter_parser::parse(each_filter)?;
+                        datetime_filter = Some(parsed_datetime_filter);
                     }
+
+                    Rule::METRICS_FILTER => {
+                        metrics_filter = Some(parse_metrics_filter(each_filter)?);
+                    }
+
+                    _ => { /* do nothing*/ }
                 }
             }
-            _ => {}
         }
     }
 
@@ -50,7 +46,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
     })
 }
 
-pub fn parse_metrics_filter<'q>(pair: Pair<'q, Rule>) -> Result<Metrics> {
+pub fn parse_metrics_filter(pair: Pair<'_, Rule>) -> Result<Metrics> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::METRICS_FILTER {
         return Err(ParserError::UnexpectedPair(
@@ -60,19 +56,15 @@ pub fn parse_metrics_filter<'q>(pair: Pair<'q, Rule>) -> Result<Metrics> {
     }
 
     for each in pair.into_inner() {
-        match each.as_rule() {
-            Rule::METRICS_NAME => {
-                return Ok(Metrics::try_from(each.as_str())
-                    .map_err(|_| ParserError::InvalidMetricsError(each.as_str().to_string()))?)
-            }
-
-            _ => { /* do nothing */ }
+        if each.as_rule() == Rule::METRICS_NAME {
+            return Metrics::try_from(each.as_str())
+                .map_err(|_| ParserError::InvalidMetricsError(each.as_str().to_string()));
         }
     }
 
-    Err(ParserError::InvalidGrammer(format!(
-        "no metrics in metrics filter"
-    )))
+    Err(ParserError::InvalidGrammer(
+        "no metrics in metrics filter".to_string(),
+    ))
 }
 
 #[cfg(test)]

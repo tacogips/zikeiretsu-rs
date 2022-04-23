@@ -10,7 +10,7 @@ pub(crate) fn read_from_block_with_specific_fields(
 ) -> Result<TimeSeriesDataFrame> {
     // 1. number  of data
     let (number_of_data, mut block_idx): (u64, usize) =
-        base_128_variants::decompress_u64(&block_data)?;
+        base_128_variants::decompress_u64(block_data)?;
     let number_of_datapoints = number_of_data as usize;
 
     // 2. data field num
@@ -30,7 +30,7 @@ pub(crate) fn read_from_block_with_specific_fields(
         None => HashMap::new(),
         Some(field_selectors) => {
             let mut field_selectors_set = HashMap::new();
-            if field_selectors.len() == 0 {
+            if field_selectors.is_empty() {
                 return Err(BlockError::InvalidFieldSelector(
                     "empty field selector".to_string(),
                 ));
@@ -149,7 +149,7 @@ pub(crate) fn read_from_block_with_specific_fields(
         if field_selectors_map.is_empty() {
             Some(idx)
         } else {
-            field_selectors_map.get(&idx).map(|v| *v)
+            field_selectors_map.get(&idx).copied()
         }
     };
 
@@ -158,7 +158,7 @@ pub(crate) fn read_from_block_with_specific_fields(
             FieldType::Float64 => {
                 let mut float_values = Vec::<f64>::new();
                 let read_idx = xor_encoding::decompress_f64(
-                    &&block_data[block_idx..],
+                    &block_data[block_idx..],
                     number_of_datapoints,
                     &mut float_values,
                 )?;
@@ -175,7 +175,7 @@ pub(crate) fn read_from_block_with_specific_fields(
             FieldType::Bool => {
                 let mut bool_values = Vec::<bool>::new();
                 let read_idx = bools::decompress(
-                    &&block_data[block_idx..],
+                    &block_data[block_idx..],
                     &mut bool_values,
                     number_of_datapoints,
                 )?;
@@ -200,7 +200,7 @@ pub(crate) fn read_from_block_with_specific_fields(
         timestamps,
         block_field_values
             .into_iter()
-            .map(|field_values| DataSeries::new(field_values))
+            .map(DataSeries::new)
             .collect(),
     );
     Ok(dataframe)

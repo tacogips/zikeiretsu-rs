@@ -223,7 +223,7 @@ where
         datapoint_search_condition: DatapointSearchCondition,
     ) -> Result<()> {
         let datapoints = self.datapoints().await?;
-        let datapoints_searcher = DatapointSearcher::new(&datapoints);
+        let datapoints_searcher = DatapointSearcher::new(datapoints);
 
         if let Some((_, indices)) = datapoints_searcher
             .search_with_indices(datapoint_search_condition)
@@ -240,7 +240,7 @@ where
         if let Persistence::Storage(db_dir, cloud_storage_and_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
             let all_datapoints = self.datapoints().await?;
-            let datapoints_searcher = DatapointSearcher::new(&all_datapoints);
+            let datapoints_searcher = DatapointSearcher::new(all_datapoints);
 
             if let Some((datapoints, indices)) = datapoints_searcher
                 .search_with_indices(condition.datapoint_search_condition)
@@ -249,7 +249,7 @@ where
                 storage_api::write::write_datas(
                     db_dir,
                     &metrics,
-                    &datapoints,
+                    datapoints,
                     cloud_storage_and_setting
                         .as_ref()
                         .map(|(cloud_strorage, cloud_setting)| (cloud_strorage, cloud_setting)),

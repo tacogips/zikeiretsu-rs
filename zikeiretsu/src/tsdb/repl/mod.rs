@@ -1,7 +1,7 @@
 mod validator;
 
-use super::query::*;
-use crate::tsdb::query::eval::execute_query;
+use super::engine::*;
+use crate::tsdb::query::executor::execute_query;
 use crate::EngineError;
 use dirs::home_dir;
 use rustyline::error::ReadlineError;
@@ -41,14 +41,14 @@ pub async fn start(ctx: &mut DBContext) -> Result<()> {
     let _ = editor.load_history(history_file_path.as_path());
 
     loop {
-        println!("");
+        println!();
         let readline = editor.readline("query> ");
 
         match readline {
             Ok(line) => {
                 log::debug!("qeury:{}", line);
                 editor.add_history_entry(line.as_str());
-                if let Err(e) = execute_query(&ctx, &line).await {
+                if let Err(e) = execute_query(ctx, &line).await {
                     eprintln!("query error: {e}")
                 }
             }

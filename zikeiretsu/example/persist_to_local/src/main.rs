@@ -87,7 +87,10 @@ async fn main() {
 
     write_datas(&temp_db_dir).await;
 
-    let db_context = DBContext::new(Some(temp_db_dir.into_path()), None);
+    let db_context = DBContext::new(
+        temp_db_dir.into_path(),
+        vec![Database::new("test_db".to_string(), None)],
+    );
 
     let query = r#"
     with

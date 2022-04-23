@@ -21,11 +21,11 @@ pub async fn write_datas<P: AsRef<Path>>(
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<()> {
     debug_assert!(!data_points.is_empty());
-    debug_assert!(DataPoint::check_datapoints_is_sorted(&data_points).is_ok());
+    debug_assert!(DataPoint::check_datapoints_is_sorted(data_points).is_ok());
 
     let cloud_infos = if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if cloud_setting.upload_data_after_write {
-            let cloud_lock_file_path = CloudLockfilePath::new(metrics, &cloud_storage);
+            let cloud_lock_file_path = CloudLockfilePath::new(metrics, cloud_storage);
             if cloud_lock_file_path.exists().await? {
                 return Err(StorageApiError::CreateLockfileError(format!(
                     "cloud lock file already exists at {lock_file_url} ",
@@ -50,7 +50,7 @@ pub async fn write_datas<P: AsRef<Path>>(
             block_file_dir,
             block_file_path,
             block_timestamp,
-        } = match write_datas_to_local(db_dir, &metrics, data_points, cloud_storage_and_setting)
+        } = match write_datas_to_local(db_dir, metrics, data_points, cloud_storage_and_setting)
             .await
         {
             Ok(r) => r,
@@ -64,9 +64,9 @@ pub async fn write_datas<P: AsRef<Path>>(
             let upload_result = upload_to_cloud(
                 &block_list_file_path,
                 &block_file_path,
-                &metrics,
+                metrics,
                 &block_timestamp,
-                &cloud_storage,
+                cloud_storage,
             )
             .await;
             match upload_result {
@@ -85,7 +85,7 @@ pub async fn write_datas<P: AsRef<Path>>(
                     write_error_file(
                         db_dir,
                         TimestampNano::now(),
-                        &metrics,
+                        metrics,
                         persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
                         block_timestamp,
                         Some(format!("error:{e:?}")),
@@ -117,7 +117,7 @@ async fn write_datas_to_local(
     data_points: &[DataPoint],
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<WrittenBlockInfo> {
-    let lock_file_path = lockfile_path(&db_dir, metrics);
+    let lock_file_path = lockfile_path(db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
 
@@ -138,7 +138,7 @@ async fn write_datas_to_local(
     let block_list_file_path = {
         let block_list = super::read::read_block_list(
             db_dir,
-            &metrics,
+            metrics,
             &cache_setting,
             cloud_storage_and_setting,
         )
@@ -155,7 +155,7 @@ async fn write_datas_to_local(
         block_list.add_timestamp(block_timestamp)?;
         block_list.update_updated_at(TimestampNano::now());
 
-        let block_list_file_path = block_list_file_path(&db_dir, &metrics);
+        let block_list_file_path = block_list_file_path(db_dir, metrics);
         block_list::write_to_block_listfile(&block_list_file_path, block_list)?;
         block_list_file_path
     };
@@ -163,7 +163,7 @@ async fn write_datas_to_local(
     // write block file
     let (block_file_dir, block_file_path) = {
         let (block_file_dir, block_file_path) =
-            block_timestamp_to_block_file_path(db_dir, &metrics, &block_timestamp);
+            block_timestamp_to_block_file_path(db_dir, metrics, &block_timestamp);
         if block_file_path.exists() {
             return Err(StorageApiError::UnsupportedStorageStatus(format!(
                 "block file already exists at {block_file_path}. merging block files is not supported yet...",
@@ -171,15 +171,14 @@ async fn write_datas_to_local(
             )));
         }
 
-        create_dir_all(block_file_dir.as_path())
-            .map_err(|e| StorageApiError::CreateBlockFileError(e))?;
-        block::write_to_block_file(&block_file_path, &data_points)?;
+        create_dir_all(block_file_dir.as_path()).map_err(StorageApiError::CreateBlockFileError)?;
+        block::write_to_block_file(&block_file_path, data_points)?;
         (block_file_dir, block_file_path)
     };
     Ok(WrittenBlockInfo {
-        block_list_file_path: block_list_file_path.to_path_buf(),
-        block_file_dir: block_file_dir.to_path_buf(),
-        block_file_path: block_file_path.to_path_buf(),
+        block_list_file_path,
+        block_file_dir,
+        block_file_path,
         block_timestamp,
     })
 }
@@ -219,7 +218,7 @@ async fn write_error_file(
         error_time,
         Some(metrics.clone()),
         error_type,
-        Some(block_timestamp.clone()),
+        Some(block_timestamp),
         detail,
     );
 

@@ -13,6 +13,7 @@ pub enum OutputFormat {
 #[derive(Debug)]
 pub struct WithClause<'q> {
     pub def_columns: Option<Vec<Column<'q>>>,
+    pub def_database: Option<&'q str>,
     pub def_timezone: Option<FixedOffset>,
     pub def_output: Option<OutputFormat>,
     pub def_output_file_path: Option<PathBuf>,
@@ -20,7 +21,7 @@ pub struct WithClause<'q> {
     pub def_sync_cloud: bool,
 }
 
-pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
+pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::WITH_CLAUSE {
         return Err(ParserError::UnexpectedPair(
@@ -31,6 +32,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
 
     let mut with_clause = WithClause {
         def_columns: None,
+        def_database: None,
         def_timezone: None,
         def_output: None,
         def_output_file_path: None,
@@ -38,100 +40,92 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WithClause<'q>> {
         def_sync_cloud: true,
     };
     for each in pair.into_inner() {
-        match each.as_rule() {
-            Rule::WITH_CLAUSE_DEFINES => {
-                for each_define in each.into_inner() {
-                    match each_define.as_rule() {
-                        Rule::DEFINE_COLUMNS => {
-                            for each_in_define_columns in each_define.into_inner() {
-                                if each_in_define_columns.as_rule() == Rule::COLUMNS {
-                                    let columns =
-                                        columns_parser::parse(each_in_define_columns, false)?;
+        if each.as_rule() == Rule::WITH_CLAUSE_DEFINES {
+            for each_define in each.into_inner() {
+                match each_define.as_rule() {
+                    Rule::DEFINE_COLUMNS => {
+                        for each_in_define_columns in each_define.into_inner() {
+                            if each_in_define_columns.as_rule() == Rule::COLUMNS {
+                                let columns = columns_parser::parse(each_in_define_columns, false)?;
 
-                                    with_clause.def_columns = Some(columns);
-                                }
+                                with_clause.def_columns = Some(columns);
                             }
                         }
+                    }
 
-                        Rule::DEFINE_TZ => {
-                            for each_in_define_tz in each_define.into_inner() {
-                                if each_in_define_tz.as_rule() == Rule::TIMEZONE_OFFSET_VAL {
-                                    let timezone =
-                                        timezone_parser::parse_timezone_offset(each_in_define_tz)?;
-
-                                    with_clause.def_timezone = Some(timezone)
-                                } else if each_in_define_tz.as_rule() == Rule::TIMEZONE_NAME {
-                                    let timezone =
-                                        timezone_parser::parse_timezone_name(each_in_define_tz)?;
-
-                                    with_clause.def_timezone = Some(timezone)
-                                }
+                    Rule::DEFINE_DATABASE => {
+                        for each_in_define_database in each_define.into_inner() {
+                            if each_in_define_database.as_rule() == Rule::DB_NAME {
+                                with_clause.def_database = Some(each_in_define_database.as_str());
                             }
                         }
+                    }
 
-                        Rule::DEFINE_FORMAT => {
-                            for each_in_define_tz in each_define.into_inner() {
-                                match each_in_define_tz.as_rule() {
-                                    Rule::KW_JSON => {
-                                        with_clause.def_output = Some(OutputFormat::Json)
-                                    }
-                                    Rule::KW_DATAFRAME => {
-                                        with_clause.def_output = Some(OutputFormat::DataFrame)
-                                    }
+                    Rule::DEFINE_TZ => {
+                        for each_in_define_tz in each_define.into_inner() {
+                            if each_in_define_tz.as_rule() == Rule::TIMEZONE_OFFSET_VAL {
+                                let timezone =
+                                    timezone_parser::parse_timezone_offset(each_in_define_tz)?;
 
-                                    Rule::KW_PARQUET => {
-                                        with_clause.def_output = Some(OutputFormat::Parquet)
-                                    }
-                                    _ => { /* do nothing */ }
-                                }
+                                with_clause.def_timezone = Some(timezone)
+                            } else if each_in_define_tz.as_rule() == Rule::TIMEZONE_NAME {
+                                let timezone =
+                                    timezone_parser::parse_timezone_name(each_in_define_tz)?;
+
+                                with_clause.def_timezone = Some(timezone)
                             }
                         }
+                    }
 
-                        Rule::DEFINE_OUTPUT_FILE => {
-                            for each_in_output_file in each_define.into_inner() {
-                                match each_in_output_file.as_rule() {
-                                    Rule::FILE_PATH => {
-                                        with_clause.def_output_file_path =
-                                            Some(PathBuf::from(each_in_output_file.as_str()));
-                                    }
-                                    _ => { /* do nothing */ }
+                    Rule::DEFINE_FORMAT => {
+                        for each_in_define_tz in each_define.into_inner() {
+                            match each_in_define_tz.as_rule() {
+                                Rule::KW_JSON => with_clause.def_output = Some(OutputFormat::Json),
+                                Rule::KW_DATAFRAME => {
+                                    with_clause.def_output = Some(OutputFormat::DataFrame)
                                 }
+
+                                Rule::KW_PARQUET => {
+                                    with_clause.def_output = Some(OutputFormat::Parquet)
+                                }
+                                _ => { /* do nothing */ }
                             }
                         }
+                    }
 
-                        Rule::DEFINE_CACHE => {
-                            for each_inner in each_define.into_inner() {
-                                match each_inner.as_rule() {
-                                    Rule::BOOLEAN_VALUE => {
-                                        with_clause.def_use_cache = parse_bool(each_inner)?;
-                                    }
-                                    _ => { /* do nothing */ }
-                                }
+                    Rule::DEFINE_OUTPUT_FILE => {
+                        for each_in_output_file in each_define.into_inner() {
+                            if each_in_output_file.as_rule() == Rule::FILE_PATH {
+                                with_clause.def_output_file_path =
+                                    Some(PathBuf::from(each_in_output_file.as_str()));
                             }
                         }
+                    }
 
-                        Rule::DEFINE_CLOUD => {
-                            for each_inner in each_define.into_inner() {
-                                match each_inner.as_rule() {
-                                    Rule::BOOLEAN_VALUE => {
-                                        with_clause.def_sync_cloud = parse_bool(each_inner)?;
-                                    }
-                                    _ => { /* do nothing */ }
-                                }
+                    Rule::DEFINE_CACHE => {
+                        for each_inner in each_define.into_inner() {
+                            if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
+                                with_clause.def_use_cache = parse_bool(each_inner)?;
                             }
                         }
+                    }
 
-                        _ => {
-                            return Err(ParserError::InvalidGrammer(format!(
-                                "invalid defines in with clause:{}",
-                                each_define
-                            )))
+                    Rule::DEFINE_CLOUD => {
+                        for each_inner in each_define.into_inner() {
+                            if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
+                                with_clause.def_sync_cloud = parse_bool(each_inner)?;
+                            }
                         }
+                    }
+
+                    _ => {
+                        return Err(ParserError::InvalidGrammer(format!(
+                            "invalid defines in with clause:{}",
+                            each_define
+                        )))
                     }
                 }
             }
-
-            _ => { /* do nothing */ }
         }
     }
 

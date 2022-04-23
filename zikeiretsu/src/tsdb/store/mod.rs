@@ -1,10 +1,8 @@
-pub mod read_only_store;
 pub mod writable_store;
 
 use crate::tsdb::util;
 use crate::tsdb::{search::*, storage::api as storage_api};
 use chrono::{DateTime, Utc};
-pub use read_only_store::*;
 use std::cmp::Ordering;
 use thiserror::Error;
 use tokio::sync::mpsc;
@@ -289,10 +287,8 @@ mod test {
             assert!(datapoints.is_ok());
             let dataframe = datapoints.unwrap().unwrap();
 
-            let store = ReadonlyStore::new(dataframe, false).unwrap();
-
             {
-                let result = store.as_dataframe().search(&condition).await;
+                let result = dataframe.search(&condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),
@@ -311,7 +307,7 @@ mod test {
                     Some(TimestampNano::new(1629745451_715063000)),
                     Some(TimestampNano::new(1629745451_715065001)),
                 );
-                let result = store.as_dataframe().search(&another_condition).await;
+                let result = dataframe.search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),
@@ -414,8 +410,6 @@ mod test {
             assert!(datapoints.is_ok());
             let dataframe = datapoints.unwrap().unwrap();
 
-            let store = ReadonlyStore::new(dataframe, false).unwrap();
-
             {
                 let expected = float_data_points!(
                     {1629745451_715062000, vec![100f64,12f64]},
@@ -427,7 +421,7 @@ mod test {
                     {1639745451_715062000, vec![1200f64,37f64]}
                 );
 
-                let result = store.as_dataframe().search(&condition).await;
+                let result = dataframe.search(&condition).await;
                 assert!(result.is_some());
 
                 assert_eq!(result.clone().unwrap().len(), expected.len());
@@ -447,7 +441,7 @@ mod test {
                     None,
                     Some(TimestampNano::new(1639745451_715061001)),
                 );
-                let result = store.as_dataframe().search(&another_condition).await;
+                let result = dataframe.search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),

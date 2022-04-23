@@ -49,7 +49,7 @@ pub fn remove_range<T>(datas: &mut Vec<T>, range: (usize, usize)) -> Result<Vec<
     //}
 }
 
-pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut Vec<T>) {
+pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut [T]) {
     let orig_len = datas.len();
     let new_data_len = new_datas.len();
     datas.reserve(new_data_len);
@@ -57,7 +57,7 @@ pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut Vec<T>) {
     unsafe {
         ptr::copy(
             datas.as_ptr(),
-            datas.as_mut_ptr().offset((new_data_len) as isize),
+            datas.as_mut_ptr().add(new_data_len),
             orig_len,
         );
         ptr::copy(new_datas.as_ptr(), datas.as_mut_ptr(), new_data_len);

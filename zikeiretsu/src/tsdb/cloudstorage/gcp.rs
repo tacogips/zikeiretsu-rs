@@ -45,7 +45,7 @@ pub async fn download_block_file<'a>(
                 OpenOptions::new().create(true).write(true).open(dest)?
             };
 
-            block_file.write(&contents_data)?;
+            block_file.write_all(&contents_data)?;
             Ok(Some(()))
         }
         None => Ok(None),
@@ -86,7 +86,7 @@ pub async fn download_block_list_file<'a>(
                 OpenOptions::new().create(true).write(true).open(dest)?
             };
 
-            block_list_file.write(&contents_data)?;
+            block_list_file.write_all(&contents_data)?;
             Ok(Some(()))
         }
         None => Ok(None),
@@ -97,8 +97,8 @@ pub fn extract_metrics_from_url(dest_url: &str) -> Result<Metrics> {
     let captured = BLOCK_LIST_FILE_PATTERN.captures(dest_url);
     if let Some(captured) = captured {
         if let Some(matched) = captured.get(1) {
-            let metrics = Metrics::new(matched.as_str())
-                .map_err(|e| CloudStorageError::InvalidMetricsName(e))?;
+            let metrics =
+                Metrics::new(matched.as_str()).map_err(CloudStorageError::InvalidMetricsName)?;
             return Ok(metrics);
         }
     }

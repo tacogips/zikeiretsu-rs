@@ -47,8 +47,6 @@ pub async fn main() -> Result<()> {
 
     log::debug!("current_dir :{:?}", std::env::current_dir());
 
-    log::debug!("args:{:?}", args);
-
     let mut ctx = args.as_db_context()?;
     match args.query {
         Some(query) => execute_query(&ctx, &query).await?,

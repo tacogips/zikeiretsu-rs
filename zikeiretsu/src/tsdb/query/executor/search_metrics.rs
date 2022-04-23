@@ -3,37 +3,27 @@ use super::EvalError;
 
 use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::{InterpretedQueryCondition, OutputWriter};
-use crate::tsdb::query::DBContext;
 use crate::tsdb::DBConfig;
 use crate::tsdb::DataSeriesRefs;
 use polars::prelude::DataFrame as PDataFrame;
 
 pub async fn execute_search_metrics(
-    ctx: &DBContext,
+    db_dir: &str,
     db_config: &DBConfig,
     condition: InterpretedQueryCondition,
 ) -> Result<Option<PDataFrame>, EvalError> {
-    let db_dir = match &ctx.db_dir {
-        Some(db_dir) => db_dir,
-        None => return Err(EvalError::DBDirNotSet),
-    };
-
-    let store = Engine::search(
+    let dataframe = Engine::search(
         &db_dir,
         &condition.metrics,
-        condition
-            .field_selectors
-            .as_ref()
-            .map(|indices| indices.as_slice()),
+        condition.field_selectors.as_deref(),
         &condition.datetime_search_condition,
-        &db_config,
+        db_config,
     )
     .await?;
-    match store {
+    match dataframe {
         None => Ok(None),
-        Some(store) => {
-            let mut p_df = store
-                .as_dataframe()
+        Some(dataframe) => {
+            let mut p_df = dataframe
                 .as_polar_dataframes(condition.field_names, Some(&condition.timezone))
                 .await?;
 

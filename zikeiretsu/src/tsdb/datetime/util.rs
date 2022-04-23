@@ -47,27 +47,14 @@ impl DatetimeAccuracy {
                 (_, _, 0) => DatetimeAccuracy::Minute,
                 _ => DatetimeAccuracy::Second,
             }
+        } else if nano_sec % 1_000 != 0 {
+            DatetimeAccuracy::MicroSecond
+        } else if nano_sec % 1_000_000 != 0 {
+            DatetimeAccuracy::MilliSecond
         } else {
-            if nano_sec % 1_000 != 0 {
-                DatetimeAccuracy::MicroSecond
-            } else if nano_sec % 1_000_000 != 0 {
-                DatetimeAccuracy::MilliSecond
-            } else {
-                DatetimeAccuracy::NanoSecond
-            }
+            DatetimeAccuracy::NanoSecond
         }
     }
-
-    /////// Returns the number of nanoseconds since the whole non-leap second.
-    /////// The range from 1,000,000,000 to 1,999,999,999 represents
-    /////// the [leap second](./naive/struct.NaiveTime.html#leap-second-handling).
-    //fn nanosecond(&self) -> u32;
-
-    //    dt.hour()
-    //    let naive_local_datetime = dt.naive_local();
-    //    naive_local_datetime.hour();
-    //    unimplemented!()
-    //}
 }
 
 static DATETIME_FORMATS: OnceCell<Vec<(chrono_format::StrftimeItems<'static>, bool)>> =
@@ -102,7 +89,7 @@ pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
             datetime_str.to_string(),
         ));
     }
-    if !datetime_str.starts_with("'") || !datetime_str.ends_with("'") {
+    if !datetime_str.starts_with('\'') || !datetime_str.ends_with('\'') {
         return Err(DatetimeUtilError::InvalidDatetimeFormat(
             datetime_str.to_string(),
         ));
@@ -113,7 +100,7 @@ pub(crate) fn parse_datetime_str(datetime_str: &str) -> Result<DateTime<Utc>> {
     for (each_format, is_naive_date) in datetime_formats() {
         let mut parsed = chrono_format::Parsed::new();
 
-        if let Ok(_) = chrono_format::parse(&mut parsed, datetime_str, each_format.clone()) {
+        if chrono_format::parse(&mut parsed, datetime_str, each_format.clone()).is_ok() {
             if *is_naive_date {
                 let naive = parsed.to_naive_date()?;
                 let naive = NaiveDateTime::new(naive, NaiveTime::from_hms(0, 0, 0));

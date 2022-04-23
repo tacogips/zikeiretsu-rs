@@ -31,9 +31,9 @@ impl<'q> DatetimeFilter<'q> {
                             DatetimeFilterValue::Function(build_in_func, tz),
                         ))
                     } else {
-                        Err(ParserError::InvalidGrammer(format!(
-                            "'in' needs datetime range or buildin function "
-                        )))
+                        Err(ParserError::InvalidGrammer(
+                            "'in' needs datetime range or buildin function ".to_string(),
+                        ))
                     }
                 }
                 Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
@@ -94,7 +94,7 @@ impl DatetimeFilterValue {
                         .map(|delta| delta.as_micro_second())
                         .unwrap_or(0),
                 );
-                naive_datetime = naive_datetime + delta_micro_seconds;
+                naive_datetime += delta_micro_seconds;
 
                 let datetime = offset.from_local_datetime(&naive_datetime).unwrap();
                 TimestampNano::new(datetime.timestamp_nanos() as u64)
@@ -139,9 +139,9 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                 match rel_ope.next() {
                     Some(rel_ope) => relation_op = Some(rel_ope.as_str().trim()),
                     None => {
-                        return Err(ParserError::InvalidGrammer(format!(
-                            "empty relation operator in datetime filter"
-                        )))
+                        return Err(ParserError::InvalidGrammer(
+                            "empty relation operator in datetime filter".to_string(),
+                        ))
                     }
                 }
             }
@@ -165,7 +165,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
                 }
             }
             Rule::KW_TIMESTAMP => column_name = Some(ColumnName(each.as_str())),
-            r @ _ => {
+            r => {
                 return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
                 )))
@@ -185,8 +185,8 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilter<'q>> {
     }
 }
 
-pub fn parse_datetime_range_close<'q>(
-    pair: Pair<'q, Rule>,
+pub fn parse_datetime_range_close(
+    pair: Pair<'_, Rule>,
     base_datetime: Option<&DatetimeFilterValue>,
 ) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
@@ -210,7 +210,7 @@ pub fn parse_datetime_range_close<'q>(
                     let calced_datetime = match base_datetime {
                         DatetimeFilterValue::DateString(dt, base_delta) => {
                             DatetimeFilterValue::DateString(
-                                dt.clone(),
+                                *dt,
                                 Some(datetime_delta.to_composit_if_some(base_delta.clone())),
                             )
                         }
@@ -224,12 +224,12 @@ pub fn parse_datetime_range_close<'q>(
 
                     datetime = Some(calced_datetime)
                 } else {
-                    return Err(ParserError::InvalidGrammer(format!(
-                        " datetime filter val1  is needed. "
-                    )));
+                    return Err(ParserError::InvalidGrammer(
+                        " datetime filter val1  is needed. ".to_string(),
+                    ));
                 }
             }
-            r @ _ => {
+            r => {
                 return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in datetime filter : {r:?}"
                 )))
@@ -238,14 +238,14 @@ pub fn parse_datetime_range_close<'q>(
     }
 
     match datetime {
-        None => Err(ParserError::InvalidGrammer(format!(
-            "invalid datetime filter close. "
-        ))),
+        None => Err(ParserError::InvalidGrammer(
+            "invalid datetime filter close. ".to_string(),
+        )),
         Some(datetime) => Ok(datetime),
     }
 }
 
-pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
+pub fn parse_datetime(pair: Pair<'_, Rule>) -> Result<DatetimeFilterValue> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME {
         return Err(ParserError::UnexpectedPair(
@@ -286,7 +286,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
                 datetime_delta = Some(parse_datetime_delta(each)?);
             }
 
-            r @ _ => {
+            r => {
                 return Err(ParserError::InvalidGrammer(format!(
                     "unknown term in datetime : {r:?}"
                 )))
@@ -303,7 +303,7 @@ pub fn parse_datetime<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeFilterValue> {
     }
 }
 
-pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
+pub fn parse_datetime_delta(pair: Pair<'_, Rule>) -> Result<DatetimeDelta> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::DATETIME_DELTA {
         return Err(ParserError::UnexpectedPair(
@@ -313,9 +313,9 @@ pub fn parse_datetime_delta<'q>(pair: Pair<'q, Rule>) -> Result<DatetimeDelta> {
     }
 
     match pair.into_inner().next() {
-        None => Err(ParserError::InvalidGrammer(format!(
-            "invalid datetime delta"
-        ))),
+        None => Err(ParserError::InvalidGrammer(
+            "invalid datetime delta".to_string(),
+        )),
 
         Some(date_time_delta) => match date_time_delta.as_rule() {
             Rule::DURATION_DELTA => {

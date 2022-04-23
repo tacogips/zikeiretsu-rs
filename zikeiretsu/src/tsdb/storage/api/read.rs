@@ -30,14 +30,14 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
     //TODO(tacogips) need some lock
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if cloud_setting.update_block_list {
-            let block_file_urls = CloudBlockListFilePath::list_files_urls(&cloud_storage).await?;
+            let block_file_urls = CloudBlockListFilePath::list_files_urls(cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
 
             for each_block_file_url in block_file_urls.iter() {
                 match CloudBlockListFilePath::extract_metrics_from_url(
                     each_block_file_url,
-                    &cloud_storage,
+                    cloud_storage,
                 ) {
                     Ok(metrics) => {
                         result.push(metrics);
@@ -73,8 +73,8 @@ pub(crate) fn extract_metrics_from_file_name(file_name: &str) -> Result<Metrics>
     let captured = LOCAL_BLOCK_LIST_FILE_PATTERN.captures(file_name);
     if let Some(captured) = captured {
         if let Some(matched) = captured.get(1) {
-            let metrics = Metrics::new(matched.as_str())
-                .map_err(|e| StorageApiError::InvalidMetricsName(e))?;
+            let metrics =
+                Metrics::new(matched.as_str()).map_err(StorageApiError::InvalidMetricsName)?;
             return Ok(metrics);
         }
     }
@@ -84,7 +84,6 @@ pub(crate) fn extract_metrics_from_file_name(file_name: &str) -> Result<Metrics>
 }
 
 pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
-    let db_dir = db_dir.as_ref();
     let block_list_dir = block_list_dir_path(db_dir);
     let mut file_names = vec![];
 
@@ -114,11 +113,11 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     log::debug!("search_dataframe. condition: {}", condition);
 
     let db_dir = db_dir.as_ref();
-    let lock_file_path = lockfile_path(&db_dir, metrics);
+    let lock_file_path = lockfile_path(db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
     let block_list =
-        read_block_list(db_dir, &metrics, cache_setting, cloud_storage_and_setting).await?;
+        read_block_list(db_dir, metrics, cache_setting, cloud_storage_and_setting).await?;
 
     let (since_sec, until_sec) = condition.as_secs();
 
@@ -140,10 +139,10 @@ pub async fn search_dataframe<P: AsRef<Path>>(
         Some(block_timestamps) => {
             let tasks = block_timestamps.iter().map(|block_timestamp| async move {
                 let mut block = read_block(
-                    &db_dir,
-                    &metrics,
-                    field_selectors.clone(),
-                    &block_timestamp,
+                    db_dir,
+                    metrics,
+                    field_selectors,
+                    block_timestamp,
                     cloud_storage_and_setting,
                 )
                 .await?;
@@ -152,7 +151,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     &block_timestamp.since_sec.as_timestamp_nano(),
                     &(block_timestamp.until_sec + 1).as_timestamp_nano(),
                 ) {
-                    block.retain_matches(&condition).await?;
+                    block.retain_matches(condition).await?;
                 }
 
                 Ok((block, block_timestamp))
@@ -173,8 +172,8 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                 for (mut each_dataframes_block, each_block_timestamp) in
                     dataframes_of_blocks.into_iter()
                 {
-                    if prev_block_timestamp.is_before(&each_block_timestamp)
-                        || prev_block_timestamp.adjacent_before_of(&each_block_timestamp)
+                    if prev_block_timestamp.is_before(each_block_timestamp)
+                        || prev_block_timestamp.adjacent_before_of(each_block_timestamp)
                     {
                         merged_dataframe.append(&mut each_dataframes_block).unwrap();
                     } else {
@@ -209,7 +208,7 @@ async fn read_block(
         if !block_file_path.exists() {
             if cloud_setting.download_block_if_not_exits {
                 let cloud_block_file_path =
-                    CloudBlockFilePath::new(&metrics, &block_timestamp, &cloud_storage);
+                    CloudBlockFilePath::new(metrics, block_timestamp, cloud_storage);
 
                 let download_result = cloud_block_file_path.download(&block_file_path).await?;
 
@@ -243,14 +242,14 @@ pub(crate) async fn read_block_list<'a>(
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<block_list::BlockList> {
-    let block_list_path = block_list_file_path(&db_dir, &metrics);
+    let block_list_path = block_list_file_path(db_dir, metrics);
     let downloaded_from_cloud = if let Some((cloud_storage, cloud_setting)) =
         cloud_storage_and_setting
     {
         if cloud_setting.update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
         {
-            let cloud_block_list_file_path = CloudBlockListFilePath::new(&metrics, &cloud_storage);
+            let cloud_block_list_file_path = CloudBlockListFilePath::new(metrics, cloud_storage);
 
             let download_result = cloud_block_list_file_path
                 .download(&block_list_path)
@@ -272,8 +271,8 @@ pub(crate) async fn read_block_list<'a>(
 
     let block_list = if use_cache {
         let cache = CACHE.read().await;
-        let block_list = cache.block_list_cache.get(&metrics).await;
-        block_list.map(|e| e.clone())
+        let block_list = cache.block_list_cache.get(metrics).await;
+        block_list.cloned()
     } else {
         None
     };
@@ -285,7 +284,7 @@ pub(crate) async fn read_block_list<'a>(
                 //TODO(tacogips) fetch from  cloud storage hear??
                 return Err(StorageApiError::NoBlockListFile(metrics.to_string()));
             }
-            block_list::read_from_blocklist_file(&metrics, block_list_path)?
+            block_list::read_from_blocklist_file(metrics, block_list_path)?
         }
     };
 
@@ -293,7 +292,7 @@ pub(crate) async fn read_block_list<'a>(
         let mut cache = CACHE.write().await;
         cache
             .block_list_cache
-            .write(&metrics, block_list.clone())
+            .write(metrics, block_list.clone())
             .await;
     }
 

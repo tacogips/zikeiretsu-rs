@@ -46,7 +46,7 @@ impl<'a> DataSeriesRef<'a> {
             SeriesValuesRef::TimestampNano(timestamps) => PSeries::new(
                 field_name,
                 timestamps
-                    .into_iter()
+                    .iter()
                     .map(|ts| ts.as_formated_datetime(tz))
                     .collect::<Vec<String>>(),
             ),
@@ -54,7 +54,7 @@ impl<'a> DataSeriesRef<'a> {
             SeriesValuesRef::TimestampSec(timestamps) => PSeries::new(
                 field_name,
                 timestamps
-                    .into_iter()
+                    .iter()
                     .map(|ts| ts.as_formated_datetime(tz))
                     .collect::<Vec<String>>(),
             ),
@@ -75,7 +75,7 @@ pub enum DataSeriesRefsError {
 
 #[async_trait]
 pub trait DataSeriesRefs {
-    fn as_data_serieses_ref_vec<'a>(&'a self) -> Vec<DataSeriesRef<'a>>;
+    fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>>;
 
     async fn as_polar_dataframes(
         &self,
@@ -91,7 +91,7 @@ pub trait DataSeriesRefs {
                         column_names.len(),
                     ));
                 }
-                column_names.into_iter().map(|s| s.to_string()).collect()
+                column_names.into_iter().collect()
             }
             None => (0..data_series_vec.len())
                 .into_iter()
@@ -113,13 +113,9 @@ pub trait DataSeriesRefs {
 }
 
 pub type StringSeriesRef<'a> = &'a Vec<String>;
+#[derive(Default)]
 pub struct StringDataSeriesRefs<'a> {
     values: Vec<StringSeriesRef<'a>>,
-}
-impl<'a> Default for StringDataSeriesRefs<'a> {
-    fn default() -> Self {
-        Self { values: vec![] }
-    }
 }
 
 impl<'a> StringDataSeriesRefs<'a> {

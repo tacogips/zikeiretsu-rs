@@ -20,16 +20,16 @@ impl BuildinMetrics {
     }
 }
 
-pub(crate) fn parse_from<'q>(
-    from_clause: Option<&FromClause<'q>>,
+pub(crate) fn parse_from(
+    from_clause: Option<&FromClause<'_>>,
 ) -> LexerResult<Either<Metrics, BuildinMetrics>> {
     match from_clause {
         None => Err(LexerError::NoFrom),
-        Some(metrics) => match BuildinMetrics::from(&metrics.from) {
+        Some(metrics) => match BuildinMetrics::from(metrics.from) {
             Some(build_in_query) => Ok(Either::Right(build_in_query)),
             None => {
-                let metrics = Metrics::new(metrics.from.to_string())
-                    .map_err(|err_msg| LexerError::InvalidMetrics(err_msg))?;
+                let metrics =
+                    Metrics::new(metrics.from.to_string()).map_err(LexerError::InvalidMetrics)?;
                 Ok(Either::Left(metrics))
             }
         },

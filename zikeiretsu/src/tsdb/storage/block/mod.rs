@@ -101,14 +101,13 @@ pub(crate) struct TimestampDeltas {
 }
 
 impl TimestampDeltas {
-    pub fn as_timestamps(self) -> Vec<TimestampNano> {
+    pub fn as_timestamps(&self) -> Vec<TimestampNano> {
         debug_assert_eq!(
             self.timestamps_deltas_second.len(),
             self.timestamps_nanoseconds.len()
         );
 
-        let mut timestamps = Vec::<TimestampNano>::new();
-        timestamps.push(self.head_timestamp.clone());
+        let mut timestamps = vec![self.head_timestamp];
         let mut prev_timestamp = self.head_timestamp;
 
         for data_idx in 0..self.timestamps_deltas_second.len() {
@@ -118,7 +117,7 @@ impl TimestampDeltas {
                 + (self.timestamps_nanoseconds.get(data_idx).unwrap()
                     << self.common_trailing_zero_bits);
             let current_timestamp = TimestampNano(current_timestamp);
-            timestamps.push(current_timestamp.clone());
+            timestamps.push(current_timestamp);
             prev_timestamp = current_timestamp;
         }
         timestamps
@@ -138,7 +137,7 @@ impl From<&[DataPoint]> for TimestampDeltas {
             let prev = unsafe { datapoints.get_unchecked(i - 1) };
             let curr = unsafe { datapoints.get_unchecked(i) };
             let delta_sec =
-                &curr.timestamp_nano.as_timestamp_sec() - &prev.timestamp_nano.as_timestamp_sec();
+                curr.timestamp_nano.as_timestamp_sec() - prev.timestamp_nano.as_timestamp_sec();
 
             let nanosec: u64 = *curr.timestamp_nano % SEC_IN_NANOSEC as u64;
 
@@ -159,7 +158,7 @@ impl From<&[DataPoint]> for TimestampDeltas {
             .map(|each| each >> common_trailing_zero_bits)
             .collect();
 
-        let head_timestamp = head_data_point.timestamp_nano.clone();
+        let head_timestamp = head_data_point.timestamp_nano;
         TimestampDeltas {
             head_timestamp,
             timestamps_deltas_second,

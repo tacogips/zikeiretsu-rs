@@ -1,17 +1,11 @@
 use super::DataSeriesRef;
 use async_trait::async_trait;
 use chrono::FixedOffset;
-use futures::future::{join_all, Then};
-use futures::Future;
+use futures::future::join_all;
 use std::sync::Arc;
 use thiserror::*;
 
-use arrow::array::{
-    Array, ArrayData, ArrayRef, BooleanArray, Float64Array, Int32Array, Int32Builder, Int64Array,
-    ListArray, NullArray, PrimitiveArray, StringArray, StructArray, TimestampNanosecondArray,
-    TimestampSecondArray, UInt64Array,
-};
-use arrow::buffer::Buffer;
+use arrow::array::ArrayRef;
 use arrow::datatypes::{Field, Schema};
 use arrow::error::ArrowError;
 use arrow::record_batch::*;

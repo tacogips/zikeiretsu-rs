@@ -9,7 +9,7 @@ use crate::tsdb::engine::EngineError;
 use crate::tsdb::lexer::{interpret, DatabaseName, InterpretedQuery, LexerError, OutputError};
 use crate::tsdb::query::parser::{parse_query, ParserError};
 use crate::tsdb::query::QuerySetting;
-use crate::tsdb::{DBConfig, DBContext, TimeSeriesDataFrame};
+use crate::tsdb::{DBConfig, DBContext};
 use arrow::error::ArrowError;
 use arrow::record_batch::*;
 pub use interface::*;

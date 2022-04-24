@@ -1,8 +1,7 @@
-use super::ArrowDataFrameOutput;
 use crate::tsdb::query::executor::Result as ExecuteResult;
 use arrow::record_batch::RecordBatch;
 use parquet::arrow::arrow_writer::ArrowWriter;
-use parquet::basic::{Compression, Encoding};
+use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use std::fs::File;
 

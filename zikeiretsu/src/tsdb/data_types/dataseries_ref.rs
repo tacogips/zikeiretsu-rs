@@ -1,16 +1,13 @@
 use super::field::*;
 use crate::tsdb::datetime::*;
-use chrono::prelude::*;
 use chrono::FixedOffset;
 use serde::Serialize;
 use std::sync::Arc;
 
 use arrow::array::{
-    Array, ArrayData, ArrayRef, BooleanArray, Float64Array, Int32Array, Int32Builder, Int64Array,
-    ListArray, NullArray, PrimitiveArray, StringArray, StructArray, TimestampNanosecondArray,
+    ArrayRef, BooleanArray, Float64Array, NullArray, StringArray, TimestampNanosecondArray,
     TimestampSecondArray, UInt64Array,
 };
-use arrow::buffer::Buffer;
 use arrow::datatypes::Field;
 use arrow::datatypes::{DataType, TimeUnit};
 

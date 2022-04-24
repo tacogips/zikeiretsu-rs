@@ -1,6 +1,10 @@
 use super::*;
 use crate::query::OutputCondition;
-use arrow::{datatypes::Schema, error::ArrowError};
+use arrow::{
+    datatypes::Schema,
+    datatypes::{DataType, Field},
+    error::ArrowError,
+};
 use arrow_flight::{
     flight_service_client::FlightServiceClient,
     flight_service_server::FlightService,
@@ -51,15 +55,16 @@ impl ExecutorInterface for ArrowFlightClientInterface {
         match self.client.do_get(ticket).await {
             Ok(response_stream) => {
                 let mut stream = response_stream.into_inner();
-                if let Some(result) = stream.next().await {
+                let mut flight_datas = Vec::<FlightData>::new();
+                while let Some(result) = stream.next().await {
                     match result {
                         Err(status) => eprintln!("{}", status),
-                        Ok(flight_data) => {
-                            if let Err(e) = print_flight_data_query_result(flight_data).await {
-                                eprintln!("{}", e);
-                            }
-                        }
+                        Ok(flight_data) => flight_datas.push(flight_data),
                     }
+                }
+
+                if let Err(e) = print_flight_data_query_result(flight_datas).await {
+                    eprintln!("{}", e);
                 }
             }
             Err(status) => {
@@ -71,41 +76,23 @@ impl ExecutorInterface for ArrowFlightClientInterface {
     }
 }
 
-pub async fn print_flight_data_query_result(flight_data: FlightData) -> ArrowFlightResult<()> {
-    let output_condition: OutputCondition = serde_json::from_slice(&flight_data.app_metadata)?;
-    let schema = Schema::try_from(&flight_data)?;
-    let record_batch = flight_data_to_arrow_batch(&flight_data, Arc::new(schema), &[])?;
+pub async fn print_flight_data_query_result(flight_data: Vec<FlightData>) -> ArrowFlightResult<()> {
+    if flight_data.len() != 2 {
+        return Err(ArrowFlightClientError::InvalidStreamFlightDataNum(
+            flight_data.len(),
+        ));
+    }
+
+    let schema_data = flight_data.first().unwrap(); //TODO handler errr
+    let schema = Schema::try_from(schema_data)?;
+
+    let record_batch_data = flight_data.last().unwrap(); //TODO handler errror
+    let output_condition: OutputCondition =
+        serde_json::from_slice(&record_batch_data.app_metadata)?;
+    let record_batch = flight_data_to_arrow_batch(record_batch_data, Arc::new(schema), &[])?;
 
     output_records(record_batch, output_condition).await?;
     Ok(())
-
-    //data: &FlightData,
-    //schema: SchemaRef,
-    //dictionaries_by_field: &[Option<ArrayRef>],
-
-    //pub struct FlightData {
-    //    ///
-    //    /// The descriptor of the data. This is only relevant when a client is
-    //    /// starting a new DoPut stream.
-    //    #[prost(message, optional, tag = "1")]
-    //    pub flight_descriptor: ::core::option::Option<FlightDescriptor>,
-    //    ///
-    //    /// Header for message data as described in Message.fbs::Message.
-    //    #[prost(bytes = "vec", tag = "2")]
-    //    pub data_header: ::prost::alloc::vec::Vec<u8>,
-    //    ///
-    //    /// Application-defined metadata.
-    //    #[prost(bytes = "vec", tag = "3")]
-    //    pub app_metadata: ::prost::alloc::vec::Vec<u8>,
-    //    ///
-    //    /// The actual batch of Arrow data. Preferably handled with minimal-copies
-    //    /// coming last in the definition to help with sidecar patterns (it is
-    //    /// expected that some implementations will fetch this field off the wire
-    //    /// with specialized code to avoid extra memory copies).
-    //    #[prost(bytes = "vec", tag = "1000")]
-    //    pub data_body: ::prost::alloc::vec::Vec<u8>,
-    //}
-    //
 }
 
 pub type ArrowFlightResult<T> = std::result::Result<T, ArrowFlightClientError>;
@@ -125,4 +112,7 @@ pub enum ArrowFlightClientError {
 
     #[error("arrow error: {0}")]
     ExecuteError(#[from] ExecuteError),
+
+    #[error("invalid steamed flight data num {0}")]
+    InvalidStreamFlightDataNum(usize),
 }

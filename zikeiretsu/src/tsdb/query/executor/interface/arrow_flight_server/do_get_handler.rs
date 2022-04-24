@@ -1,4 +1,5 @@
 use super::DoGetStream;
+use crate::tsdb::engine::DBContext;
 use futures::Stream;
 use std::pin::Pin;
 use tonic::transport::Server;
@@ -10,6 +11,11 @@ use arrow_flight::{
     HandshakeResponse, PutResult, SchemaResult, Ticket,
 };
 
-pub async fn handle(request: Request<Ticket>) -> Result<Response<DoGetStream>, Status> {
+pub async fn handle(
+    ctx: &DBContext,
+    request: Request<Ticket>,
+) -> Result<Response<DoGetStream>, Status> {
+    let ticket = request.into_inner();
+    let query = ticket.to_string();
     Err(Status::unimplemented("Not yet implemented"))
 }

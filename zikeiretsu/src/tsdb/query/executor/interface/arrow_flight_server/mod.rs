@@ -1,19 +1,19 @@
 mod do_get_handler;
 
-use futures::Stream;
-use std::pin::Pin;
-use tonic::transport::Server;
-use tonic::{Request, Response, Status, Streaming};
-
+use crate::tsdb::engine::DBContext;
 use arrow_flight::{
     flight_service_server::FlightService, flight_service_server::FlightServiceServer, Action,
     ActionType, Criteria, Empty, FlightData, FlightDescriptor, FlightInfo, HandshakeRequest,
     HandshakeResponse, PutResult, SchemaResult, Ticket,
 };
+use futures::Stream;
+use std::pin::Pin;
 use thiserror::Error;
+use tonic::transport::Server;
+use tonic::{Request, Response, Status, Streaming};
 
 #[derive(Clone)]
-pub struct FlightZikeiretsuService;
+pub struct FlightZikeiretsuService(pub DBContext);
 pub type DoGetStream =
     Pin<Box<dyn Stream<Item = Result<FlightData, Status>> + Send + Sync + 'static>>;
 #[tonic::async_trait]
@@ -36,7 +36,7 @@ impl FlightService for FlightZikeiretsuService {
         &self,
         request: Request<Ticket>,
     ) -> Result<Response<Self::DoGetStream>, Status> {
-        do_get_handler::handle(request).await
+        do_get_handler::handle(&self.0, request).await
     }
 
     async fn handshake(
@@ -96,11 +96,11 @@ impl FlightService for FlightZikeiretsuService {
     }
 }
 
-pub async fn server(host: &str, port: Option<usize>) -> ServeResult<()> {
+pub async fn server(db_config: DBContext, host: &str, port: Option<usize>) -> ServeResult<()> {
     let addr = format!("{}:{}", host, port.unwrap_or(51033))
         .parse()
         .map_err(|e| ServeError::AddressParseError(format!("{e}")))?;
-    let service = FlightZikeiretsuService;
+    let service = FlightZikeiretsuService(db_config);
     let svc = FlightServiceServer::new(service);
 
     log::info!("zikeiretsu arrow flight server listening at [{}]", addr);

@@ -40,8 +40,7 @@ pub struct Args {
     #[clap(
         long = "databases",
         env = "ZDB_DATABASES",
-        help = "config for server. pass pair of database name and the bucket name join by '=' or just database name.
-        the value be separated by comma if pass multiple setting. e.g. databases=test_db_name=gs://test_bucket,test_db2,test_db3=gs://aaaa/bbb/cccc"
+        help = "config for server. pass pair of database name and the bucket name join by '=' or just database name.the value be separated by comma if pass multiple setting. e.g. databases=test_db_name=gs://test_bucket,test_db2,test_db3=gs://aaaa/bbb/cccc"
     )]
     databases: Option<String>,
 
@@ -52,11 +51,12 @@ pub struct Args {
     )]
     service_account_file_path: Option<PathBuf>,
 
-    #[clap(long = "config", short, help = "config for server and client. ")]
+    #[clap(
+        long = "config",
+        short,
+        help = "config file path for server and client. Read ~/.config/zikeiretsu/config.toml by default if it exists."
+    )]
     config: Option<PathBuf>,
-
-    #[clap(skip)]
-    parsed_databases: Option<Vec<Database>>,
 
     #[clap(long = "https", help = "config for server and client. ")]
     pub https: bool,
@@ -66,6 +66,9 @@ pub struct Args {
 
     #[clap(long = "port", help = "config for server and client. ")]
     pub port: Option<usize>,
+
+    #[clap(skip)]
+    parsed_databases: Option<Vec<Database>>,
 
     pub query: Option<String>,
 }

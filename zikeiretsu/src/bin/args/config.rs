@@ -80,9 +80,7 @@ mod test {
 
             data_dir = "/tmp/db_dir"
             service_account_file_path= "/path/to/service_account"
-            dataframe_width = 120
-            dataframe_row_num = 9
-            dataframe_col_num = 11
+            https = false
             host = "localhost"
             port = 1234
 
@@ -101,7 +99,7 @@ mod test {
 
                 host: Some("localhost".to_string()),
                 port: Some(1234),
-
+                https: Some(false),
                 databases: Some(vec![DatabaseConfig {
                     database_name: "test_db".to_string(),
                     cloud_storage_url: Some("gs://some/where".to_string()),

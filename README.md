@@ -73,7 +73,20 @@ You can pass the parameters zikeiretsu DB via followings
 - Command arguments
 - Environment variable
 
-###
+### Config file example
+Zikeiretsu will read config file at `~/.config/zikeiretsu/config.toml` by default.
+
+```toml
+data_dir = "/tmp/db_dir"
+service_account_file_path= "/path/to/service_account"
+https = false
+host = "localhost"
+port = 1234
+
+[[databases]]
+database_name="test_db"
+cloud_storage_url ="gs://some/where"
+```
 
 
 ### Query Example

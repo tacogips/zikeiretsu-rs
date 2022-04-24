@@ -13,7 +13,6 @@ use crate::tsdb::{DBConfig, DBContext, TimeSeriesDataFrame};
 use arrow::error::ArrowError;
 use arrow::record_batch::*;
 pub use interface::*;
-//use polars::prelude::ArrowError;
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use thiserror::Error;

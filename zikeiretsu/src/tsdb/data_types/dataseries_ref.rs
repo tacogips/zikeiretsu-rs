@@ -2,7 +2,6 @@ use super::field::*;
 use crate::tsdb::datetime::*;
 use chrono::prelude::*;
 use chrono::FixedOffset;
-//use polars::prelude::{DataType as PDataType, Series as PSeries};
 use serde::Serialize;
 use std::sync::Arc;
 
@@ -12,9 +11,8 @@ use arrow::array::{
     TimestampSecondArray, UInt64Array,
 };
 use arrow::buffer::Buffer;
-use arrow::datatypes::{DataType, TimeUnit};
-//use arrow::datatypes::{DataType, Date64Type, Field, Time64NanosecondType, ToByteSlice};
 use arrow::datatypes::Field;
+use arrow::datatypes::{DataType, TimeUnit};
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum SeriesValuesRef<'a> {
@@ -45,32 +43,6 @@ impl<'a> DataSeriesRef<'a> {
         }
     }
 
-    //    pub async fn as_polar_series(&self, field_name: &str, tz: Option<&FixedOffset>) -> PSeries {
-    //        unimplemented!()
-    //        //match &self.values {
-    //        //    SeriesValuesRef::Float64(vs) => PSeries::new(field_name, vs),
-    //        //    SeriesValuesRef::UInt64(vs) => PSeries::new(field_name, vs),
-    //        //    SeriesValuesRef::Bool(vs) => PSeries::new(field_name, vs),
-    //        //    SeriesValuesRef::Vacant(_) => PSeries::new_empty(field_name, &PDataType::Null),
-    //        //    SeriesValuesRef::String(vs) => PSeries::new(field_name, vs),
-    //        //    SeriesValuesRef::TimestampNano(timestamps) => PSeries::new(
-    //        //        field_name,
-    //        //        timestamps
-    //        //            .iter()
-    //        //            .map(|ts| ts.as_formated_datetime(tz))
-    //        //            .collect::<Vec<String>>(),
-    //        //    ),
-    //
-    //        //    SeriesValuesRef::TimestampSec(timestamps) => PSeries::new(
-    //        //        field_name,
-    //        //        timestamps
-    //        //            .iter()
-    //        //            .map(|ts| ts.as_formated_datetime(tz))
-    //        //            .collect::<Vec<String>>(),
-    //        //    ),
-    //        //}
-    //    }
-    //
     pub async fn as_arrow_field(
         &self,
         field_name: &str,

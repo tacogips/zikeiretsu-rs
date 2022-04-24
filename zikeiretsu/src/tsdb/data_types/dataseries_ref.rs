@@ -62,10 +62,10 @@ impl<'a> DataSeriesRef<'a> {
     }
 }
 
-pub type Result<T> = std::result::Result<T, DataSeriesRefsError>;
+pub type Result<T> = std::result::Result<T, PolarsConvatibleDataFrameError>;
 
 #[derive(Error, Debug)]
-pub enum DataSeriesRefsError {
+pub enum PolarsConvatibleDataFrameError {
     #[error("polars error :{0}")]
     PolarsError(#[from] PolarsError),
 
@@ -74,7 +74,7 @@ pub enum DataSeriesRefsError {
 }
 
 #[async_trait]
-pub trait DataSeriesRefs {
+pub trait PolarsConvatibleDataFrame {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>>;
     fn column_names(&self) -> Option<&Vec<String>>;
 
@@ -83,7 +83,7 @@ pub trait DataSeriesRefs {
         let field_names: Vec<String> = match self.column_names() {
             Some(column_names) => {
                 if data_series_vec.len() != column_names.len() {
-                    return Err(DataSeriesRefsError::UnmatchedColumnNameNumber(
+                    return Err(PolarsConvatibleDataFrameError::UnmatchedColumnNameNumber(
                         data_series_vec.len(),
                         column_names.len(),
                     ));

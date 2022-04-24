@@ -83,7 +83,7 @@ impl Default for DataFrame {
     }
 }
 
-impl DataSeriesRefs for DataFrame {
+impl PolarsConvatibleDataFrame for DataFrame {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>> {
         self.data_serieses
             .iter()

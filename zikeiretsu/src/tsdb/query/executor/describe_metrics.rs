@@ -3,7 +3,7 @@ use crate::tsdb::engine::{Engine, EngineError};
 use crate::tsdb::DBConfig;
 use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{
-    DataFrame, DataSeries, DataSeriesRefs, SeriesValues, TimestampNano, TimestampSec,
+    DataFrame, DataSeries, PolarsConvatibleDataFrame, SeriesValues, TimestampNano, TimestampSec,
 };
 use futures::future;
 use serde::{Deserialize, Serialize};

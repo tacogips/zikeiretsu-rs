@@ -1,5 +1,5 @@
 use super::super::{ExecuteResult, ExecuteResultData, Result};
-use crate::tsdb::data_types::dataseries_ref::DataSeriesRefs;
+use crate::tsdb::data_types::dataseries_ref::PolarsConvatibleDataFrame;
 use crate::{DataFrame, OutputCondition, TimeSeriesDataFrame};
 
 pub async fn output_execute_result(result: ExecuteResult) {

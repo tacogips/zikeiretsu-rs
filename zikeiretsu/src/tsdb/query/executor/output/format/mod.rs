@@ -11,14 +11,14 @@ use crate::tsdb::query::lexer::OutputFormat;
 use polars::prelude::DataFrame as PDataFrame;
 use std::io::Write as IoWrite;
 
-pub trait DataSeriesRefsOutput {
+pub trait PolarsConvatibleDataFrameOutput {
     fn output(&mut self, data: &mut PDataFrame) -> EvalResult<()>;
 }
 
 pub fn new_data_series_refs_vec_output<'d, Dest>(
     format: &OutputFormat,
     output_dest: Dest,
-) -> Box<dyn DataSeriesRefsOutput + 'd>
+) -> Box<dyn PolarsConvatibleDataFrameOutput + 'd>
 where
     Dest: 'd + IoWrite,
 {

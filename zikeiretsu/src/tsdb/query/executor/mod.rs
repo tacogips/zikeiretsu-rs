@@ -3,7 +3,7 @@ pub mod metrics_list;
 pub mod output;
 pub mod search_metrics;
 
-use crate::tsdb::data_types::DataSeriesRefsError;
+use crate::tsdb::data_types::PolarsConvatibleDataFrameError;
 use crate::tsdb::engine::EngineError;
 use crate::tsdb::lexer::{interpret, DatabaseName, InterpretedQuery, LexerError, OutputError};
 use crate::tsdb::query::parser::{parse_query, ParserError};
@@ -170,7 +170,7 @@ pub enum EvalError {
     EngineError(#[from] EngineError),
 
     #[error("dataseries ref error {0}")]
-    DataSeriesRefsError(#[from] DataSeriesRefsError),
+    PolarsConvatibleDataFrameError(#[from] PolarsConvatibleDataFrameError),
 
     #[error("serde json error {0}")]
     SerdeJsonError(#[from] serde_json::Error),

@@ -4,7 +4,7 @@ pub mod metrics_list;
 pub mod output;
 pub mod search_metrics;
 
-use crate::tsdb::data_types::{PolarsConvatibleDataFrame, PolarsConvatibleDataFrameError};
+use crate::tsdb::data_types::{ArrowConvatibleDataFrame, ArrowConvatibleDataFrameError};
 use crate::tsdb::engine::EngineError;
 use crate::tsdb::lexer::{interpret, DatabaseName, InterpretedQuery, LexerError, OutputError};
 use crate::tsdb::query::parser::{parse_query, ParserError};
@@ -13,7 +13,7 @@ use crate::tsdb::{DBConfig, DBContext, TimeSeriesDataFrame};
 use arrow::error::ArrowError;
 use arrow::record_batch::*;
 pub use interface::*;
-//use polars::prelude::PolarsError;
+//use polars::prelude::ArrowError;
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -174,7 +174,7 @@ pub enum ExecuteError {
     EngineError(#[from] EngineError),
 
     #[error("dataseries ref error {0}")]
-    PolarsConvatibleDataFrameError(#[from] PolarsConvatibleDataFrameError),
+    ArrowConvatibleDataFrameError(#[from] ArrowConvatibleDataFrameError),
 
     #[error("serde json error {0}")]
     SerdeJsonError(#[from] serde_json::Error),

@@ -366,7 +366,7 @@ impl From<TimeSeriesDataFrameRef<'_>> for TimeSeriesDataFrame {
     }
 }
 
-impl PolarsConvatibleDataFrame for TimeSeriesDataFrame {
+impl ArrowConvatibleDataFrame for TimeSeriesDataFrame {
     fn column_names(&self) -> Option<&Vec<String>> {
         self.column_names.as_ref()
     }

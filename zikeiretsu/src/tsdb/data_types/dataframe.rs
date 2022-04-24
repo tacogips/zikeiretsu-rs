@@ -2,7 +2,7 @@ use super::arrow_dataframe::*;
 use super::dataseries::*;
 use super::dataseries_ref::*;
 use crate::tsdb::util::VecOpeError;
-//use polars::prelude::PolarsError;
+//use polars::prelude::ArrowError;
 
 use serde::{Deserialize, Serialize};
 use thiserror::*;
@@ -24,7 +24,7 @@ pub enum DataframeError {
     #[error("unmatched field number. This might be a by bug. {0}, {1}")]
     UnmatchedFieldNumError(usize, usize),
     //    #[error("polars error. {0}")]
-    //    PolarsError(#[from] PolarsError),
+    //    ArrowError(#[from] ArrowError),
 }
 
 pub type Result<T> = std::result::Result<T, DataframeError>;
@@ -83,7 +83,7 @@ impl Default for DataFrame {
     }
 }
 
-impl PolarsConvatibleDataFrame for DataFrame {
+impl ArrowConvatibleDataFrame for DataFrame {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>> {
         self.data_serieses
             .iter()

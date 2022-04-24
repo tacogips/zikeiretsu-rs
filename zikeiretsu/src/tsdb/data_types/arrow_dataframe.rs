@@ -17,11 +17,11 @@ use arrow::datatypes::{Field, Schema};
 use arrow::error::ArrowError;
 use arrow::record_batch::*;
 
-pub type Result<T> = std::result::Result<T, PolarsConvatibleDataFrameError>;
+pub type Result<T> = std::result::Result<T, ArrowConvatibleDataFrameError>;
 #[derive(Error, Debug)]
-pub enum PolarsConvatibleDataFrameError {
+pub enum ArrowConvatibleDataFrameError {
     //#[error("polars error :{0}")]
-    //PolarsError(#[from] PolarsError),
+    //ArrowError(#[from] ArrowError),
     #[error("unmatched number of column names . field of df:{0}, columns:{1}")]
     UnmatchedColumnNameNumber(usize, usize),
 
@@ -30,7 +30,7 @@ pub enum PolarsConvatibleDataFrameError {
 }
 
 #[async_trait]
-pub trait PolarsConvatibleDataFrame {
+pub trait ArrowConvatibleDataFrame {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>>;
     fn column_names(&self) -> Option<&Vec<String>>;
 
@@ -41,7 +41,7 @@ pub trait PolarsConvatibleDataFrame {
     //    //  let field_names: Vec<String> = match self.column_names() {
     //    //      Some(column_names) => {
     //    //          if data_series_vec.len() != column_names.len() {
-    //    //              return Err(PolarsConvatibleDataFrameError::UnmatchedColumnNameNumber(
+    //    //              return Err(ArrowConvatibleDataFrameError::UnmatchedColumnNameNumber(
     //    //                  data_series_vec.len(),
     //    //                  column_names.len(),
     //    //              ));
@@ -71,7 +71,7 @@ pub trait PolarsConvatibleDataFrame {
         let field_names: Vec<String> = match self.column_names() {
             Some(column_names) => {
                 if data_series_vec.len() != column_names.len() {
-                    return Err(PolarsConvatibleDataFrameError::UnmatchedColumnNameNumber(
+                    return Err(ArrowConvatibleDataFrameError::UnmatchedColumnNameNumber(
                         data_series_vec.len(),
                         column_names.len(),
                     ));

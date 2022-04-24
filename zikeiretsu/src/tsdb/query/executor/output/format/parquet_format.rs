@@ -10,7 +10,6 @@ pub struct ParquetDfOutput(pub File);
 
 impl ParquetDfOutput {
     pub fn output(self, record: RecordBatch) -> ExecuteResult<()> {
-        // Default writer properties
         let props = WriterProperties::builder()
             .set_compression(Compression::SNAPPY)
             .build();

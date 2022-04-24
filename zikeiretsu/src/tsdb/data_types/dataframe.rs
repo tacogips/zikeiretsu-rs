@@ -8,7 +8,7 @@ use thiserror::*;
 
 #[derive(Error, Debug)]
 pub enum DataframeError {
-    #[error(" data series index out of bound data seriese index:{0}, data index:{1}")]
+    #[error("data series index out of bound data seriese index:{0}, data index:{1}")]
     DataSeriesIndexOutOfBound(usize, usize),
 
     #[error("unsorted dataframe. {0}")]

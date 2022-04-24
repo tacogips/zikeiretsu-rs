@@ -1,11 +1,9 @@
 pub mod executor;
-pub mod executor_interface;
 pub mod lexer;
 pub mod parser;
 
 use crate::EngineError;
 pub use executor::*;
-pub use executor_interface::*;
 pub use lexer::*;
 use parser::*;
 use thiserror::Error;

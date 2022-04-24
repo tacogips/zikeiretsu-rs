@@ -1,8 +1,7 @@
 mod validator;
 
 use super::engine::*;
-//use crate::tsdb::query::executor::execute_query;
-use crate::tsdb::query::executor_interface::ExecutorInterface;
+use crate::tsdb::query::executor::interface::ExecutorInterface;
 use crate::EngineError;
 use dirs::home_dir;
 use rustyline::error::ReadlineError;

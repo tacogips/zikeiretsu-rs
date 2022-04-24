@@ -1,4 +1,5 @@
 pub mod describe_metrics;
+pub mod interface;
 pub mod metrics_list;
 pub mod output;
 pub mod search_metrics;
@@ -9,6 +10,7 @@ use crate::tsdb::lexer::{interpret, DatabaseName, InterpretedQuery, LexerError, 
 use crate::tsdb::query::parser::{parse_query, ParserError};
 use crate::tsdb::query::QuerySetting;
 use crate::tsdb::{DBConfig, DBContext, TimeSeriesDataFrame};
+pub use interface::*;
 use polars::prelude::PolarsError;
 use serde::{Deserialize, Serialize};
 use std::io::Error as IoError;

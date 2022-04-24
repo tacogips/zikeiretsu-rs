@@ -1,4 +1,4 @@
-use super::executor::{execute_query, output::*, EvalError};
+use super::{execute_query, output::*, EvalError};
 use crate::tsdb::engine::DBContext;
 use async_trait::async_trait;
 use thiserror::Error;

@@ -32,16 +32,6 @@ pub struct DataSeriesRef<'a> {
     pub values: SeriesValuesRef<'a>,
 }
 
-//pub enum ArrowSeries {
-//    UInt64(UInt64Array),
-//    Float64(Float64Array),
-//    Bool(BooleanArray),
-//    String(StringArray),
-//    TimestampNano(TimestampNanosecondArray),
-//    TimestampSec(TimestampSecondArray),
-//    Vacant(NullArray),
-//}
-//
 impl<'a> DataSeriesRef<'a> {
     pub fn new(values: SeriesValuesRef<'a>) -> Self {
         Self { values }
@@ -82,7 +72,7 @@ impl<'a> DataSeriesRef<'a> {
     }
 
     pub async fn as_arrow_field(
-        self,
+        &self,
         field_name: &str,
         tz: Option<&FixedOffset>,
     ) -> (Field, ArrayRef) {
@@ -93,40 +83,40 @@ impl<'a> DataSeriesRef<'a> {
             ),
             SeriesValuesRef::UInt64(vs) => (
                 Field::new(field_name, DataType::UInt64, false),
-                UInt64Array::from(vs.to_vec()),
+                Arc::new(UInt64Array::from(vs.to_vec())),
             ),
             SeriesValuesRef::Bool(vs) => (
                 Field::new(field_name, DataType::Boolean, false),
-                BooleanArray::from(vs.to_vec()),
+                Arc::new(BooleanArray::from(vs.to_vec())),
             ),
             SeriesValuesRef::Vacant(num) => (
                 Field::new(field_name, DataType::Null, true),
-                NullArray::new(num),
+                Arc::new(NullArray::new(num)),
             ),
             SeriesValuesRef::String(vs) => (
                 Field::new(field_name, DataType::Utf8, false),
-                StringArray::from(vs.to_vec()),
+                Arc::new(StringArray::from(vs.to_vec())),
             ),
             SeriesValuesRef::TimestampNano(timestamp_nanos) => (
                 Field::new(field_name, DataType::Time64(TimeUnit::Nanosecond), false),
-                TimestampNanosecondArray::from_vec(
+                Arc::new(TimestampNanosecondArray::from_vec(
                     timestamp_nanos
                         .iter()
                         .map(|each_ts| each_ts.as_i64())
                         .collect(),
                     tz.map(|tz| tz.to_string()),
-                ),
+                )),
             ),
 
             SeriesValuesRef::TimestampSec(timestamp_secs) => (
                 Field::new(field_name, DataType::Time64(TimeUnit::Second), false),
-                TimestampSecondArray::from_vec(
+                Arc::new(TimestampSecondArray::from_vec(
                     timestamp_secs
                         .iter()
                         .map(|each_ts| each_ts.as_i64())
                         .collect(),
                     tz.map(|tz| tz.to_string()),
-                ),
+                )),
             ),
         }
     }

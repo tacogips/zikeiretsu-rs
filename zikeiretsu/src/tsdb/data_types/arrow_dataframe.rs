@@ -87,19 +87,8 @@ pub trait PolarsConvatibleDataFrame {
         let arrays = field_names
             .iter()
             .zip(data_series_vec.iter())
-            .map(|(field_name, each_series)| each_series.as_arrow_field(field_name, timezone))
-            .collect();
+            .map(|(field_name, each_series)| each_series.as_arrow_field(field_name, timezone));
 
-        // let struct_array = StructArray::from(vec![
-        //     (
-        //         Field::new("b", DataType::Boolean, false),
-        //         boolean.clone() as ArrayRef,
-        //     ),
-        //     (
-        //         Field::new("c", DataType::Int32, false),
-        //         int.clone() as ArrayRef,
-        //     ),
-        // ]);
         let serieses = join_all(arrays)
             .await
             .into_iter()

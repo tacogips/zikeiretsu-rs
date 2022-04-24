@@ -1,13 +1,14 @@
-use super::PolarsConvatibleDataFrameOutput;
+use super::ArrowDataFrameOutput;
 use crate::tsdb::query::executor::Result as ExecuteResult;
-use polars::prelude::DataFrame as PDataFrame;
+use arrow::record_batch::RecordBatch;
+use arrow::util::pretty::pretty_format_batches;
 use std::io::Write as IoWrite;
 
 pub struct TableDfOutput<Dest: IoWrite>(pub Dest);
 
-impl<Dest: IoWrite> PolarsConvatibleDataFrameOutput for TableDfOutput<Dest> {
-    fn output(&mut self, df: &mut PDataFrame) -> ExecuteResult<()> {
-        write!(self.0, "{}", df)?;
+impl<Dest: IoWrite> ArrowDataFrameOutput for TableDfOutput<Dest> {
+    fn output(&mut self, df: &[RecordBatch]) -> ExecuteResult<()> {
+        write!(self.0, "{}", pretty_format_batches(df)?)?;
         Ok(())
     }
 }

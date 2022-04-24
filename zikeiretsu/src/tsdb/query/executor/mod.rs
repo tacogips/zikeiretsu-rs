@@ -4,43 +4,37 @@ pub mod metrics_list;
 pub mod output;
 pub mod search_metrics;
 
-use crate::tsdb::data_types::PolarsConvatibleDataFrameError;
+use crate::tsdb::data_types::{PolarsConvatibleDataFrame, PolarsConvatibleDataFrameError};
 use crate::tsdb::engine::EngineError;
 use crate::tsdb::lexer::{interpret, DatabaseName, InterpretedQuery, LexerError, OutputError};
 use crate::tsdb::query::parser::{parse_query, ParserError};
 use crate::tsdb::query::QuerySetting;
 use crate::tsdb::{DBConfig, DBContext, TimeSeriesDataFrame};
+use arrow::error::ArrowError;
+use arrow::record_batch::*;
 pub use interface::*;
 use polars::prelude::PolarsError;
-use serde::{Deserialize, Serialize};
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use thiserror::Error;
 
-pub mod execute_results {
-    pub use super::{ExecuteResult, ExecuteResultData};
-    pub use crate::describe_metrics::MetricsDescribe;
-    pub use crate::tsdb::Metrics;
-    pub use crate::DataFrame;
-    pub use crate::OutputCondition;
-}
+pub use crate::describe_metrics::MetricsDescribe;
+pub use crate::tsdb::Metrics;
+pub use crate::DataFrame;
+pub use crate::OutputCondition;
 
 use crate::tsdb::dataframe::DataframeError;
-use execute_results::*;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct ExecuteResult {
     data: Option<ExecuteResultData>,
     error_message: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-#[serde(tag = "t", content = "c")]
-pub enum ExecuteResultData {
-    MetricsList(DataFrame, OutputCondition),
-    DescribeMetrics(DataFrame, OutputCondition),
-    DescribeBlokList(DataFrame, OutputCondition),
-    SearchMetrics(Option<TimeSeriesDataFrame>, OutputCondition),
+#[derive(Debug, PartialEq)]
+pub struct ExecuteResultData {
+    pub records: Option<RecordBatch>,
+    pub output_condition: OutputCondition,
 }
 
 pub async fn execute_query(ctx: &DBContext, query: &str) -> ExecuteResult {
@@ -64,7 +58,10 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             let db_dir = db_dir.display().to_string();
             let metrics = metrics_list::execute_metrics_list(Some(&db_dir), &db_config).await?;
 
-            Ok(ExecuteResultData::MetricsList(metrics, output_condition))
+            Ok(ExecuteResultData {
+                records: Some(metrics.as_arrow_dataframes(None).await?),
+                output_condition,
+            })
         }
 
         InterpretedQuery::DescribeMetrics(database_name, describe_condition, query_setting) => {
@@ -78,10 +75,10 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             )
             .await?;
 
-            Ok(ExecuteResultData::DescribeMetrics(
-                df,
-                describe_condition.output_condition,
-            ))
+            Ok(ExecuteResultData {
+                records: Some(df.as_arrow_dataframes(None).await?),
+                output_condition: describe_condition.output_condition,
+            })
         }
 
         InterpretedQuery::DescribeBlockList(database_name, describe_condition, query_setting) => {
@@ -95,10 +92,10 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             )
             .await?;
 
-            Ok(ExecuteResultData::DescribeBlokList(
-                df,
-                describe_condition.output_condition,
-            ))
+            Ok(ExecuteResultData {
+                records: Some(df.as_arrow_dataframes(None).await?),
+                output_condition: describe_condition.output_condition,
+            })
         }
 
         InterpretedQuery::SearchMetrics(database_name, query_condition, query_setting) => {
@@ -109,10 +106,19 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
                 search_metrics::execute_search_metrics(&db_dir, &db_config, &query_condition)
                     .await?;
 
-            Ok(ExecuteResultData::SearchMetrics(
-                query_result_df,
-                query_condition.output_condition,
-            ))
+            match query_result_df {
+                None => Ok(ExecuteResultData {
+                    records: None,
+                    output_condition: query_condition.output_condition,
+                }),
+                Some(df) => Ok(ExecuteResultData {
+                    records: Some(
+                        df.as_arrow_dataframes(Some(&query_condition.timezone))
+                            .await?,
+                    ),
+                    output_condition: query_condition.output_condition,
+                }),
+            }
         }
     }
 }
@@ -183,4 +189,7 @@ pub enum ExecuteError {
 
     #[error("no database found:{0}")]
     NoDatabaseFound(String),
+
+    #[error("arrow error{0}")]
+    ArrowErro(#[from] ArrowError),
 }

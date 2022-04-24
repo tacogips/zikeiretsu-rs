@@ -21,7 +21,7 @@ xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
 base-128-variants = { path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.10" }
-polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" ,features=["dtype-full", "serde", "fmt","parquet"]}
+#polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" ,features=["dtype-full", "serde", "fmt","parquet"]}
 
 chrono = "0.4"
 chrono-tz = "0.4"
@@ -56,8 +56,10 @@ clap = {version = "3.1" , features= ["derive","env"]}
 tracing = "0.1"
 tracing-subscriber = {version = "0.2", features = ["env-filter"]}
 tracing-log = "0.1"
-arrow = { version = "12.0", features = ["prettyprint"]}
-arrow-flight = "12.0"
+
+arrow = { version = "12", features = ["prettyprint"]}
+arrow-flight = "12"
+parquet = "12"
 
 [dev-dependencies]
 tempfile = "3.2"

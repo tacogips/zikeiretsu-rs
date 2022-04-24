@@ -7,8 +7,8 @@ use std::io::Write as IoWrite;
 pub struct TableDfOutput<Dest: IoWrite>(pub Dest);
 
 impl<Dest: IoWrite> ArrowDataFrameOutput for TableDfOutput<Dest> {
-    fn output(&mut self, df: &[RecordBatch]) -> ExecuteResult<()> {
-        write!(self.0, "{}", pretty_format_batches(df)?)?;
+    fn output(&mut self, record: RecordBatch) -> ExecuteResult<()> {
+        write!(self.0, "{}", pretty_format_batches(&[record])?)?;
         Ok(())
     }
 }

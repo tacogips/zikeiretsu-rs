@@ -13,7 +13,7 @@ use crate::tsdb::{DBConfig, DBContext, TimeSeriesDataFrame};
 use arrow::error::ArrowError;
 use arrow::record_batch::*;
 pub use interface::*;
-use polars::prelude::PolarsError;
+//use polars::prelude::PolarsError;
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -24,6 +24,7 @@ pub use crate::DataFrame;
 pub use crate::OutputCondition;
 
 use crate::tsdb::dataframe::DataframeError;
+use parquet::errors::ParquetError;
 
 #[derive(Debug, PartialEq)]
 pub struct ExecuteResult {
@@ -181,9 +182,6 @@ pub enum ExecuteError {
     #[error("metrics not found: {0}")]
     MetricsNotFoundError(String),
 
-    #[error("polars dataframe error: {0}")]
-    PolarsError(#[from] PolarsError),
-
     #[error("no db dir")]
     DBDirNotSet,
 
@@ -191,5 +189,8 @@ pub enum ExecuteError {
     NoDatabaseFound(String),
 
     #[error("arrow error{0}")]
-    ArrowErro(#[from] ArrowError),
+    ArrowError(#[from] ArrowError),
+
+    #[error("parquet error{0}")]
+    ParquetError(#[from] ParquetError),
 }

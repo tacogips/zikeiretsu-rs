@@ -2,7 +2,7 @@ use super::arrow_dataframe::*;
 use super::dataseries::*;
 use super::dataseries_ref::*;
 use crate::tsdb::util::VecOpeError;
-use polars::prelude::PolarsError;
+//use polars::prelude::PolarsError;
 
 use serde::{Deserialize, Serialize};
 use thiserror::*;
@@ -23,9 +23,8 @@ pub enum DataframeError {
 
     #[error("unmatched field number. This might be a by bug. {0}, {1}")]
     UnmatchedFieldNumError(usize, usize),
-
-    #[error("polars error. {0}")]
-    PolarsError(#[from] PolarsError),
+    //    #[error("polars error. {0}")]
+    //    PolarsError(#[from] PolarsError),
 }
 
 pub type Result<T> = std::result::Result<T, DataframeError>;

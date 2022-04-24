@@ -1,8 +1,9 @@
 use super::super::{ExecuteResult, ExecuteResultData, Result};
-use super::format::output_with_condition;
-use crate::tsdb::data_types::PolarsConvatibleDataFrame;
+use super::format::*;
+use crate::tsdb::query::lexer::OutputFormat;
 use crate::OutputCondition;
 use arrow::record_batch::RecordBatch;
+use std::rc::Rc;
 
 pub async fn output_execute_result(result: ExecuteResult) -> Result<()> {
     if let Some(error_message) = result.error_message {
@@ -27,7 +28,41 @@ pub async fn output_execute_result(result: ExecuteResult) -> Result<()> {
     }
 }
 
-async fn output_records(df: RecordBatch, condition: OutputCondition) -> Result<()> {
-    output_with_condition!(condition, df);
+async fn output_records(
+    record_batch: RecordBatch,
+    output_condition: OutputCondition,
+) -> Result<()> {
+    match output_condition.output_wirter()? {
+        crate::tsdb::lexer::OutputWriter::Stdout => {
+            let out = std::io::stdout();
+            let out = std::io::BufWriter::new(out.lock());
+
+            let mut destination: Box<dyn ArrowDataFrameOutput> =
+                match &output_condition.output_format {
+                    OutputFormat::Json => Box::new(JsonDfOutput(out)),
+                    OutputFormat::DataFrame => Box::new(TableDfOutput(out)),
+                    _ => unimplemented!(),
+                };
+
+            destination.output(record_batch)?;
+        }
+        crate::tsdb::lexer::OutputWriter::File(f) => {
+            let mut destination: Box<dyn ArrowDataFrameOutput> =
+                match &output_condition.output_format {
+                    OutputFormat::Json => {
+                        let out = std::io::BufWriter::new(f);
+                        Box::new(JsonDfOutput(out))
+                    }
+                    OutputFormat::DataFrame => {
+                        let out = std::io::BufWriter::new(f);
+                        Box::new(TableDfOutput(out))
+                    }
+                    OutputFormat::Parquet => Box::new(ParquetDfOutput(Rc::new(f))),
+                };
+
+            destination.output(record_batch)?;
+        }
+    }
+
     Ok(())
 }

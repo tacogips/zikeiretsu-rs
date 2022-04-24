@@ -25,31 +25,19 @@ pub use crate::OutputCondition;
 use crate::tsdb::dataframe::DataframeError;
 use parquet::errors::ParquetError;
 
-#[derive(Debug, PartialEq)]
-pub struct ExecuteResult {
-    data: Option<ExecuteResultData>,
-    error_message: Option<String>,
-}
+//#[derive(Debug, PartialEq)]
+//pub struct ExecuteResult {
+//    data: Option<ExecuteResultData>,
+//    error_message: Option<String>,
+//}
 
 #[derive(Debug, PartialEq)]
-pub struct ExecuteResultData {
+pub struct ExecutedData {
     pub records: Option<RecordBatch>,
     pub output_condition: OutputCondition,
 }
 
-pub async fn execute_query(ctx: &DBContext, query: &str) -> ExecuteResult {
-    match inner_execute_query(ctx, query).await {
-        Ok(data) => ExecuteResult {
-            data: Some(data),
-            error_message: None,
-        },
-        Err(e) => ExecuteResult {
-            data: None,
-            error_message: Some(format!("{e}")),
-        },
-    }
-}
-async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResultData> {
+pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData> {
     let parsed_query = parse_query(query)?;
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {
@@ -58,7 +46,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             let db_dir = db_dir.display().to_string();
             let metrics = metrics_list::execute_metrics_list(Some(&db_dir), &db_config).await?;
 
-            Ok(ExecuteResultData {
+            Ok(ExecutedData {
                 records: Some(metrics.as_arrow_record_batchs(false, None).await?),
                 output_condition,
             })
@@ -75,7 +63,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             )
             .await?;
 
-            Ok(ExecuteResultData {
+            Ok(ExecutedData {
                 records: Some(df.as_arrow_record_batchs(false, None).await?),
                 output_condition: describe_condition.output_condition,
             })
@@ -92,7 +80,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             )
             .await?;
 
-            Ok(ExecuteResultData {
+            Ok(ExecutedData {
                 records: Some(df.as_arrow_record_batchs(false, None).await?),
                 output_condition: describe_condition.output_condition,
             })
@@ -107,11 +95,11 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
                     .await?;
 
             match query_result_df {
-                None => Ok(ExecuteResultData {
+                None => Ok(ExecutedData {
                     records: None,
                     output_condition: query_condition.output_condition,
                 }),
-                Some(df) => Ok(ExecuteResultData {
+                Some(df) => Ok(ExecutedData {
                     records: Some(
                         df.as_arrow_record_batchs(
                             query_condition.format_datetime,

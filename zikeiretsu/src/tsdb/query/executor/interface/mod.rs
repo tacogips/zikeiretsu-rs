@@ -24,8 +24,18 @@ pub struct AdhocExecutorInterface;
 #[async_trait]
 impl ExecutorInterface for AdhocExecutorInterface {
     async fn execute_query(&self, ctx: &DBContext, query: &str) -> Result<()> {
-        let result = execute_query(ctx, query).await;
-        output_execute_result(result).await?;
+        match execute_query(ctx, query).await {
+            Err(e) => {
+                eprintln!("{}", e);
+            }
+            Ok(result) => {
+                if let Some(records) = result.records {
+                    output_records(records, result.output_condition).await?
+                } else {
+                    println!("[empty]")
+                }
+            }
+        }
         Ok(())
     }
 }

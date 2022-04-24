@@ -107,7 +107,7 @@ impl OutputWriter {
     fn validate_available_for_format(&self, format: &OutputFormat) -> StdResult<(), OutputError> {
         match format {
             OutputFormat::Json => Ok(()),
-            OutputFormat::DataFrame => Ok(()),
+            OutputFormat::Table => Ok(()),
             OutputFormat::Parquet => match &self {
                 OutputWriter::File(_) => Ok(()),
                 OutputWriter::Stdout => Err(OutputError::InvalidOutputDestination(

@@ -70,7 +70,11 @@ impl<'a> DataSeriesRef<'a> {
                 Arc::new(StringArray::from(vs.to_vec())),
             ),
             SeriesValuesRef::TimestampNano(timestamp_nanos) => (
-                Field::new(field_name, DataType::Time64(TimeUnit::Nanosecond), false),
+                Field::new(
+                    field_name,
+                    DataType::Timestamp(TimeUnit::Nanosecond, tz.map(|tz| tz.to_string())),
+                    false,
+                ),
                 Arc::new(TimestampNanosecondArray::from_vec(
                     timestamp_nanos
                         .iter()
@@ -81,7 +85,11 @@ impl<'a> DataSeriesRef<'a> {
             ),
 
             SeriesValuesRef::TimestampSec(timestamp_secs) => (
-                Field::new(field_name, DataType::Time64(TimeUnit::Second), false),
+                Field::new(
+                    field_name,
+                    DataType::Timestamp(TimeUnit::Second, tz.map(|tz| tz.to_string())),
+                    false,
+                ),
                 Arc::new(TimestampSecondArray::from_vec(
                     timestamp_secs
                         .iter()

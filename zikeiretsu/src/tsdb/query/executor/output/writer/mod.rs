@@ -3,7 +3,6 @@ use super::format::*;
 use crate::tsdb::query::lexer::OutputFormat;
 use crate::OutputCondition;
 use arrow::record_batch::RecordBatch;
-use std::rc::Rc;
 
 pub async fn output_execute_result(result: ExecuteResult) -> Result<()> {
     if let Some(error_message) = result.error_message {
@@ -40,7 +39,7 @@ async fn output_records(
             let mut destination: Box<dyn ArrowDataFrameOutput> =
                 match &output_condition.output_format {
                     OutputFormat::Json => Box::new(JsonDfOutput(out)),
-                    OutputFormat::DataFrame => Box::new(TableDfOutput(out)),
+                    OutputFormat::Table => Box::new(TableDfOutput(out)),
                     r => panic!("inalid output format for stdout. this should be a bug. {r:?}"),
                 };
 
@@ -53,7 +52,7 @@ async fn output_records(
                         let out = std::io::BufWriter::new(f);
                         Box::new(JsonDfOutput(out))
                     }
-                    OutputFormat::DataFrame => {
+                    OutputFormat::Table => {
                         let out = std::io::BufWriter::new(f);
                         Box::new(TableDfOutput(out))
                     }

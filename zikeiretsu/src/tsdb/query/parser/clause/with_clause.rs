@@ -7,7 +7,7 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum OutputFormat {
     Json,
-    DataFrame,
+    Table,
     Parquet,
 }
 
@@ -82,8 +82,8 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
                         for each_in_define_tz in each_define.into_inner() {
                             match each_in_define_tz.as_rule() {
                                 Rule::KW_JSON => with_clause.def_output = Some(OutputFormat::Json),
-                                Rule::KW_DATAFRAME => {
-                                    with_clause.def_output = Some(OutputFormat::DataFrame)
+                                Rule::KW_TABLE => {
+                                    with_clause.def_output = Some(OutputFormat::Table)
                                 }
 
                                 Rule::KW_PARQUET => {
@@ -232,7 +232,7 @@ mod test {
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
         assert_eq!(result.def_timezone, None);
-        assert_eq!(result.def_output, Some(OutputFormat::DataFrame));
+        assert_eq!(result.def_output, Some(OutputFormat::Table));
         assert_eq!(result.def_output_file_path, None,);
     }
 

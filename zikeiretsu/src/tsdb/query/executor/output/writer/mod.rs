@@ -1,4 +1,4 @@
-use super::super::{ExecutedData, Result};
+use super::super::Result;
 use super::format::*;
 use crate::tsdb::query::lexer::OutputFormat;
 use crate::OutputCondition;

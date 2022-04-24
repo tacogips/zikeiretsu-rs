@@ -7,8 +7,7 @@ use arrow_flight::{
     HandshakeResponse, PutResult, SchemaResult, Ticket,
 };
 
-use futures::prelude::stream::{BoxStream, Stream};
-use std::pin::Pin;
+use futures::prelude::stream::BoxStream;
 use thiserror::Error;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status, Streaming};

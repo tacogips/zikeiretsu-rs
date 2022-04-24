@@ -1,19 +1,10 @@
 use super::*;
 use crate::query::OutputCondition;
-use arrow::{
-    datatypes::Schema,
-    datatypes::{DataType, Field},
-    error::ArrowError,
-};
+use arrow::{datatypes::Schema, error::ArrowError};
 use arrow_flight::{
-    flight_service_client::FlightServiceClient,
-    flight_service_server::FlightService,
-    flight_service_server::FlightServiceServer,
-    utils::{flight_data_from_arrow_batch, flight_data_to_arrow_batch},
-    Action, ActionType, Criteria, Empty, FlightData, FlightDescriptor, FlightInfo,
-    HandshakeRequest, HandshakeResponse, IpcMessage, PutResult, SchemaAsIpc, SchemaResult, Ticket,
+    flight_service_client::FlightServiceClient, utils::flight_data_to_arrow_batch, FlightData,
+    Ticket,
 };
-use futures::stream::Stream;
 use std::sync::Arc;
 use tokio_stream::StreamExt;
 //use futures::StreamExt;

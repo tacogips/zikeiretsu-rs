@@ -1,22 +1,14 @@
 use super::DoGetStream;
 use crate::tsdb::engine::DBContext;
 use async_stream::stream;
-use futures::prelude::stream::{BoxStream, Stream};
 use serde_json;
-use tonic::transport::Server;
-use tonic::{Request, Response, Status, Streaming};
+use tonic::{Request, Response, Status};
 
-use crate::{execute_query, output::*, ExecuteError};
+use crate::execute_query;
 
-use arrow_flight::{
-    flight_service_server::FlightService,
-    flight_service_server::FlightServiceServer,
-    utils::{flight_data_from_arrow_batch, flight_data_to_arrow_batch},
-    Action, ActionType, Criteria, Empty, FlightData, FlightDescriptor, FlightInfo,
-    HandshakeRequest, HandshakeResponse, IpcMessage, PutResult, SchemaAsIpc, SchemaResult, Ticket,
-};
+use arrow_flight::{utils::flight_data_from_arrow_batch, FlightData, SchemaAsIpc, Ticket};
 
-use arrow::ipc::{reader, writer, writer::IpcWriteOptions};
+use arrow::ipc::writer::IpcWriteOptions;
 
 //pub type DoGetStream =
 //    Pin<Box<dyn Stream<Item = Result<FlightData, Status>> + Send + Sync + 'static>>;

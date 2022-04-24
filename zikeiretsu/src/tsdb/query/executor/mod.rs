@@ -25,12 +25,6 @@ pub use crate::OutputCondition;
 use crate::tsdb::dataframe::DataframeError;
 use parquet::errors::ParquetError;
 
-//#[derive(Debug, PartialEq)]
-//pub struct ExecuteResult {
-//    data: Option<ExecuteResultData>,
-//    error_message: Option<String>,
-//}
-
 #[derive(Debug, PartialEq)]
 pub struct ExecutedData {
     pub records: Option<RecordBatch>,

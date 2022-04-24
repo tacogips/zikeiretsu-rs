@@ -55,6 +55,12 @@ pub struct Args {
     #[clap(skip)]
     parsed_databases: Option<Vec<Database>>,
 
+    #[clap(long = "host", help = "config for server and client. ")]
+    host: Option<String>,
+
+    #[clap(long = "port", help = "config for server and client. ")]
+    port: Option<usize>,
+
     pub query: Option<String>,
 }
 
@@ -88,6 +94,15 @@ impl Args {
         if let Some(df_col_num) = config.dataframe_col_num {
             self.df_col_num = Some(df_col_num);
         }
+
+        if let Some(host) = config.host {
+            self.host = Some(host);
+        }
+
+        if let Some(port) = config.port {
+            self.port = Some(port);
+        }
+
         Ok(())
     }
 

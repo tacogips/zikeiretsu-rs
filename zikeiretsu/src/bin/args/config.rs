@@ -13,6 +13,8 @@ pub struct Config {
     pub dataframe_width: Option<u16>,
     pub dataframe_row_num: Option<usize>,
     pub dataframe_col_num: Option<usize>,
+    pub host: Option<String>,
+    pub port: Option<usize>,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -83,6 +85,8 @@ mod test {
             dataframe_width = 120
             dataframe_row_num = 9
             dataframe_col_num = 11
+            host = "localhost"
+            port = 1234
 
             [[databases]]
             database_name="test_db"
@@ -99,6 +103,9 @@ mod test {
                 dataframe_width: Some(120),
                 dataframe_row_num: Some(9),
                 dataframe_col_num: Some(11),
+
+                host: Some("localhost".to_string()),
+                port: Some(1234),
 
                 databases: Some(vec![DatabaseConfig {
                     database_name: "test_db".to_string(),

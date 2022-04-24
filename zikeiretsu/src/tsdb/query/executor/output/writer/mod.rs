@@ -1,6 +1,6 @@
 use super::super::{ExecuteResult, ExecuteResultData, Result};
 use super::format::output_with_condition;
-use crate::tsdb::data_types::dataseries_ref::PolarsConvatibleDataFrame;
+use crate::tsdb::data_types::PolarsConvatibleDataFrame;
 use crate::OutputCondition;
 
 pub async fn output_execute_result(result: ExecuteResult) -> Result<()> {

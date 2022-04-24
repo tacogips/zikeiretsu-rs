@@ -2,6 +2,7 @@ use super::dataframe::{DataframeError, Result};
 use super::dataseries::*;
 use super::dataseries_ref::*;
 use super::field::*;
+use super::polar_dataframe::*;
 use super::{datapoint::DataPoint, DatapointSearchCondition};
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::{prepend, trim_values};

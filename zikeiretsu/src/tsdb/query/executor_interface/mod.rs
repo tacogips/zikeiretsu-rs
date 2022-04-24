@@ -16,7 +16,7 @@ pub trait ExecutorInterface {
     async fn execute_query(&self, ctx: &DBContext, query: &str) -> Result<()>;
 }
 
-pub struct AdhocExecutorInterface {}
+pub struct AdhocExecutorInterface;
 
 #[async_trait]
 impl ExecutorInterface for AdhocExecutorInterface {

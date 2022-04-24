@@ -43,11 +43,15 @@ pub async fn handle(
 
                 let (_dictionaries, mut fligh_batch) =
                     flight_data_from_arrow_batch(&records, &write_option);
+
+                let schema_data: FlightData =
+                    SchemaAsIpc::new(&records.schema(), &write_option).into();
+
+                fligh_batch.data_header = schema_data.data_header;
                 fligh_batch.app_metadata = output_condition.into_bytes();
 
-                //records.into_bytes();
                 Ok(Response::new(Box::pin(stream! {
-                    yield Ok( fligh_batch)
+                    yield Ok(fligh_batch)
                 })))
             } else {
                 Err(Status::not_found("no data found"))

@@ -1,25 +1,22 @@
-use super::executor::execute_results::*;
-use crate::tsdb::engine::DBContext;
-use async_trait::async_trait;
-use thiserror::Error;
+use super::super::{ExecuteResult, ExecuteResultData, Result};
+use crate::tsdb::data_types::dataseries_ref::DataSeriesRefs;
+use crate::{DataFrame, OutputCondition, TimeSeriesDataFrame};
 
-pub type Result<T> = std::result::Result<T, ExecutorInterfaceError>;
-
-#[derive(Error, Debug)]
-pub enum ExecutorInterfaceError {}
-
-#[async_trait]
-pub trait ExecutorInterface {
-    async fn execute_query(&self, ctx: &DBContext, query: &str) -> Result<()>;
+pub async fn output_execute_result(result: ExecuteResult) {
+    if result.is_error() {
+    } else {
+        match result.data {
+            Some(ExecuteResultData::MetricsList(df, conditon)) => {}
+            Some(ExecuteResultData::DescribeMetrics(df, condition)) => {}
+            Some(ExecuteResultData::SearchMetrics(ts_df, condition)) => {}
+            None => {}
+        }
+    }
 }
 
-pub struct AdhocExecutorInterface {}
-
-#[async_trait]
-impl ExecutorInterface for AdhocExecutorInterface {
-    async fn execute_query(&self, ctx: &DBContext, query: &str) -> Result<()> {
-        Ok(())
-    }
+async fn output_metrics_list(df: DataFrame, condition: OutputCondition) -> Result<()> {
+    let mut p_df = df.as_polar_dataframes(None).await?;
+    Ok(())
 }
 
 ////TODO(tacogips) remove

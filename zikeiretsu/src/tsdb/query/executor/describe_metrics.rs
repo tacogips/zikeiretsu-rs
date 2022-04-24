@@ -1,7 +1,5 @@
-use super::output::*;
 use super::EvalError;
 use crate::tsdb::engine::{Engine, EngineError};
-use crate::tsdb::query::lexer::{OutputCondition, OutputWriter};
 use crate::tsdb::DBConfig;
 use crate::tsdb::{block_list, Metrics};
 use crate::tsdb::{

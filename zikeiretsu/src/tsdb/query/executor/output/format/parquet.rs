@@ -1,4 +1,5 @@
-use super::{DataSeriesRefsOutput, EvalResult};
+use super::DataSeriesRefsOutput;
+use crate::tsdb::query::executor::Result as EvalResult;
 use polars::prelude::{DataFrame as PDataFrame, ParquetWriter};
 use std::io::Write as IoWrite;
 

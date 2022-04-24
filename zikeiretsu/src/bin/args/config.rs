@@ -10,9 +10,6 @@ pub struct Config {
     pub data_dir: Option<PathBuf>,
     pub databases: Option<Vec<DatabaseConfig>>,
     pub service_account_file_path: Option<PathBuf>,
-    pub dataframe_width: Option<u16>,
-    pub dataframe_row_num: Option<usize>,
-    pub dataframe_col_num: Option<usize>,
     pub https: Option<bool>,
     pub host: Option<String>,
     pub port: Option<usize>,
@@ -101,9 +98,6 @@ mod test {
             Config {
                 data_dir: Some("/tmp/db_dir".into()),
                 service_account_file_path: Some("/path/to/service_account".into()),
-                dataframe_width: Some(120),
-                dataframe_row_num: Some(9),
-                dataframe_col_num: Some(11),
 
                 host: Some("localhost".to_string()),
                 port: Some(1234),

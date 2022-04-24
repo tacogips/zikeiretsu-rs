@@ -1,4 +1,5 @@
 mod config;
+
 use ::zikeiretsu::{CloudStorage, CloudStorageError, DBContext, Database};
 
 use clap::Parser;
@@ -51,27 +52,6 @@ pub struct Args {
     )]
     service_account_file_path: Option<PathBuf>,
 
-    #[clap(
-        long = "df_width",
-        env = "ZDB_DATAFRAME_WIDTH",
-        help = "config for server. "
-    )]
-    df_width: Option<u16>,
-
-    #[clap(
-        long = "df_row",
-        env = "ZDB_DATAFRAME_ROW",
-        help = "config for server. "
-    )]
-    df_row_num: Option<usize>,
-
-    #[clap(
-        long = "df_col",
-        env = "ZDB_DATAFRAME_COL",
-        help = "config for server. "
-    )]
-    df_col_num: Option<usize>,
-
     #[clap(long = "config", short, help = "config for server and client. ")]
     config: Option<PathBuf>,
 
@@ -109,18 +89,6 @@ impl Args {
             self.service_account_file_path = Some(service_account_file_path);
         }
 
-        if let Some(df_width) = config.dataframe_width {
-            self.df_width = Some(df_width);
-        }
-
-        if let Some(df_row_num) = config.dataframe_row_num {
-            self.df_row_num = Some(df_row_num);
-        }
-
-        if let Some(df_col_num) = config.dataframe_col_num {
-            self.df_col_num = Some(df_col_num);
-        }
-
         if let Some(https) = config.https {
             self.https = https;
         }
@@ -152,22 +120,6 @@ impl Args {
         if let Some(service_account) = self.service_account_file_path.as_ref() {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
-
-        if let Some(table_width) = self.df_width {
-            // default 100
-            env::set_var("POLARS_TABLE_WIDTH", table_width.to_string());
-        }
-
-        if let Some(table_row) = self.df_row_num {
-            //default 25
-            env::set_var("POLARS_FMT_MAX_ROWS", table_row.to_string());
-        }
-
-        if let Some(table_col) = self.df_col_num {
-            //default 75
-            env::set_var("POLARS_FMT_MAX_COLS", table_col.to_string());
-        }
-
         Ok(())
     }
 

@@ -21,6 +21,8 @@ zikeiretsu = {git = "https://github.com/tacogips/zikeiretsu-rs", tag = "0.0.1" }
 ## Usage
 
 ```
+zikeiretsu 0.0.1
+
 USAGE:
     zikeiretsu [OPTIONS] [QUERY]
 
@@ -28,17 +30,39 @@ ARGS:
     <QUERY>
 
 OPTIONS:
-    -b, --bucket <BUCKET>                                [env: ZDB_BUCKET=]
     -c, --config <CONFIG>
-    -d, --db_dir <DB_DIR>                                [env: ZDB_DIR=]
-        --df_col <DF_COL_NUM>                            [env: ZDB_DATAFRAME_COL=]
-        --df_row <DF_ROW_NUM>                            [env: ZDB_DATAFRAME_ROW=]
-        --df_width <DF_WIDTH>                            [env: ZDB_DATAFRAME_WIDTH=]
-    -h, --help                                           Print help information
-    -p, --bucket_sub_path <BUCKET_SUB_PATH>              [env: ZDB_BUCKET_SUBPATH=]
-        --service_account <SERVICE_ACCOUNT_FILE_PATH>    [env: ZDB_SERVICE_ACCOUNT=]
-    -t, --cloud_type <CLOUD_TYPE>                        [env: ZDB_CLOUD_TYPE=]
-    -V, --version                                        Print version information
+            config for server and client.
+
+    -d, --data_dir <DATA_DIR>
+            [env: ZDB_DIR=]
+
+        --databases <DATABASES>
+            config for server. pass pair of database name and the bucket name join by '=' or just
+            database name.
+                    the value be separated by comma if pass multiple setting. e.g.
+            databases=test_db_name=gs://test_bucket,test_db2,test_db3=gs://aaaa/bbb/cccc [env:
+            ZDB_DATABASES=]
+
+    -h, --help
+            Print help information
+
+        --host <HOST>
+            config for server and client.
+
+        --https
+            config for server and client.
+
+    -m, --mode <MODE>
+
+
+        --port <PORT>
+            config for server and client.
+
+        --service_account <SERVICE_ACCOUNT_FILE_PATH>
+            config for server. path to google service account file [env: ZDB_SERVICE_ACCOUNT=]
+
+    -V, --version
+            Print version information
 ```
 
 
@@ -54,7 +78,5 @@ You can pass the parameters zikeiretsu DB via followings
 
 ### Query Example
 ```
-
-
 
 ```

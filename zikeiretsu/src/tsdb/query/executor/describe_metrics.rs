@@ -1,4 +1,4 @@
-use super::EvalError;
+use super::ExecuteError;
 use crate::tsdb::engine::{Engine, EngineError};
 use crate::tsdb::DBConfig;
 use crate::tsdb::{block_list, Metrics};
@@ -11,14 +11,14 @@ pub async fn execute_describe_metrics(
     db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
     show_block_list: bool,
-) -> Result<DataFrame, EvalError> {
+) -> Result<DataFrame, ExecuteError> {
     let metricses = Engine::list_metrics(Some(&db_dir), db_config).await?;
     let metricses = match metrics_filter {
         Some(metrics_filter) => metricses
             .into_iter()
             .find(|each| *each == metrics_filter)
             .map_or(
-                Err(EvalError::MetricsNotFoundError(format!(
+                Err(ExecuteError::MetricsNotFoundError(format!(
                     "{}",
                     metrics_filter
                 ))),
@@ -27,7 +27,7 @@ pub async fn execute_describe_metrics(
         None => metricses,
     };
     if metricses.is_empty() {
-        return Err(EvalError::MetricsNotFoundError("[empty]".to_string()));
+        return Err(ExecuteError::MetricsNotFoundError("[empty]".to_string()));
     }
 
     let describes = load_metrics_describes(db_dir, db_config, metricses).await?;
@@ -43,7 +43,7 @@ async fn load_metrics_describes(
     db_dir: &str,
     db_config: &DBConfig,
     metricses: Vec<Metrics>,
-) -> Result<Vec<MetricsDescribe>, EvalError> {
+) -> Result<Vec<MetricsDescribe>, ExecuteError> {
     let metrics_descibes = metricses.into_iter().map(|metrics| async move {
         Engine::block_list_data(db_dir, &metrics, db_config)
             .await
@@ -67,7 +67,7 @@ pub struct MetricsDescribe {
 }
 
 //TODO(tacogips) return DataFrameRef instead
-fn describes_to_dataframe(describes: &[MetricsDescribe]) -> Result<DataFrame, EvalError> {
+fn describes_to_dataframe(describes: &[MetricsDescribe]) -> Result<DataFrame, ExecuteError> {
     let mut metrics_names = Vec::<String>::new();
     let mut update_ats = Vec::<TimestampNano>::new();
     let mut block_num = Vec::<u64>::new();
@@ -113,7 +113,7 @@ fn describes_to_dataframe(describes: &[MetricsDescribe]) -> Result<DataFrame, Ev
 //TODO(tacogips) return DataFrameRef instead
 fn describes_to_dataframe_with_block_list(
     describes: &[MetricsDescribe],
-) -> Result<DataFrame, EvalError> {
+) -> Result<DataFrame, ExecuteError> {
     let mut metrics_names = Vec::<String>::new();
     let mut update_ats = Vec::<TimestampNano>::new();
     let mut block_num = Vec::<u64>::new();

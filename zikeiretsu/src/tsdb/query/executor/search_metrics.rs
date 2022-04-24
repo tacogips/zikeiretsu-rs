@@ -1,4 +1,4 @@
-use super::EvalError;
+use super::ExecuteError;
 
 use crate::tsdb::engine::Engine;
 use crate::tsdb::query::lexer::InterpretedQueryCondition;
@@ -9,7 +9,7 @@ pub async fn execute_search_metrics(
     db_dir: &str,
     db_config: &DBConfig,
     condition: &InterpretedQueryCondition,
-) -> Result<Option<TimeSeriesDataFrame>, EvalError> {
+) -> Result<Option<TimeSeriesDataFrame>, ExecuteError> {
     let dataframe = Engine::search(
         &db_dir,
         &condition.metrics,

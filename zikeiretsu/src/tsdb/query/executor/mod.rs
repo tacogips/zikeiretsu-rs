@@ -131,13 +131,13 @@ fn to_db_config_and_db_dir(
     let database = match ctx.get_database(database_name.as_ref().map(|name| name.as_str())) {
         Ok(database) => match database {
             None => {
-                return Err(EvalError::NoDatabaseFound(
+                return Err(ExecuteError::NoDatabaseFound(
                     "no database definitions".to_string(),
                 ))
             }
             Some(database) => database,
         },
-        Err(e) => return Err(EvalError::NoDatabaseFound(format!("{}", e))),
+        Err(e) => return Err(ExecuteError::NoDatabaseFound(format!("{}", e))),
     };
     let db_dir = database.as_local_db_dir(&ctx.data_dir);
 
@@ -151,9 +151,9 @@ fn to_db_config_and_db_dir(
     ))
 }
 
-pub type Result<T> = std::result::Result<T, EvalError>;
+pub type Result<T> = std::result::Result<T, ExecuteError>;
 #[derive(Error, Debug)]
-pub enum EvalError {
+pub enum ExecuteError {
     #[error("repl read line error {0}")]
     IoError(#[from] IoError),
 

@@ -1,4 +1,4 @@
-use super::{execute_query, output::*, EvalError};
+use super::{execute_query, output::*, ExecuteError};
 use crate::tsdb::engine::DBContext;
 use async_trait::async_trait;
 use thiserror::Error;
@@ -8,7 +8,7 @@ pub type Result<T> = std::result::Result<T, ExecutorInterfaceError>;
 #[derive(Error, Debug)]
 pub enum ExecutorInterfaceError {
     #[error("{0}")]
-    EvalError(#[from] EvalError),
+    ExecuteError(#[from] ExecuteError),
 }
 
 #[async_trait]

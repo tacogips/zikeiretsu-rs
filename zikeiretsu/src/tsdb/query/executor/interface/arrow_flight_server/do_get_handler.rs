@@ -30,13 +30,13 @@ pub async fn handle(
     let query = String::from_utf8(ticket.ticket).unwrap();
     let result = execute_query(ctx, &query).await;
     match result {
-        Err(e) => Err(Status::unimplemented("Not yet implemented")),
+        Err(e) => Err(Status::invalid_argument(format!("invalid argument :{e}"))),
 
         Ok(result) => {
             if let Some(records) = result.records {
                 let output_condition =
                     serde_json::to_string(&result.output_condition).map_err(|e| {
-                        Status::unknown("failed to serialize the output condition :{e}")
+                        Status::unknown(format!("failed to serialize the output condition :{e}"))
                     })?;
 
                 let write_option = IpcWriteOptions::default();

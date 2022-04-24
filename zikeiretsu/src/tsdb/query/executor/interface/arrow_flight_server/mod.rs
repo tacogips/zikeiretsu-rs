@@ -90,21 +90,25 @@ impl FlightService for FlightZikeiretsuService {
     }
 }
 
-pub async fn server(db_config: DBContext, host: &str, port: Option<usize>) -> ServeResult<()> {
-    let addr = format!("{}:{}", host, port.unwrap_or(51033))
+pub async fn arrow_flight_server(
+    db_context: DBContext,
+    host: Option<&str>,
+    port: Option<usize>,
+) -> ArrowFlightResult<()> {
+    let addr = format!("{}:{}", host.unwrap_or("0.0.0.0"), port.unwrap_or(51033))
         .parse()
-        .map_err(|e| ServeError::AddressParseError(format!("{e}")))?;
-    let service = FlightZikeiretsuService(db_config);
+        .map_err(|e| ArrowFlightServeError::AddressParseError(format!("{e}")))?;
+    let service = FlightZikeiretsuService(db_context);
     let svc = FlightServiceServer::new(service);
 
-    log::info!("zikeiretsu arrow flight server listening at [{}]", addr);
+    println!("zikeiretsu arrow flight server listening at [{}]", addr);
     Server::builder().add_service(svc).serve(addr).await?;
     Ok(())
 }
 
-pub type ServeResult<T> = std::result::Result<T, ServeError>;
+pub type ArrowFlightResult<T> = std::result::Result<T, ArrowFlightServeError>;
 #[derive(Error, Debug)]
-pub enum ServeError {
+pub enum ArrowFlightServeError {
     #[error("address parse error: {0}")]
     AddressParseError(String),
 

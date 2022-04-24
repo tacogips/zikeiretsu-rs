@@ -5,13 +5,36 @@ use clap::Parser;
 use config::*;
 use std::env;
 use std::path::PathBuf;
+use std::str::FromStr;
 use thiserror::Error;
+
+#[derive(Parser, PartialEq, Debug)]
+pub enum Mode {
+    Adhoc,
+    Server,
+    Client,
+}
+impl FromStr for Mode {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "adhoc" => Ok(Self::Adhoc),
+            "server" => Ok(Self::Server),
+            "client" => Ok(Self::Client),
+            r => Err(format!("unknown mode {r}")),
+        }
+    }
+}
 
 #[derive(Parser, Debug, Default)]
 #[clap(author, version, about)]
 pub struct Args {
     #[clap(long = "data_dir", short = 'd', env = "ZDB_DIR")]
     data_dir: Option<PathBuf>,
+
+    #[clap(long = "mode", short = 'm')]
+    pub mode: Option<Mode>,
 
     #[clap(
         long = "databases",
@@ -56,10 +79,10 @@ pub struct Args {
     parsed_databases: Option<Vec<Database>>,
 
     #[clap(long = "host", help = "config for server and client. ")]
-    host: Option<String>,
+    pub host: Option<String>,
 
     #[clap(long = "port", help = "config for server and client. ")]
-    port: Option<usize>,
+    pub port: Option<usize>,
 
     pub query: Option<String>,
 }

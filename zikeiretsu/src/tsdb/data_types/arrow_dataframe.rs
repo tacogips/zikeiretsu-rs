@@ -31,7 +31,7 @@ pub trait ArrowConvatibleDataFrame {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>>;
     fn column_names(&self) -> Option<&Vec<String>>;
 
-    async fn as_arrow_dataframes(&self, timezone: Option<&FixedOffset>) -> Result<RecordBatch> {
+    async fn as_arrow_record_batchs(&self, timezone: Option<&FixedOffset>) -> Result<RecordBatch> {
         let data_series_vec = self.as_data_serieses_ref_vec();
         let field_names: Vec<String> = match self.column_names() {
             Some(column_names) => {

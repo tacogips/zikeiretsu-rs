@@ -59,7 +59,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             let metrics = metrics_list::execute_metrics_list(Some(&db_dir), &db_config).await?;
 
             Ok(ExecuteResultData {
-                records: Some(metrics.as_arrow_dataframes(None).await?),
+                records: Some(metrics.as_arrow_record_batchs(None).await?),
                 output_condition,
             })
         }
@@ -76,7 +76,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             .await?;
 
             Ok(ExecuteResultData {
-                records: Some(df.as_arrow_dataframes(None).await?),
+                records: Some(df.as_arrow_record_batchs(None).await?),
                 output_condition: describe_condition.output_condition,
             })
         }
@@ -93,7 +93,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             .await?;
 
             Ok(ExecuteResultData {
-                records: Some(df.as_arrow_dataframes(None).await?),
+                records: Some(df.as_arrow_record_batchs(None).await?),
                 output_condition: describe_condition.output_condition,
             })
         }
@@ -113,7 +113,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
                 }),
                 Some(df) => Ok(ExecuteResultData {
                     records: Some(
-                        df.as_arrow_dataframes(Some(&query_condition.timezone))
+                        df.as_arrow_record_batchs(Some(&query_condition.timezone))
                             .await?,
                     ),
                     output_condition: query_condition.output_condition,

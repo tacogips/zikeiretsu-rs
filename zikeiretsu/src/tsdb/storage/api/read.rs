@@ -109,6 +109,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Option<TimeSeriesDataFrame>> {
+    log::debug!("search_dataframe. seaching db_dir: {:?}", db_dir.as_ref());
     log::debug!("search_dataframe. field_selectors: {:?}", field_selectors);
     log::debug!("search_dataframe. condition: {}", condition);
 

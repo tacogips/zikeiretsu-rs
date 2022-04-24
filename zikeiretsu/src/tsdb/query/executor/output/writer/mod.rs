@@ -4,8 +4,9 @@ use crate::tsdb::data_types::PolarsConvatibleDataFrame;
 use crate::OutputCondition;
 
 pub async fn output_execute_result(result: ExecuteResult) -> Result<()> {
-    if result.is_error() {
-        unimplemented!()
+    if let Some(error_message) = result.error_message {
+        eprintln!("{}", error_message);
+        Ok(())
     } else {
         match result.data {
             Some(ExecuteResultData::MetricsList(df, condition)) => {

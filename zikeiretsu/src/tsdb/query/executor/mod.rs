@@ -34,12 +34,6 @@ pub struct ExecuteResult {
     error_message: Option<String>,
 }
 
-impl ExecuteResult {
-    fn is_error(&self) -> bool {
-        self.error_message.is_some()
-    }
-}
-
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "t", content = "c")]
 pub enum ExecuteResultData {

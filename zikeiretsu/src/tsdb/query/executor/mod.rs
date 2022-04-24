@@ -45,7 +45,7 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> ExecuteResult {
         },
         Err(e) => ExecuteResult {
             data: None,
-            error_message: Some(format!("{e:?}")),
+            error_message: Some(format!("{e}")),
         },
     }
 }
@@ -157,28 +157,28 @@ fn to_db_config_and_db_dir(
 pub type Result<T> = std::result::Result<T, ExecuteError>;
 #[derive(Error, Debug)]
 pub enum ExecuteError {
-    #[error("repl read line error {0}")]
+    #[error("repl read line error: {0}")]
     IoError(#[from] IoError),
 
-    #[error("dataframe error {0}")]
+    #[error("dataframe error: {0}")]
     DataframeError(#[from] DataframeError),
 
-    #[error("parser error {0}")]
+    #[error("parser error: {0}")]
     ParserError(#[from] ParserError),
 
-    #[error("lexer error {0}")]
+    #[error("lexer error: {0}")]
     LexerError(#[from] LexerError),
 
-    #[error("output error {0}")]
+    #[error("output error: {0}")]
     OutputError(#[from] OutputError),
 
-    #[error("engine error {0}")]
+    #[error("engine error: {0}")]
     EngineError(#[from] EngineError),
 
-    #[error("dataseries ref error {0}")]
+    #[error("arrow table error: {0}")]
     ArrowConvatibleDataFrameError(#[from] ArrowConvatibleDataFrameError),
 
-    #[error("serde json error {0}")]
+    #[error("serde json error: {0}")]
     SerdeJsonError(#[from] serde_json::Error),
 
     #[error("metrics not found: {0}")]
@@ -187,12 +187,12 @@ pub enum ExecuteError {
     #[error("no db dir")]
     DBDirNotSet,
 
-    #[error("no database found:{0}")]
+    #[error("no database found: {0}")]
     NoDatabaseFound(String),
 
-    #[error("arrow error{0}")]
+    #[error("arrow error: {0}")]
     ArrowError(#[from] ArrowError),
 
-    #[error("parquet error{0}")]
+    #[error("parquet error: {0}")]
     ParquetError(#[from] ParquetError),
 }

@@ -37,6 +37,9 @@ pub enum LexerError {
     #[error("invalid column definition:{0}")]
     InvalidColumnDefinition(String),
 
+    #[error("you need at least one where condition ")]
+    EmptyFilterCondition,
+
     #[error("invalid metrics:{0}")]
     InvalidMetrics(String),
 }
@@ -190,10 +193,10 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
             .map(|mut field_names| prepend_ts_column_to_head!(field_names)),
     };
 
-    let datetime_search_condition = r#where::interpret_datatime_search_condition(
-        &with.timezone,
-        parsed_query.r#where.as_ref(),
-    )?;
+    let datetime_search_condition = match parsed_query.r#where.as_ref() {
+        None => return Err(LexerError::EmptyFilterCondition),
+        Some(filter) => r#where::interpret_datatime_search_condition(&with.timezone, filter)?,
+    };
 
     invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
 

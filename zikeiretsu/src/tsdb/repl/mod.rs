@@ -49,7 +49,7 @@ pub async fn start(ctx: &mut DBContext, executer: impl ExecutorInterface) -> Res
                 log::debug!("qeury:{}", line);
                 editor.add_history_entry(line.as_str());
                 if let Err(e) = executer.execute_query(ctx, &line).await {
-                    eprintln!("query error: {e:?}")
+                    eprintln!("query error: {e}")
                 }
             }
 

@@ -1,11 +1,15 @@
 use super::field::*;
 use crate::tsdb::datetime::*;
-use async_trait::async_trait;
 use chrono::FixedOffset;
-use futures::future::join_all;
-use polars::prelude::{DataFrame as PDataFrame, Series as PSeries, *};
 use serde::Serialize;
-use thiserror::*;
+use std::sync::Arc;
+
+use arrow::array::{
+    ArrayRef, BooleanArray, Float64Array, NullArray, StringArray, TimestampNanosecondArray,
+    TimestampSecondArray, UInt64Array,
+};
+use arrow::datatypes::Field;
+use arrow::datatypes::{DataType, TimeUnit};
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum SeriesValuesRef<'a> {
@@ -36,102 +40,90 @@ impl<'a> DataSeriesRef<'a> {
         }
     }
 
-    pub async fn as_polar_series(&self, field_name: &str, tz: Option<&FixedOffset>) -> PSeries {
-        match &self.values {
-            SeriesValuesRef::Float64(vs) => PSeries::new(field_name, vs),
-            SeriesValuesRef::UInt64(vs) => PSeries::new(field_name, vs),
-            SeriesValuesRef::Bool(vs) => PSeries::new(field_name, vs),
-            SeriesValuesRef::Vacant(_) => PSeries::new_empty(field_name, &DataType::Null),
-            SeriesValuesRef::String(vs) => PSeries::new(field_name, vs),
-            SeriesValuesRef::TimestampNano(timestamps) => PSeries::new(
-                field_name,
-                timestamps
-                    .iter()
-                    .map(|ts| ts.as_formated_datetime(tz))
-                    .collect::<Vec<String>>(),
-            ),
-
-            SeriesValuesRef::TimestampSec(timestamps) => PSeries::new(
-                field_name,
-                timestamps
-                    .iter()
-                    .map(|ts| ts.as_formated_datetime(tz))
-                    .collect::<Vec<String>>(),
-            ),
-        }
-    }
-}
-
-pub type Result<T> = std::result::Result<T, DataSeriesRefsError>;
-
-#[derive(Error, Debug)]
-pub enum DataSeriesRefsError {
-    #[error("polars error :{0}")]
-    PolarsError(#[from] PolarsError),
-
-    #[error("unmatched number of column names . field of df:{0}, columns:{1}")]
-    UnmatchedColumnNameNumber(usize, usize),
-}
-
-#[async_trait]
-pub trait DataSeriesRefs {
-    fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>>;
-
-    async fn as_polar_dataframes(
+    pub async fn as_arrow_field(
         &self,
-        column_names: Option<Vec<String>>,
-        timezone: Option<&FixedOffset>,
-    ) -> Result<PDataFrame> {
-        let data_series_vec = self.as_data_serieses_ref_vec();
-        let field_names: Vec<String> = match column_names {
-            Some(column_names) => {
-                if data_series_vec.len() != column_names.len() {
-                    return Err(DataSeriesRefsError::UnmatchedColumnNameNumber(
-                        data_series_vec.len(),
-                        column_names.len(),
-                    ));
+        field_name: &str,
+        format_timestamp: bool,
+        tz: Option<&FixedOffset>,
+    ) -> (Field, ArrayRef) {
+        match self.values {
+            SeriesValuesRef::Float64(vs) => (
+                Field::new(field_name, DataType::Float64, false),
+                Arc::new(Float64Array::from(vs.to_vec())),
+            ),
+            SeriesValuesRef::UInt64(vs) => (
+                Field::new(field_name, DataType::UInt64, false),
+                Arc::new(UInt64Array::from(vs.to_vec())),
+            ),
+            SeriesValuesRef::Bool(vs) => (
+                Field::new(field_name, DataType::Boolean, false),
+                Arc::new(BooleanArray::from(vs.to_vec())),
+            ),
+            SeriesValuesRef::Vacant(num) => (
+                Field::new(field_name, DataType::Null, true),
+                Arc::new(NullArray::new(num)),
+            ),
+            SeriesValuesRef::String(vs) => (
+                Field::new(field_name, DataType::Utf8, false),
+                Arc::new(StringArray::from(vs.to_vec())),
+            ),
+            SeriesValuesRef::TimestampNano(timestamp_nanos) => {
+                if format_timestamp {
+                    (
+                        Field::new(field_name, DataType::Utf8, false),
+                        Arc::new(StringArray::from(
+                            timestamp_nanos
+                                .iter()
+                                .map(|each_ts| each_ts.as_formated_datetime(tz))
+                                .collect::<Vec<String>>(),
+                        )),
+                    )
+                } else {
+                    (
+                        Field::new(
+                            field_name,
+                            DataType::Timestamp(TimeUnit::Nanosecond, tz.map(|tz| tz.to_string())),
+                            false,
+                        ),
+                        Arc::new(TimestampNanosecondArray::from_vec(
+                            timestamp_nanos
+                                .iter()
+                                .map(|each_ts| each_ts.as_i64())
+                                .collect(),
+                            tz.map(|tz| tz.to_string()),
+                        )),
+                    )
                 }
-                column_names.into_iter().collect()
             }
-            None => (0..data_series_vec.len())
-                .into_iter()
-                .map(|e| e.to_string())
-                .collect(),
-        };
 
-        let serieses = field_names
-            .iter()
-            .zip(data_series_vec.iter())
-            .map(|(field_name, each_series)| each_series.as_polar_series(field_name, timezone));
-
-        let serieses = join_all(serieses)
-            .await
-            .into_iter()
-            .collect::<Vec<PSeries>>();
-        Ok(PDataFrame::new(serieses)?)
-    }
-}
-
-pub type StringSeriesRef<'a> = &'a Vec<String>;
-#[derive(Default)]
-pub struct StringDataSeriesRefs<'a> {
-    values: Vec<StringSeriesRef<'a>>,
-}
-
-impl<'a> StringDataSeriesRefs<'a> {
-    pub fn push(&mut self, series: StringSeriesRef<'a>) {
-        self.values.push(series);
-    }
-}
-
-impl<'a> DataSeriesRefs for StringDataSeriesRefs<'a> {
-    fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'a>> {
-        let vs: Vec<DataSeriesRef<'_>> = self
-            .values
-            .iter()
-            .map(|strs| DataSeriesRef::new(SeriesValuesRef::String(&strs[..])))
-            .collect();
-
-        vs
+            SeriesValuesRef::TimestampSec(timestamp_secs) => {
+                if format_timestamp {
+                    (
+                        Field::new(field_name, DataType::Utf8, false),
+                        Arc::new(StringArray::from(
+                            timestamp_secs
+                                .iter()
+                                .map(|each_ts| each_ts.as_formated_datetime(tz))
+                                .collect::<Vec<String>>(),
+                        )),
+                    )
+                } else {
+                    (
+                        Field::new(
+                            field_name,
+                            DataType::Timestamp(TimeUnit::Second, tz.map(|tz| tz.to_string())),
+                            false,
+                        ),
+                        Arc::new(TimestampSecondArray::from_vec(
+                            timestamp_secs
+                                .iter()
+                                .map(|each_ts| each_ts.as_i64())
+                                .collect(),
+                            tz.map(|tz| tz.to_string()),
+                        )),
+                    )
+                }
+            }
+        }
     }
 }

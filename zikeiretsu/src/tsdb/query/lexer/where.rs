@@ -8,14 +8,11 @@ use super::Result as LexerResult;
 
 pub(crate) fn interpret_datatime_search_condition<'q>(
     timezone: &FixedOffset,
-    where_clause: Option<&WhereClause<'q>>,
+    where_clause: &WhereClause<'q>,
 ) -> LexerResult<DatapointSearchCondition> {
-    match where_clause {
+    match &where_clause.datetime_filter {
         None => Ok(DatapointSearchCondition::all()),
-        Some(where_clause) => match &where_clause.datetime_filter {
-            None => Ok(DatapointSearchCondition::all()),
-            Some(datetime_filter) => datetime_filter_to_condition(timezone, datetime_filter),
-        },
+        Some(datetime_filter) => datetime_filter_to_condition(timezone, datetime_filter),
     }
 }
 

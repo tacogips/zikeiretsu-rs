@@ -1,12 +1,13 @@
 use super::super::boolean::parse_bool;
 use crate::tsdb::query::parser::*;
 use pest::iterators::Pair;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum OutputFormat {
     Json,
-    DataFrame,
+    Table,
     Parquet,
 }
 
@@ -18,6 +19,7 @@ pub struct WithClause<'q> {
     pub def_output: Option<OutputFormat>,
     pub def_output_file_path: Option<PathBuf>,
     pub def_use_cache: bool,
+    pub def_format_datetime: bool,
     pub def_sync_cloud: bool,
 }
 
@@ -36,6 +38,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
         def_timezone: None,
         def_output: None,
         def_output_file_path: None,
+        def_format_datetime: true,
         def_use_cache: true,
         def_sync_cloud: true,
     };
@@ -81,8 +84,8 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
                         for each_in_define_tz in each_define.into_inner() {
                             match each_in_define_tz.as_rule() {
                                 Rule::KW_JSON => with_clause.def_output = Some(OutputFormat::Json),
-                                Rule::KW_DATAFRAME => {
-                                    with_clause.def_output = Some(OutputFormat::DataFrame)
+                                Rule::KW_TABLE => {
+                                    with_clause.def_output = Some(OutputFormat::Table)
                                 }
 
                                 Rule::KW_PARQUET => {
@@ -106,6 +109,14 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
                         for each_inner in each_define.into_inner() {
                             if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
                                 with_clause.def_use_cache = parse_bool(each_inner)?;
+                            }
+                        }
+                    }
+
+                    Rule::DEFINE_FORMAT_DATETIME => {
+                        for each_inner in each_define.into_inner() {
+                            if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
+                                with_clause.def_format_datetime = parse_bool(each_inner)?;
                             }
                         }
                     }
@@ -226,12 +237,12 @@ mod test {
 
     #[test]
     fn test_parse_with_8() {
-        let query = r"with format =  df           ";
+        let query = r"with format =  table           ";
         let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
         assert_eq!(result.def_timezone, None);
-        assert_eq!(result.def_output, Some(OutputFormat::DataFrame));
+        assert_eq!(result.def_output, Some(OutputFormat::Table));
         assert_eq!(result.def_output_file_path, None,);
     }
 

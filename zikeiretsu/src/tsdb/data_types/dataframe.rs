@@ -1,14 +1,14 @@
+use super::arrow_dataframe::*;
 use super::dataseries::*;
 use super::dataseries_ref::*;
 use crate::tsdb::util::VecOpeError;
-use polars::prelude::PolarsError;
 
 use serde::{Deserialize, Serialize};
 use thiserror::*;
 
 #[derive(Error, Debug)]
 pub enum DataframeError {
-    #[error(" data series index out of bound data seriese index:{0}, data index:{1}")]
+    #[error("data series index out of bound data seriese index:{0}, data index:{1}")]
     DataSeriesIndexOutOfBound(usize, usize),
 
     #[error("unsorted dataframe. {0}")]
@@ -22,9 +22,6 @@ pub enum DataframeError {
 
     #[error("unmatched field number. This might be a by bug. {0}, {1}")]
     UnmatchedFieldNumError(usize, usize),
-
-    #[error("polars error. {0}")]
-    PolarsError(#[from] PolarsError),
 }
 
 pub type Result<T> = std::result::Result<T, DataframeError>;
@@ -32,11 +29,15 @@ pub type Result<T> = std::result::Result<T, DataframeError>;
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataFrame {
     pub data_serieses: Vec<DataSeries>,
+    pub column_names: Option<Vec<String>>,
 }
 
 impl DataFrame {
-    pub fn new(data_serieses: Vec<DataSeries>) -> Self {
-        Self { data_serieses }
+    pub fn new(data_serieses: Vec<DataSeries>, column_names: Option<Vec<String>>) -> Self {
+        Self {
+            data_serieses,
+            column_names,
+        }
     }
 
     pub fn merge(&mut self, other: &mut Self) -> Result<()> {
@@ -75,15 +76,19 @@ impl DataFrame {
 }
 impl Default for DataFrame {
     fn default() -> Self {
-        Self::new(vec![])
+        Self::new(vec![], None)
     }
 }
 
-impl DataSeriesRefs for DataFrame {
+impl ArrowConvatibleDataFrame for DataFrame {
     fn as_data_serieses_ref_vec(&self) -> Vec<DataSeriesRef<'_>> {
         self.data_serieses
             .iter()
             .map(|ds| ds.as_dataseries_ref())
             .collect()
+    }
+
+    fn column_names(&self) -> Option<&Vec<String>> {
+        self.column_names.as_ref()
     }
 }

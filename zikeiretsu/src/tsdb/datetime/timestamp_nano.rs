@@ -30,6 +30,10 @@ impl TimestampNano {
         self.0
     }
 
+    pub fn as_i64(&self) -> i64 {
+        self.0 as i64
+    }
+
     pub fn in_seconds(&self) -> u64 {
         self.0 / SEC_IN_NANOSEC as u64
     }
@@ -40,6 +44,10 @@ impl TimestampNano {
 
     pub fn as_timestamp_sec(&self) -> TimestampSec {
         TimestampSec::new(self.in_seconds())
+    }
+
+    pub fn as_naive_datetime(&self) -> NaiveDateTime {
+        NaiveDateTime::from_timestamp(self.in_seconds() as i64, self.in_subsec_nano())
     }
 
     pub fn as_datetime(&self) -> DateTime<Utc> {

@@ -11,6 +11,10 @@ impl TimestampSec {
         TimestampSec(inner)
     }
 
+    pub fn as_i64(&self) -> i64 {
+        self.0 as i64
+    }
+
     pub fn now() -> Self {
         let timestamp = Utc::now().timestamp();
         debug_assert!(timestamp >= 0);

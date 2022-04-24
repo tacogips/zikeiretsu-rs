@@ -5,13 +5,36 @@ use clap::Parser;
 use config::*;
 use std::env;
 use std::path::PathBuf;
+use std::str::FromStr;
 use thiserror::Error;
+
+#[derive(Parser, PartialEq, Debug)]
+pub enum Mode {
+    Adhoc,
+    Server,
+    Client,
+}
+impl FromStr for Mode {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "adhoc" => Ok(Self::Adhoc),
+            "server" => Ok(Self::Server),
+            "client" => Ok(Self::Client),
+            r => Err(format!("unknown mode {r}")),
+        }
+    }
+}
 
 #[derive(Parser, Debug, Default)]
 #[clap(author, version, about)]
 pub struct Args {
     #[clap(long = "data_dir", short = 'd', env = "ZDB_DIR")]
     data_dir: Option<PathBuf>,
+
+    #[clap(long = "mode", short = 'm')]
+    pub mode: Option<Mode>,
 
     #[clap(
         long = "databases",
@@ -55,6 +78,15 @@ pub struct Args {
     #[clap(skip)]
     parsed_databases: Option<Vec<Database>>,
 
+    #[clap(long = "https", help = "config for server and client. ")]
+    pub https: bool,
+
+    #[clap(long = "host", help = "config for server and client. ")]
+    pub host: Option<String>,
+
+    #[clap(long = "port", help = "config for server and client. ")]
+    pub port: Option<usize>,
+
     pub query: Option<String>,
 }
 
@@ -88,16 +120,29 @@ impl Args {
         if let Some(df_col_num) = config.dataframe_col_num {
             self.df_col_num = Some(df_col_num);
         }
+
+        if let Some(https) = config.https {
+            self.https = https;
+        }
+
+        if let Some(host) = config.host {
+            self.host = Some(host);
+        }
+
+        if let Some(port) = config.port {
+            self.port = Some(port);
+        }
+
         Ok(())
     }
 
-    pub fn init(&mut self) -> Result<()> {
+    pub fn init(&mut self, load_default_config: bool) -> Result<()> {
         self.parse_database_args()?;
 
         if let Some(config_path) = &self.config {
             let config = Config::read(config_path.as_path())?;
             self.merge_with_config(config)?;
-        } else {
+        } else if load_default_config {
             if let Some(config) = Config::try_load_default() {
                 log::info!("loading default config");
                 self.merge_with_config(config)?;
@@ -107,6 +152,7 @@ impl Args {
         if let Some(service_account) = self.service_account_file_path.as_ref() {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
+
         if let Some(table_width) = self.df_width {
             // default 100
             env::set_var("POLARS_TABLE_WIDTH", table_width.to_string());
@@ -224,7 +270,7 @@ mod test {
         data_dir.push("/tmp/test_dir/");
         args.data_dir = Some(data_dir.clone());
         args.databases = Some("t_db=gs://some/thing".to_string());
-        args.init().unwrap();
+        args.init(false).unwrap();
 
         let db_context = args.as_db_context().unwrap();
         assert_eq!(
@@ -247,7 +293,7 @@ mod test {
         args.data_dir = Some(data_dir.clone());
         args.databases =
             Some("t_db=gs://some/thing,t_db2, t_db_3 = gs://some/thing/else".to_string());
-        args.init().unwrap();
+        args.init(false).unwrap();
 
         let db_context = args.as_db_context().unwrap();
         assert_eq!(

@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use serde::Deserialize;
 use std::io;
+use std::path::PathBuf;
 use tempdir::TempDir;
 use zikeiretsu::*;
 
@@ -33,13 +34,13 @@ impl Trade {
     }
 }
 
-async fn write_datas(temp_db_dir: &TempDir) {
+async fn write_datas(temp_db_dir: &PathBuf) {
     let prices: Vec<Trade> = serde_json::from_slice(PRICES_DATA).unwrap();
     let prices: Vec<DataPoint> = prices.into_iter().map(|e| e.into_datapoint()).collect();
 
     // field type , [buy_side == bool, price == float64, size == float64]
     let fields = vec![FieldType::Bool, FieldType::Float64, FieldType::Float64];
-    let persistence = Persistence::Storage(temp_db_dir.path().to_path_buf(), None);
+    let persistence = Persistence::Storage(temp_db_dir.as_path().to_path_buf(), None);
 
     let wr = Engine::writable_store_builder("trades".try_into().unwrap(), fields.clone())
         .persistence(persistence)
@@ -75,6 +76,7 @@ async fn write_datas(temp_db_dir: &TempDir) {
 
 #[tokio::main]
 async fn main() {
+    std::env::set_var("RUST_LOG", "debug");
     let sub = tracing_subscriber::FmtSubscriber::builder()
         .with_writer(io::stderr)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
@@ -83,12 +85,15 @@ async fn main() {
     tracing::subscriber::set_global_default(sub).unwrap();
     tracing_log::LogTracer::init().unwrap();
 
-    let temp_db_dir = TempDir::new("zikeretsu_local_example").unwrap();
+    // database dir path is {data_dir}/{database_name}
+    let temp_data_dir = TempDir::new("zikeretsu_local_example").unwrap();
 
-    write_datas(&temp_db_dir).await;
+    let mut db_dir: PathBuf = temp_data_dir.path().into();
+    db_dir.push("test_db");
+    write_datas(&db_dir).await;
 
     let db_context = DBContext::new(
-        temp_db_dir.into_path(),
+        temp_data_dir.into_path(),
         vec![Database::new("test_db".to_string(), None)],
     );
 
@@ -102,5 +107,8 @@ async fn main() {
     from trades
     where ts  in ('2021-09-27 09:42',+3 minute)
         "#;
-    execute_query(&db_context, query).await.unwrap();
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
 }

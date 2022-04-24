@@ -50,7 +50,7 @@ impl Database {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DBContext {
     pub data_dir: PathBuf,
     databases: HashMap<String, Database>,

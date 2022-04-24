@@ -1,4 +1,5 @@
 [package]
+
 name = "zikeiretsu"
 version = "0.0.1"
 edition = "2021"
@@ -21,7 +22,6 @@ xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
 base-128-variants = { path ="../base-128-variants" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.10" }
-polars = { git = "https://github.com/pola-rs/polars", rev = "rust-polars-v0.20.0" ,features=["dtype-full", "serde", "fmt","parquet"]}
 
 chrono = "0.4"
 chrono-tz = "0.4"
@@ -29,13 +29,14 @@ lazy_static = "1"
 strum = { version = "0.21", features = ["derive"] }
 thiserror = "1"
 tokio = { version = "1", features= ["rt-multi-thread","macros"] }
+tokio-stream = "0.1"
 async-trait = "0.1"
 memmap2 = "0.3"
 itertools = "0.10"
 lockfile = "0.2"
 url = "2"
 log = "0.4"
-futures = "0.3"
+futures = {version = "0.3" , features= ["std"] }
 serde = "1"
 serde_json = "1"
 owning_ref = "0.4"
@@ -56,6 +57,12 @@ clap = {version = "3.1" , features= ["derive","env"]}
 tracing = "0.1"
 tracing-subscriber = {version = "0.2", features = ["env-filter"]}
 tracing-log = "0.1"
+
+arrow = { version = "12", features = ["prettyprint"]}
+arrow-flight = "12.0.0"
+parquet = "12"
+tonic = {version = "0.7" }
+async-stream = "0.3"
 
 [dev-dependencies]
 tempfile = "3.2"

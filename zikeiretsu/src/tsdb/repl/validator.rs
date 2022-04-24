@@ -6,8 +6,7 @@ use rustyline::Result;
 use rustyline_derive::{Completer, Helper, Highlighter, Hinter};
 
 lazy_static! {
-    static ref MIDDLE_OF_MULTI_LINE_PATTEN: Regex =
-        RegexBuilder::new(r".*\\[ \t]*$").build().unwrap();
+    static ref FINISH_LINE_PATTERN: Regex = RegexBuilder::new(r".*[ \t]*;[ \t]*$").build().unwrap();
 }
 
 #[derive(Completer, Helper, Highlighter, Hinter)]
@@ -19,9 +18,9 @@ impl Validator for MultiLineInputValidator {
 }
 
 fn validate_multiline(input: &str) -> ValidationResult {
-    if MIDDLE_OF_MULTI_LINE_PATTEN.is_match(input) {
-        ValidationResult::Incomplete
-    } else {
+    if FINISH_LINE_PATTERN.is_match(input) {
         ValidationResult::Valid(None)
+    } else {
+        ValidationResult::Incomplete
     }
 }

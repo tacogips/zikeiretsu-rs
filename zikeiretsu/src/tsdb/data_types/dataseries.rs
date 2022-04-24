@@ -6,6 +6,7 @@ use crate::tsdb::util::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(tag = "t", content = "c")]
 pub enum SeriesValues {
     Vacant(usize),
     TimestampNano(Vec<TimestampNano>),
@@ -81,6 +82,7 @@ macro_rules! unmatch_series_error {
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct DataSeries {
+    #[serde(rename = "v")]
     pub values: SeriesValues,
 }
 

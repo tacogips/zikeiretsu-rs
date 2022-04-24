@@ -10,13 +10,14 @@ use crate::tsdb::query::parser::*;
 use crate::tsdb::{CacheSetting, CloudStorageSetting};
 use chrono::FixedOffset;
 use either::Either;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::result::Result as StdResult;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize, Deserialize)]
 pub enum LexerError {
     #[error("invalid datertime range. start:{0}, end: {1}")]
     InvalidDatetimeRange(String, String),
@@ -35,6 +36,9 @@ pub enum LexerError {
 
     #[error("invalid column definition:{0}")]
     InvalidColumnDefinition(String),
+
+    #[error("you need at least one where condition ")]
+    EmptyFilterCondition,
 
     #[error("invalid metrics:{0}")]
     InvalidMetrics(String),
@@ -80,7 +84,7 @@ pub struct QuerySetting {
     pub cloud_setting: CloudStorageSetting,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct OutputCondition {
     pub output_format: OutputFormat,
     pub output_file_path: Option<PathBuf>,
@@ -106,7 +110,7 @@ impl OutputWriter {
     fn validate_available_for_format(&self, format: &OutputFormat) -> StdResult<(), OutputError> {
         match format {
             OutputFormat::Json => Ok(()),
-            OutputFormat::DataFrame => Ok(()),
+            OutputFormat::Table => Ok(()),
             OutputFormat::Parquet => match &self {
                 OutputWriter::File(_) => Ok(()),
                 OutputWriter::Stdout => Err(OutputError::InvalidOutputDestination(
@@ -145,7 +149,8 @@ pub struct InterpretedQueryCondition {
     pub field_selectors: Option<Vec<usize>>,
     pub field_names: Option<Vec<String>>,
     pub datetime_search_condition: DatapointSearchCondition,
-    pub output_condition: Option<OutputCondition>,
+    pub output_condition: OutputCondition,
+    pub format_datetime: bool,
     pub timezone: FixedOffset,
 }
 
@@ -188,17 +193,17 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
             .map(|mut field_names| prepend_ts_column_to_head!(field_names)),
     };
 
-    let datetime_search_condition = r#where::interpret_datatime_search_condition(
-        &with.timezone,
-        parsed_query.r#where.as_ref(),
-    )?;
+    let datetime_search_condition = match parsed_query.r#where.as_ref() {
+        None => return Err(LexerError::EmptyFilterCondition),
+        Some(filter) => r#where::interpret_datatime_search_condition(&with.timezone, filter)?,
+    };
 
     invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;
 
-    let output_condition = Some(OutputCondition {
+    let output_condition = OutputCondition {
         output_format: with.output_format,
         output_file_path: with.output_file_path,
-    });
+    };
 
     let query_context = InterpretedQueryCondition {
         metrics,
@@ -206,6 +211,7 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
         field_names,
         datetime_search_condition,
         output_condition,
+        format_datetime: with.format_datetime,
         timezone: with.timezone,
     };
     let database_name = with

@@ -147,6 +147,7 @@ pub struct InterpretedQueryCondition {
     pub field_names: Option<Vec<String>>,
     pub datetime_search_condition: DatapointSearchCondition,
     pub output_condition: OutputCondition,
+    pub format_datetime: bool,
     pub timezone: FixedOffset,
 }
 
@@ -207,6 +208,7 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
         field_names,
         datetime_search_condition,
         output_condition,
+        format_datetime: with.format_datetime,
         timezone: with.timezone,
     };
     let database_name = with

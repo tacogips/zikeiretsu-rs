@@ -10,6 +10,7 @@ pub(crate) struct With<'q> {
     pub timezone: FixedOffset,
     pub database: Option<&'q str>,
     pub output_format: OutputFormat,
+    pub format_datetime: bool,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
     pub column_name_aliases: Option<Vec<String>>,
     pub output_file_path: Option<PathBuf>,
@@ -25,6 +26,7 @@ impl<'q> Default for With<'q> {
         Self {
             timezone,
             output_format,
+            format_datetime: true,
             database: None,
             column_index_map: None,
             column_name_aliases: None,
@@ -82,6 +84,9 @@ pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult
             with.output_format = output
         }
 
+        // format datetiem
+        with.format_datetime = with_clause.def_format_datetime;
+
         // cache setting
         if !with_clause.def_use_cache {
             with.cache_setting = CacheSetting::none();
@@ -111,6 +116,7 @@ mod test {
 
             def_database: None,
             def_timezone: None,
+            def_format_datetime: true,
             def_output: None,
             def_output_file_path: None,
             def_use_cache: true,

@@ -46,6 +46,7 @@ impl<'a> DataSeriesRef<'a> {
     pub async fn as_arrow_field(
         &self,
         field_name: &str,
+        format_timestamp: bool,
         tz: Option<&FixedOffset>,
     ) -> (Field, ArrayRef) {
         match self.values {
@@ -69,35 +70,63 @@ impl<'a> DataSeriesRef<'a> {
                 Field::new(field_name, DataType::Utf8, false),
                 Arc::new(StringArray::from(vs.to_vec())),
             ),
-            SeriesValuesRef::TimestampNano(timestamp_nanos) => (
-                Field::new(
-                    field_name,
-                    DataType::Timestamp(TimeUnit::Nanosecond, tz.map(|tz| tz.to_string())),
-                    false,
-                ),
-                Arc::new(TimestampNanosecondArray::from_vec(
-                    timestamp_nanos
-                        .iter()
-                        .map(|each_ts| each_ts.as_i64())
-                        .collect(),
-                    tz.map(|tz| tz.to_string()),
-                )),
-            ),
+            SeriesValuesRef::TimestampNano(timestamp_nanos) => {
+                if format_timestamp {
+                    (
+                        Field::new(field_name, DataType::Utf8, false),
+                        Arc::new(StringArray::from(
+                            timestamp_nanos
+                                .iter()
+                                .map(|each_ts| each_ts.as_formated_datetime(tz))
+                                .collect::<Vec<String>>(),
+                        )),
+                    )
+                } else {
+                    (
+                        Field::new(
+                            field_name,
+                            DataType::Timestamp(TimeUnit::Nanosecond, tz.map(|tz| tz.to_string())),
+                            false,
+                        ),
+                        Arc::new(TimestampNanosecondArray::from_vec(
+                            timestamp_nanos
+                                .iter()
+                                .map(|each_ts| each_ts.as_i64())
+                                .collect(),
+                            tz.map(|tz| tz.to_string()),
+                        )),
+                    )
+                }
+            }
 
-            SeriesValuesRef::TimestampSec(timestamp_secs) => (
-                Field::new(
-                    field_name,
-                    DataType::Timestamp(TimeUnit::Second, tz.map(|tz| tz.to_string())),
-                    false,
-                ),
-                Arc::new(TimestampSecondArray::from_vec(
-                    timestamp_secs
-                        .iter()
-                        .map(|each_ts| each_ts.as_i64())
-                        .collect(),
-                    tz.map(|tz| tz.to_string()),
-                )),
-            ),
+            SeriesValuesRef::TimestampSec(timestamp_secs) => {
+                if format_timestamp {
+                    (
+                        Field::new(field_name, DataType::Utf8, false),
+                        Arc::new(StringArray::from(
+                            timestamp_secs
+                                .iter()
+                                .map(|each_ts| each_ts.as_formated_datetime(tz))
+                                .collect::<Vec<String>>(),
+                        )),
+                    )
+                } else {
+                    (
+                        Field::new(
+                            field_name,
+                            DataType::Timestamp(TimeUnit::Second, tz.map(|tz| tz.to_string())),
+                            false,
+                        ),
+                        Arc::new(TimestampSecondArray::from_vec(
+                            timestamp_secs
+                                .iter()
+                                .map(|each_ts| each_ts.as_i64())
+                                .collect(),
+                            tz.map(|tz| tz.to_string()),
+                        )),
+                    )
+                }
+            }
         }
     }
 }

@@ -1,7 +1,10 @@
+mod arrow_flight_server;
 use super::{execute_query, output::*, ExecuteError};
 use crate::tsdb::engine::DBContext;
 use async_trait::async_trait;
 use thiserror::Error;
+
+pub use arrow_flight_server::*;
 
 pub type Result<T> = std::result::Result<T, ExecutorInterfaceError>;
 

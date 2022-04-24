@@ -57,8 +57,9 @@ tracing-subscriber = {version = "0.2", features = ["env-filter"]}
 tracing-log = "0.1"
 
 arrow = { version = "12", features = ["prettyprint"]}
-arrow-flight = "12"
+arrow-flight = "12.0.0"
 parquet = "12"
+tonic = {version = "0.7" }
 
 [dev-dependencies]
 tempfile = "3.2"

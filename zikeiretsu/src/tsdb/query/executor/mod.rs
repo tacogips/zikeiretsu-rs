@@ -43,6 +43,7 @@ impl ExecuteResult {
 pub enum ExecuteResultData {
     MetricsList(DataFrame, OutputCondition),
     DescribeMetrics(DataFrame, OutputCondition),
+    DescribeBlokList(DataFrame, OutputCondition),
     SearchMetrics(Option<TimeSeriesDataFrame>, OutputCondition),
 }
 
@@ -98,7 +99,7 @@ async fn inner_execute_query(ctx: &DBContext, query: &str) -> Result<ExecuteResu
             )
             .await?;
 
-            Ok(ExecuteResultData::DescribeMetrics(
+            Ok(ExecuteResultData::DescribeBlokList(
                 df,
                 describe_condition.output_condition,
             ))

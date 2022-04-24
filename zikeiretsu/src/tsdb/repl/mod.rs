@@ -25,7 +25,7 @@ pub enum ZikeiretsuReplError {
 }
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuReplError>;
-pub async fn start(ctx: &mut DBContext, executer: Box<dyn ExecutorInterface>) -> Result<()> {
+pub async fn start(ctx: &mut DBContext, mut executer: Box<dyn ExecutorInterface>) -> Result<()> {
     let config = Config::builder()
         .history_ignore_space(true)
         .completion_type(CompletionType::List)

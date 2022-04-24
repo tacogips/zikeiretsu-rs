@@ -18,14 +18,14 @@ pub enum ExecutorInterfaceError {
 
 #[async_trait]
 pub trait ExecutorInterface {
-    async fn execute_query(&self, ctx: &DBContext, query: &str) -> Result<()>;
+    async fn execute_query(&mut self, ctx: &DBContext, query: &str) -> Result<()>;
 }
 
 pub struct AdhocExecutorInterface;
 
 #[async_trait]
 impl ExecutorInterface for AdhocExecutorInterface {
-    async fn execute_query(&self, ctx: &DBContext, query: &str) -> Result<()> {
+    async fn execute_query(&mut self, ctx: &DBContext, query: &str) -> Result<()> {
         match execute_query(ctx, query).await {
             Err(e) => {
                 eprintln!("{}", e);

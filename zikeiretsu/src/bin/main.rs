@@ -24,6 +24,9 @@ pub enum ZikeiretsuBinError {
 
     #[error("arrow flight serve error: {0}")]
     ArrowFlightServeError(#[from] ArrowFlightServeError),
+
+    #[error("arrow flight client error: {0}")]
+    ArrowFlightClientError(#[from] ArrowFlightClientError),
 }
 
 pub type Result<T> = std::result::Result<T, ZikeiretsuBinError>;
@@ -65,10 +68,10 @@ pub async fn main() -> Result<()> {
         arrow_flight_server(ctx, args.host.as_deref(), args.port).await?;
     } else {
         setup_log(false);
-        let executor_interface: Box<dyn ExecutorInterface> = if mode == Mode::Adhoc {
+        let mut executor_interface: Box<dyn ExecutorInterface> = if mode == Mode::Adhoc {
             Box::new(AdhocExecutorInterface)
         } else {
-            Box::new(ArrowFlightClientInterface)
+            Box::new(ArrowFlightClientInterface::new(args.host.as_deref(), args.port).await?)
         };
         match args.query {
             Some(query) => executor_interface.execute_query(&ctx, &query).await?,

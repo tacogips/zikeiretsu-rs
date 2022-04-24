@@ -78,6 +78,9 @@ pub struct Args {
     #[clap(skip)]
     parsed_databases: Option<Vec<Database>>,
 
+    #[clap(long = "https", help = "config for server and client. ")]
+    pub https: bool,
+
     #[clap(long = "host", help = "config for server and client. ")]
     pub host: Option<String>,
 
@@ -116,6 +119,10 @@ impl Args {
 
         if let Some(df_col_num) = config.dataframe_col_num {
             self.df_col_num = Some(df_col_num);
+        }
+
+        if let Some(https) = config.https {
+            self.https = https;
         }
 
         if let Some(host) = config.host {

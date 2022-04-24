@@ -71,7 +71,10 @@ pub async fn main() -> Result<()> {
         let mut executor_interface: Box<dyn ExecutorInterface> = if mode == Mode::Adhoc {
             Box::new(AdhocExecutorInterface)
         } else {
-            Box::new(ArrowFlightClientInterface::new(args.host.as_deref(), args.port).await?)
+            Box::new(
+                ArrowFlightClientInterface::new(args.https, args.host.as_deref(), args.port)
+                    .await?,
+            )
         };
         match args.query {
             Some(query) => executor_interface.execute_query(&ctx, &query).await?,

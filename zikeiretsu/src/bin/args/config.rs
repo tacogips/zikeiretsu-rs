@@ -13,6 +13,7 @@ pub struct Config {
     pub dataframe_width: Option<u16>,
     pub dataframe_row_num: Option<usize>,
     pub dataframe_col_num: Option<usize>,
+    pub https: Option<bool>,
     pub host: Option<String>,
     pub port: Option<usize>,
 }

@@ -20,10 +20,19 @@ pub struct ArrowFlightClientInterface {
 }
 
 impl ArrowFlightClientInterface {
-    pub async fn new(host: Option<&str>, port: Option<usize>) -> ArrowFlightResult<Self> {
-        let addr = format!("{}:{}", host.unwrap_or("0.0.0.0"), port.unwrap_or(51033))
-            .parse()
-            .map_err(|e| ArrowFlightClientError::AddressParseError(format!("{e}")))?;
+    pub async fn new(
+        https: bool,
+        host: Option<&str>,
+        port: Option<usize>,
+    ) -> ArrowFlightResult<Self> {
+        let url_schema = if https { "https" } else { "http" };
+        let addr = format!(
+            "{url_schema}://{}:{}",
+            host.unwrap_or("0.0.0.0"),
+            port.unwrap_or(51033)
+        )
+        .parse()
+        .map_err(|e| ArrowFlightClientError::AddressParseError(format!("{e}")))?;
 
         let channel = Channel::builder(addr).connect().await?;
 

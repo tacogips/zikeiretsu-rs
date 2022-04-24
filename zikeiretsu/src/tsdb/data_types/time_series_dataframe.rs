@@ -327,9 +327,7 @@ impl TimeSeriesDataFrame {
                         .iter()
                         .map(|series| series.as_sub_dataseries(start_idx, finish_idx))
                         .collect(),
-                    self.column_names
-                        .as_ref()
-                        .map(|column_names| column_names.as_slice()),
+                    self.column_names.as_deref(),
                 );
                 Some((selected_series, (start_idx, finish_idx)))
             }
@@ -363,7 +361,7 @@ impl From<TimeSeriesDataFrameRef<'_>> for TimeSeriesDataFrame {
             df.timestamp_nanos.to_vec(),
             df.data_serieses.into_iter().map(|e| e.into()).collect(),
             df.column_names
-                .map(|e| e.into_iter().map(|s| s.to_string()).collect()),
+                .map(|e| e.iter().map(|s| s.to_string()).collect()),
         )
     }
 }

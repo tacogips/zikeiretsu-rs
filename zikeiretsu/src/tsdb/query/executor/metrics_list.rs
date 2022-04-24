@@ -8,11 +8,7 @@ pub async fn execute_metrics_list(
     db_config: &DBConfig,
 ) -> Result<DataFrame, EvalError> {
     let metricses = Engine::list_metrics(db_dir, db_config).await?;
-    let metricses_strs = metricses
-        .clone()
-        .into_iter()
-        .map(|m| m.into_inner())
-        .collect();
+    let metricses_strs = metricses.into_iter().map(|m| m.into_inner()).collect();
 
     let metrics = DataFrame::new(
         vec![DataSeries::new(SeriesValues::String(metricses_strs))],

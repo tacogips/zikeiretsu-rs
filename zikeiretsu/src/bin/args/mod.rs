@@ -112,12 +112,10 @@ impl Args {
         if let Some(config_path) = &self.config {
             let config = Config::read(config_path.as_path())?;
             self.merge_with_config(config)?;
-        } else {
-            if load_default_config {
-                if let Some(config) = Config::try_load_default() {
-                    log::info!("loading default config");
-                    self.merge_with_config(config)?;
-                }
+        } else if load_default_config {
+            if let Some(config) = Config::try_load_default() {
+                log::info!("loading default config");
+                self.merge_with_config(config)?;
             }
         }
 

@@ -31,10 +31,7 @@ pub trait PolarsConvatibleDataFrame {
                         column_names.len(),
                     ));
                 }
-                column_names
-                    .into_iter()
-                    .map(|name| name.to_string())
-                    .collect()
+                column_names.iter().map(|name| name.to_string()).collect()
             }
             None => (0..data_series_vec.len())
                 .into_iter()

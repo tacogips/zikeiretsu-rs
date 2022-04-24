@@ -41,7 +41,7 @@ async fn output_records(
                 match &output_condition.output_format {
                     OutputFormat::Json => Box::new(JsonDfOutput(out)),
                     OutputFormat::DataFrame => Box::new(TableDfOutput(out)),
-                    _ => unimplemented!(),
+                    r => panic!("inalid output format for stdout. this should be a bug. {r:?}"),
                 };
 
             destination.output(record_batch)?;
@@ -57,7 +57,10 @@ async fn output_records(
                         let out = std::io::BufWriter::new(f);
                         Box::new(TableDfOutput(out))
                     }
-                    OutputFormat::Parquet => Box::new(ParquetDfOutput(Rc::new(f))),
+                    OutputFormat::Parquet => {
+                        ParquetDfOutput(f).output(record_batch)?;
+                        return Ok(());
+                    }
                 };
 
             destination.output(record_batch)?;

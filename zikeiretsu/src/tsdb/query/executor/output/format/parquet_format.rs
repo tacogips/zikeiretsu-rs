@@ -10,8 +10,8 @@ use std::fs::File;
 
 pub struct ParquetDfOutput(pub File);
 
-impl ArrowDataFrameOutput for ParquetDfOutput {
-    fn output(&mut self, record: RecordBatch) -> ExecuteResult<()> {
+impl ParquetDfOutput {
+    pub fn output(self, record: RecordBatch) -> ExecuteResult<()> {
         // Default writer properties
         let props = WriterProperties::builder()
             .set_compression(Compression::SNAPPY)

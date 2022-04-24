@@ -4,8 +4,6 @@ use arrow::record_batch::RecordBatch;
 use parquet::arrow::arrow_writer::ArrowWriter;
 use parquet::basic::{Compression, Encoding};
 use parquet::file::properties::WriterProperties;
-//use polars::prelude::{DataFrame as PDataFrame, ParquetWriter};
-//use std::io::Write as IoWrite;
 use std::fs::File;
 
 pub struct ParquetDfOutput(pub File);

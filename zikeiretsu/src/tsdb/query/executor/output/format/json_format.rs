@@ -10,7 +10,7 @@ impl<Dest: IoWrite> ArrowDataFrameOutput for JsonDfOutput<Dest> {
         let mut value_map = serde_json::Map::new();
         let schema = record_batch.schema();
         let field_names = schema.fields().iter().map(|field| field.name());
-        for (field, column_name) in record_batch.columns().into_iter().zip(field_names) {
+        for (field, column_name) in record_batch.columns().iter().zip(field_names) {
             let field_array_value = json::writer::array_to_json_array(field)?;
             value_map.insert(
                 column_name.to_string(),

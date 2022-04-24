@@ -55,11 +55,8 @@ pub trait ArrowConvatibleDataFrame {
                     each_series.as_arrow_field(field_name, format_timestamp, timezone)
                 });
 
-        let serieses = join_all(arrays)
-            .await
-            .into_iter()
-            .collect::<Vec<(Field, ArrayRef)>>();
-        let (fields, arrays): (Vec<Field>, Vec<ArrayRef>) = serieses.into_iter().unzip();
+        let (fields, arrays): (Vec<Field>, Vec<ArrayRef>) =
+            join_all(arrays).await.into_iter().unzip();
         let schema = Schema::new(fields);
         let record_batch = RecordBatch::try_new(Arc::new(schema), arrays)?;
         Ok(record_batch)

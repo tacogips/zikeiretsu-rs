@@ -51,13 +51,14 @@ KW_DAY  			= @{ ^"DAY" ~ ^"S"? ~ !ASCII_ALPHANUMERIC }
 KW_JSON  			= @{ ^"JSON"  ~ !ASCII_ALPHANUMERIC }
 KW_TABLE      = @{ ^"TABLE" ~ !ASCII_ALPHANUMERIC }
 KW_PARQUET    = @{ ^"PARQUET" ~ !ASCII_ALPHANUMERIC }
+KW_PARQUET_SNAPPY    = @{ ^"PARQUET_SNAPPY" ~ !ASCII_ALPHANUMERIC }
 
 KW_SEMICOLON  = @{ ^";" ~ !ASCII_ALPHANUMERIC }
 
 BOOLEAN_VALUE = { KW_TRUE | KW_FALSE }
 
 DURATION_UNIT = { KW_MICROSECOND | KW_MILLISECOND | KW_SECOND | KW_MINUTES | KW_HOUR	| KW_DAY }
-FILE_PATH = @{ (ASCII_ALPHANUMERIC| "." |"/" | "\\" )+}
+FILE_PATH = @{ (ASCII_ALPHANUMERIC| "." | "/" | "\\" |"-"|"_")+}
 
 // === selector =================
 STAR_SELECTOR =  { "*" }
@@ -82,7 +83,7 @@ METRICS_NAME = @{ (ASCII_ALPHANUMERIC | METRICS_NAME_AVAILABLE_SYMBOL )+ }
 DEFINE_DATABASE = { KW_DB ~  "=" ~ DB_NAME }
 DEFINE_COLUMNS = { KW_COLS ~ "=" ~  "[" ~ COLUMNS ~ "]" }
 DEFINE_TZ      = { KW_TZ ~ "=" ~ ( TIMEZONE_OFFSET_VAL | TIMEZONE_NAME ) }
-DEFINE_FORMAT  = { KW_FORMAT ~ "=" ~ ( KW_JSON | KW_TABLE | KW_PARQUET ) }
+DEFINE_FORMAT  = { KW_FORMAT ~ "=" ~ ( KW_JSON | KW_TABLE | KW_PARQUET_SNAPPY | KW_PARQUET ) }
 DEFINE_OUTPUT_FILE  = { KW_OUTPUT_FILE ~ "=" ~ "'" ~ FILE_PATH ~ "'"}
 DEFINE_FORMAT_DATETIME   = { KW_FORMAT_DATETIME ~ "=" ~ BOOLEAN_VALUE }
 DEFINE_CACHE   = { KW_USE_CACHE ~ "=" ~ BOOLEAN_VALUE }
@@ -110,40 +111,6 @@ REL_LT  = { "<" }
 REL_EQ  = { "=" }
 
 REL_OP = { REL_IN | REL_GTE | REL_GT | REL_LTE | REL_LT | REL_EQ }
-
-
-// ### 1. show datapoints in today
-// ```
-// with
-// 	cols = [is_buy, volume, price],
-// 	tz = +9
-//
-// select ts, is_buy, volume, price
-// from trades
-// where ts in today()
-// ```
-//
-// ### 2. show datapoints in specific range
-// ```
-// with
-// 	cols = [_, volume, price],
-// 	tz = JST
-//
-// select ts, volume, price
-// from trades
-// where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
-//
-// ### 3. datetime filter as functionn
-// ```
-// with
-// 	cols = [_, volume, price],
-// 	tz = JST
-// select ts, volume, price
-// from trades
-// where ts in (yesterday() + 9:00, today() + 2 hours )
-//
-// ```
-
 
 FILTER = { DATETIME_FILTER | METRICS_FILTER }
 DATETIME_FILTER = { KW_TIMESTAMP ~ REL_OP ~ ( DATETIME_RANGE | DATETIME )}

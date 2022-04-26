@@ -34,7 +34,11 @@ pub struct Args {
     #[clap(long = "data_dir", short = 'd', env = "ZDB_DIR")]
     data_dir: Option<PathBuf>,
 
-    #[clap(long = "mode", short = 'm')]
+    #[clap(
+        long = "mode",
+        short = 'm',
+        help = "running mode {adhoc,server,client}. default: adhoc"
+    )]
     pub mode: Option<Mode>,
 
     #[clap(

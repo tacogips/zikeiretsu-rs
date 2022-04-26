@@ -3074,6 +3074,7 @@ version = "0.0.1"
 dependencies = [
  "arrow",
  "arrow-flight",
+ "async-stream",
  "async-trait",
  "base-128-variants",
  "bits-ope",
@@ -3104,7 +3105,9 @@ dependencies = [
  "strum 0.21.0",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "toml",
+ "tonic",
  "tracing",
  "tracing-log",
  "tracing-subscriber",

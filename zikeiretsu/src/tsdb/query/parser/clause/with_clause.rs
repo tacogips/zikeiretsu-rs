@@ -9,6 +9,7 @@ pub enum OutputFormat {
     Json,
     Table,
     Parquet,
+    ParquetSnappy,
 }
 
 #[derive(Debug)]
@@ -39,7 +40,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
         def_output: None,
         def_output_file_path: None,
         def_format_datetime: true,
-        def_use_cache: true,
+        def_use_cache: false,
         def_sync_cloud: true,
     };
     for each in pair.into_inner() {
@@ -90,6 +91,10 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
 
                                 Rule::KW_PARQUET => {
                                     with_clause.def_output = Some(OutputFormat::Parquet)
+                                }
+
+                                Rule::KW_PARQUET_SNAPPY => {
+                                    with_clause.def_output = Some(OutputFormat::ParquetSnappy)
                                 }
                                 _ => { /* do nothing */ }
                             }

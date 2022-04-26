@@ -272,6 +272,7 @@ pub(crate) async fn read_block_list<'a>(
 
     let block_list = if use_cache {
         let cache = CACHE.read().await;
+        //TODO(tacogips) block list caceh shoud be unique by database_naem and metrics name
         let block_list = cache.block_list_cache.get(metrics).await;
         block_list.cloned()
     } else {

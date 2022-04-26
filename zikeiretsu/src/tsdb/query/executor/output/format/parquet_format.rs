@@ -5,14 +5,22 @@ use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use std::fs::File;
 
-pub struct ParquetDfOutput(pub File);
+pub struct ParquetOutput {
+    pub file: File,
+    pub snappy_compress: bool,
+}
 
-impl ParquetDfOutput {
+impl ParquetOutput {
     pub fn output(self, record: RecordBatch) -> ExecuteResult<()> {
-        let props = WriterProperties::builder()
-            .set_compression(Compression::SNAPPY)
-            .build();
-        let mut writer = ArrowWriter::try_new(self.0, record.schema(), Some(props)).unwrap();
+        let props = if self.snappy_compress {
+            WriterProperties::builder()
+                .set_compression(Compression::SNAPPY)
+                .build()
+        } else {
+            WriterProperties::builder().build()
+        };
+
+        let mut writer = ArrowWriter::try_new(self.file, record.schema(), Some(props)).unwrap();
 
         writer.write(&record)?;
         writer.close()?;

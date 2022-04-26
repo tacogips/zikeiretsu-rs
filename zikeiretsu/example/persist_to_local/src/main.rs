@@ -100,7 +100,7 @@ async fn main() {
     let query = r#"
     with
         cols = [is_buy,price,size],
-        format = df
+        format = table
 
     select *
 

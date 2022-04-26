@@ -12,6 +12,7 @@ impl BlockListCache {
         Self { block_lists }
     }
 
+    //TODO(tacogips) block list caceh shoud be unique by database_naem and metrics name
     pub async fn get(&self, metrics: &Metrics) -> Option<&BlockList> {
         self.block_lists.get(metrics)
     }

@@ -2,43 +2,48 @@
 
 ```
 
- zkdb
-  ├─ wal (not implemented yet though..)
-  │   │
-  │   └─ ...
+ [data_dir]
   │
-  ├─ error
-  │   │
-  │   └── ...
+  ├─ [database_dir]
+  │    ├─ wal (not implemented yet though..)
+  │    │   │
+  │    │   └─ ...
+  │    │
+  │    ├─ error
+  │    │   │
+  │    │   └── ...
+  │    │
+  │    │
+  │    ├─ blocklist
+  │    │   │
+  │    │   ├── {metrics_1}.list
+  │    │   └── {metrics_2}.list
+  │    │
+  │    └── block
+  │        │
+  │        │
+  │        ├── [metrics_1]
+  │        │       ├── 1626
+  │        │       │    ├─ 162688734_162688740
+  │        │       │    │      └─ block
+  │        │       │    │
+  │        │       │    └─ 162688736_162688750
+  │        │       │          └─ block
+  │        │       ├── 1627
+  │        │       │    └─ ...
+  │        │       │
+  │        │       ├── 1628
+  │        │       │    ├─ 162888734_162788735
+  │        │       │    │     └─ block
+  │        │       │    │
+  │        │       │    └─ 162888735_162788790
+  │        │       │          └─ block
+  │        │       ├─ ...
+  │        │
+  │        ├── [metrics_2]
+  │        └── ....
   │
-  │
-  ├─ blocklist
-  │   │
-  │   ├── {metrics_1}.list
-  │   └── {metrics_2}.list
-  │
-  └── block
-      │
-      │
-      ├── [metrics_1]
-      │       ├── 1626
-      │       │    ├─ 162688734_162688740
-      │       │    │      └─ block
-      │       │    │
-      │       │    └─ 162688736_162688750
-      │       │          └─ block
-      │       ├── 1627
-      │       │    └─ ...
-      │       │
-      │       ├── 1628
-      │       │    ├─ 162888734_162788735
-      │       │    │     └─ block
-      │       │    │
-      │       │    └─ 162888735_162788790
-      │       │          └─ block
-      │       ├─ ...
-      │
-      ├── [metrics_2]
+  ├─  [database2_dir]
 
 ```
 
@@ -86,7 +91,7 @@ A metrics that contains timestamps ,multiple datas along with its own size.
 │ (1)number of datapoints (n bytes) │ (2)data fields num (1 byte) │ (3)type of field_1(1 byte) │ ... (type of field block repeated over the number of fields)│
 └───────────────────────────────────┴─────────────────────────────┴────────────────────────────┴─────────────────────────────────────────────────────────────┘
 ┌─────────────────────────────┬──────────────────────────────────────┬────────────────────────────────────────────────────────┐
-│ (4)head timestamp (8 byte)  │ (5)timestamp deltas(sec)(8 byte * n) │ (6) common trailing zero num of timestamp nano (8 bits)│
+│ (4) head timestamp (8 byte) │ (5)timestamp deltas(sec)(8 byte * n) │ (6) common trailing zero num of timestamp nano (8 bits)│
 └─────────────────────────────┴──────────────────────────────────────┴────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────────────────────┬───────────────────────────────┬──────────────────────────────────────┐
 │ (7) timestamp (sub nanosec since latest second ) (n bytes) │ (8)datas of field 1(n bytes)  │ ... (reapeat over number of fields)  │
@@ -100,7 +105,7 @@ Number of timestamps in the metrics block
 encoding by [Base 128 Variants](https://developers.google.com/protocol-buffers/docs/encoding#varints)
 
 ### (2) data field num
-Number of fields. 1 - 256
+Number of fields. 1 - 255
 
 ### (3) Type of fields
 Data types of each fields.
@@ -218,7 +223,7 @@ every value has at least 3 trailing-zeros.drop these zeros.
 
 ### (8) Datas of field
 
-#### Compressing Algorithms of each type
+#### Compressing algorithms of each type
 
 - integer ... (not implemented yet) if the value is less than (1 << 60) - 1 ,convert with [ZigZag Encoding](https://developers.google.com/protocol-buffers/docs/encoding) then compress with  [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h).We haven't decide how to handle with the outlier values(we are considering uncompress all values if the datas contains at least one value that exceed the maximum value, but it seems very unefficient...)
 - float   ... XOR encoding of Facebook Gorilla (http://www.vldb.org/pvldb/vol8/p1816-teller.pdf)
@@ -236,16 +241,4 @@ every value has at least 3 trailing-zeros.drop these zeros.
 
 ```
 
-
-## TODO
-- [ ] Validations
-	- [ ] Metrics
-	- [ ] Number of field
-- [ ] WAL
-- [ ] Support field types
-- [ ] Deduplication
-
-
-### References
-[nakabonne's article](https://zenn.dev/nakabonne/articles/d300838a1500c7)
 

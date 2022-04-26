@@ -1,7 +1,6 @@
 ## zikeiretsu-rs
 A toy time series DB
 
-
 ![demo.gif](./doc/images/demo.gif)
 
 ## Features

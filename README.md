@@ -14,12 +14,6 @@ A toy time series DB
 cargo install --git https://github.com/tacogips/zikeiretsu-rs --tag 0.0.1 zikeiretsu
 ```
 
-
-### Cargo.toml
-```toml
-zikeiretsu = {git = "https://github.com/tacogips/zikeiretsu-rs", tag = "0.0.1" }
-```
-
 ## Usage
 
 ```

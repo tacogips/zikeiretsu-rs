@@ -241,7 +241,7 @@ select  * from .describe;
 ```
 
 ### Write the datas
-you can't write the data with query. some coding will be needed.[see](./zikeiretsu/example/persist_to_local/src/main.rs)
+you can't write the data with query. some coding will be needed.[see here](./zikeiretsu/example/persist_to_local/src/main.rs)
 
 ```rust
 
@@ -292,9 +292,11 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 
 ```
 
+## About compression algorithms
+[see here](./SPEC.md)
 
 
-## Upcoming feature (some day)
+## Upcoming feature (maybe some day)
 
 - [ ] Validations
 	- [ ] Metrics
@@ -303,5 +305,6 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 - [ ] move data types support
 - [ ] Record deduplication
 - [ ] More efficient caching
+- [ ] Webassembly
 
 

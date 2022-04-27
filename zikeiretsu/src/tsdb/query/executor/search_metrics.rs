@@ -6,11 +6,13 @@ use crate::tsdb::DBConfig;
 use crate::tsdb::TimeSeriesDataFrame;
 
 pub async fn execute_search_metrics(
+    database_name: &str,
     db_dir: &str,
     db_config: &DBConfig,
     condition: &InterpretedQueryCondition,
 ) -> Result<Option<TimeSeriesDataFrame>, ExecuteError> {
     let dataframe = Engine::search(
+        &database_name,
         &db_dir,
         &condition.metrics,
         condition.field_selectors.as_deref(),

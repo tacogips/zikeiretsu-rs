@@ -275,6 +275,7 @@ mod test {
             let cache_setting = api::CacheSetting::none();
 
             let datapoints = api::read::search_dataframe(
+                "test",
                 temp_db_dir.path(),
                 &metrics,
                 None,
@@ -398,6 +399,7 @@ mod test {
             let cache_setting = api::CacheSetting::none();
 
             let datapoints = api::read::search_dataframe(
+                "test",
                 temp_db_dir.path(),
                 &metrics,
                 None,

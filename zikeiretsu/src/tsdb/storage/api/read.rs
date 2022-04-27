@@ -105,6 +105,7 @@ pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
 }
 
 pub async fn search_dataframe<P: AsRef<Path>>(
+    database_name: &str,
     db_dir: P,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
@@ -120,8 +121,14 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     let lock_file_path = lockfile_path(db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
-    let block_list =
-        read_block_list(db_dir, metrics, cache_setting, cloud_storage_and_setting).await?;
+    let block_list = read_block_list(
+        database_name,
+        db_dir,
+        metrics,
+        cache_setting,
+        cloud_storage_and_setting,
+    )
+    .await?;
 
     let (since_sec, until_sec) = condition.as_secs();
 
@@ -241,6 +248,7 @@ fn read_from_block_file(
 }
 
 pub(crate) async fn read_block_list<'a>(
+    database_name: &str,
     db_dir: &Path,
     metrics: &Metrics,
     cache_setting: &CacheSetting,

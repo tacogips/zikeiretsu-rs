@@ -36,7 +36,8 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData>
     let interpreted_query = interpret(parsed_query)?;
     match interpreted_query {
         InterpretedQuery::ListMetrics(database_name, output_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
+            let (db_config, _database_name, db_dir) =
+                to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
             let metrics = metrics_list::execute_metrics_list(Some(&db_dir), &db_config).await?;
 
@@ -47,9 +48,11 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData>
         }
 
         InterpretedQuery::DescribeMetrics(database_name, describe_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
+            let (db_config, database_name, db_dir) =
+                to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
             let df = describe_metrics::execute_describe_metrics(
+                &database_name,
                 &db_dir,
                 &db_config,
                 describe_condition.metrics_filter,
@@ -64,9 +67,11 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData>
         }
 
         InterpretedQuery::DescribeBlockList(database_name, describe_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
+            let (db_config, database_name, db_dir) =
+                to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
             let df = describe_metrics::execute_describe_metrics(
+                &database_name,
                 &db_dir,
                 &db_config,
                 describe_condition.metrics_filter,
@@ -81,12 +86,17 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData>
         }
 
         InterpretedQuery::SearchMetrics(database_name, query_condition, query_setting) => {
-            let (db_config, db_dir) = to_db_config_and_db_dir(database_name, ctx, query_setting)?;
+            let (db_config, database_name, db_dir) =
+                to_db_config_and_db_dir(database_name, ctx, query_setting)?;
             let db_dir = db_dir.display().to_string();
 
-            let query_result_df =
-                search_metrics::execute_search_metrics(&db_dir, &db_config, &query_condition)
-                    .await?;
+            let query_result_df = search_metrics::execute_search_metrics(
+                &database_name,
+                &db_dir,
+                &db_config,
+                &query_condition,
+            )
+            .await?;
 
             match query_result_df {
                 None => Ok(ExecutedData {
@@ -112,7 +122,7 @@ fn to_db_config_and_db_dir(
     database_name: Option<DatabaseName>,
     ctx: &DBContext,
     query_setting: QuerySetting,
-) -> Result<(DBConfig, PathBuf)> {
+) -> Result<(DBConfig, String, PathBuf)> {
     let database = match ctx.get_database(database_name.as_ref().map(|name| name.as_str())) {
         Ok(database) => match database {
             None => {
@@ -132,6 +142,7 @@ fn to_db_config_and_db_dir(
             cloud_storage: database.cloud_storage.clone(),
             cloud_setting: query_setting.cloud_setting,
         },
+        database.name(),
         db_dir,
     ))
 }

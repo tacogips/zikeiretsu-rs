@@ -31,7 +31,7 @@ impl<'q> Default for With<'q> {
             column_index_map: None,
             column_name_aliases: None,
             output_file_path: None,
-            cache_setting: CacheSetting::default(),
+            cache_setting: CacheSetting::only_write(),
             cloud_setting: CloudStorageSetting::default(),
         }
     }
@@ -88,8 +88,8 @@ pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult
         with.format_datetime = with_clause.def_format_datetime;
 
         // cache setting
-        if !with_clause.def_use_cache {
-            with.cache_setting = CacheSetting::only_write();
+        if with_clause.def_use_cache {
+            with.cache_setting = CacheSetting::both();
         }
 
         // cloud setting

@@ -71,6 +71,9 @@ pub struct Args {
     #[clap(long = "port", help = "config for server and client. ")]
     pub port: Option<usize>,
 
+    #[clap(long = "cache_num", help = "config for server. ")]
+    pub cache_block_num: Option<usize>,
+
     #[clap(skip)]
     parsed_databases: Option<Vec<Database>>,
 
@@ -106,6 +109,10 @@ impl Args {
 
         if let Some(port) = config.port {
             self.port = Some(port);
+        }
+
+        if let Some(cache_block_num) = config.cache_block_num {
+            self.cache_block_num = Some(cache_block_num);
         }
 
         Ok(())

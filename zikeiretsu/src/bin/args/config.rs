@@ -13,6 +13,7 @@ pub struct Config {
     pub https: Option<bool>,
     pub host: Option<String>,
     pub port: Option<usize>,
+    pub cache_block_num: Option<usize>,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -83,6 +84,7 @@ mod test {
             https = false
             host = "localhost"
             port = 1234
+            cache_block_num = 100
 
             [[databases]]
             database_name="test_db"
@@ -103,7 +105,8 @@ mod test {
                 databases: Some(vec![DatabaseConfig {
                     database_name: "test_db".to_string(),
                     cloud_storage_url: Some("gs://some/where".to_string()),
-                }])
+                }]),
+                cache_block_num: Some(100),
             }
         );
     }

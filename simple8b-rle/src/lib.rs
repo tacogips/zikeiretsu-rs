@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use std::io::Write;
 use std::iter;
 use thiserror::Error;
@@ -158,14 +157,12 @@ pub(crate) struct Simple8bSelector {
 
 macro_rules! compression_set {
     ($({$selector:expr, $bits:expr, $num_of_val:expr}),*,) => {
-        lazy_static! {
-            static ref COMPRESSION_SETS: Vec<CompressionSet> = vec![
+            static COMPRESSION_SETS: once_cell::sync::Lazy<Vec<CompressionSet>> = once_cell::sync::Lazy::new(||vec![
                 $(CompressionSet {
                 selector:  Simple8bSelector {val: $selector},
                 meaningful_bitsize: $bits,
                 contain_num: $num_of_val
-            }) , *];
-        }
+            }) , *]);
     };
 }
 

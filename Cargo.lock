@@ -2166,7 +2166,7 @@ dependencies = [
 name = "simple8b-rle"
 version = "0.1.0"
 dependencies = [
- "lazy_static",
+ "once_cell",
  "thiserror",
 ]
 

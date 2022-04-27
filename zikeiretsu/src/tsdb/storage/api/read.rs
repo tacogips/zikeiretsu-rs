@@ -154,6 +154,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     metrics,
                     field_selectors,
                     block_timestamp,
+                    cache_setting,
                     cloud_storage_and_setting,
                 )
                 .await?;
@@ -210,6 +211,7 @@ async fn read_block(
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
     block_timestamp: &block_list::BlockTimestamp,
+    cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<TimeSeriesDataFrame> {
     let (_, block_file_path) =

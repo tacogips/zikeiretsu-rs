@@ -1,6 +1,6 @@
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::TimeSeriesDataFrame;
-use std::collections::HashMap;
+use lru::LruCache;
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct BlockCacheKey {
@@ -9,17 +9,17 @@ pub struct BlockCacheKey {
 }
 
 pub(crate) struct BlockCache {
-    pub block_lists: HashMap<BlockCacheKey, TimeSeriesDataFrame>,
+    pub block_dfs: LruCache<BlockCacheKey, TimeSeriesDataFrame>,
 }
 
 impl BlockCache {
-    pub fn new() -> Self {
-        let block_lists = HashMap::<BlockCacheKey, TimeSeriesDataFrame>::new();
-        Self { block_lists }
+    pub fn new(cache_size: usize) -> Self {
+        let block_dfs = LruCache::new(cache_size);
+        Self { block_dfs }
     }
 
     pub async fn get(
-        &self,
+        &mut self,
         database_name: String,
         metrics: Metrics,
     ) -> Option<&TimeSeriesDataFrame> {
@@ -27,7 +27,7 @@ impl BlockCache {
             database_name,
             metrics,
         };
-        self.block_lists.get(&key)
+        self.block_dfs.get(&key)
     }
 
     pub async fn write(
@@ -40,6 +40,6 @@ impl BlockCache {
             database_name,
             metrics,
         };
-        self.block_lists.insert(key, block);
+        self.block_dfs.put(key, block);
     }
 }

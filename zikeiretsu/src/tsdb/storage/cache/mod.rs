@@ -9,10 +9,10 @@ pub(crate) struct Cache {
 }
 
 impl Cache {
-    pub fn new() -> Self {
+    pub fn new(block_cache_size: usize) -> Self {
         Cache {
             block_list_cache: BlockListCache::new(),
-            block_cache: block_cache::BlockCache::new(),
+            block_cache: block_cache::BlockCache::new(block_cache_size),
         }
     }
 }

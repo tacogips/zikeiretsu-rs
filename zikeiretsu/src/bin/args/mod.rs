@@ -134,6 +134,11 @@ impl Args {
         if let Some(service_account) = self.service_account_file_path.as_ref() {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
+
+        if let Some(block_cache_num) = self.cache_block_num.as_ref() {
+            env::set_var("ZDB_BLOCK_CACHE_SIZE", block_cache_num.to_string());
+        }
+
         Ok(())
     }
 

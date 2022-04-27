@@ -22,7 +22,11 @@ static LOCAL_BLOCK_LIST_FILE_PATTERN: Lazy<Regex> =
     Lazy::new(|| Regex::new(block_list::BLOCK_LIST_FILE_NAME_PATTERN).unwrap());
 
 fn shared_cache() -> Arc<RwLock<cache::Cache>> {
-    let cached = CACHE.get_or_init(|| Arc::new(RwLock::new(cache::Cache::new())));
+    let block_cache_size = std::env::var("ZDB_BLOCK_CACHE_SIZE")
+        .unwrap_or_else(|_| "1000".to_string())
+        .parse::<usize>()
+        .unwrap_or(1000);
+    let cached = CACHE.get_or_init(|| Arc::new(RwLock::new(cache::Cache::new(block_cache_size))));
     cached.clone()
 }
 

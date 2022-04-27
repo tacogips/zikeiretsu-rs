@@ -1,13 +1,12 @@
-use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 
+use once_cell::sync::Lazy;
 use rustyline::validate::{ValidationContext, ValidationResult, Validator};
 use rustyline::Result;
 use rustyline_derive::{Completer, Helper, Highlighter, Hinter};
 
-lazy_static! {
-    static ref FINISH_LINE_PATTERN: Regex = RegexBuilder::new(r".*[ \t]*;[ \t]*$").build().unwrap();
-}
+static FINISH_LINE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| RegexBuilder::new(r".*[ \t]*;[ \t]*$").build().unwrap());
 
 #[derive(Completer, Helper, Highlighter, Hinter)]
 pub struct MultiLineInputValidator;

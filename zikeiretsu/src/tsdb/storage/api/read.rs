@@ -8,19 +8,22 @@ use crate::tsdb::{
 };
 use crate::tsdb::{datapoint::*, metrics::Metrics, time_series_dataframe::*};
 use futures::future::join_all;
-use lazy_static::lazy_static;
 use lockfile::Lockfile;
 use log;
+use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
 
-lazy_static! {
-    static ref CACHE: Arc<RwLock<cache::Cache>> = Arc::new(RwLock::new(cache::Cache::new()));
-    static ref LOCAL_BLOCK_LIST_FILE_PATTERN: Regex =
-        Regex::new(block_list::BLOCK_LIST_FILE_NAME_PATTERN).unwrap();
+static CACHE: OnceCell<Arc<RwLock<cache::Cache>>> = OnceCell::new();
+static LOCAL_BLOCK_LIST_FILE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(block_list::BLOCK_LIST_FILE_NAME_PATTERN).unwrap());
+
+fn shared_cache() -> Arc<RwLock<cache::Cache>> {
+    let cached = CACHE.get_or_init(|| Arc::new(RwLock::new(cache::Cache::new())));
+    cached.clone()
 }
 
 pub async fn fetch_all_metrics<P: AsRef<Path>>(
@@ -264,14 +267,15 @@ pub(crate) async fn read_block_list<'a>(
     } else {
         false
     };
-    let use_cache = if downloaded_from_cloud {
+    let use_read_cache = if downloaded_from_cloud {
         false
     } else {
         cache_setting.read_cache
     };
 
-    let block_list = if use_cache {
-        let cache = CACHE.read().await;
+    let block_list = if use_read_cache {
+        let s_cache = shared_cache();
+        let cache = s_cache.read().await;
         //TODO(tacogips) block list caceh shoud be unique by database_naem and metrics name
         let block_list = cache.block_list_cache.get(metrics).await;
         block_list.cloned()
@@ -291,7 +295,8 @@ pub(crate) async fn read_block_list<'a>(
     };
 
     if cache_setting.write_cache {
-        let mut cache = CACHE.write().await;
+        let s_cache = shared_cache();
+        let mut cache = s_cache.write().await;
         cache
             .block_list_cache
             .write(metrics, block_list.clone())

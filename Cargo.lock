@@ -3035,7 +3035,6 @@ dependencies = [
  "file-dougu",
  "futures",
  "itertools",
- "lazy_static",
  "lockfile",
  "log",
  "memmap2",

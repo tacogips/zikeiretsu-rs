@@ -284,8 +284,10 @@ pub(crate) async fn read_block_list<'a>(
     let block_list = if use_read_cache {
         let s_cache = shared_cache();
         let cache = s_cache.read().await;
-        //TODO(tacogips) block list caceh shoud be unique by database_naem and metrics name
-        let block_list = cache.block_list_cache.get(metrics).await;
+        let block_list = cache
+            .block_list_cache
+            .get(database_name.to_string(), metrics.clone())
+            .await;
         block_list.cloned()
     } else {
         None
@@ -307,7 +309,11 @@ pub(crate) async fn read_block_list<'a>(
         let mut cache = s_cache.write().await;
         cache
             .block_list_cache
-            .write(metrics, block_list.clone())
+            .write(
+                database_name.to_string(),
+                metrics.clone(),
+                block_list.clone(),
+            )
             .await;
     }
 

@@ -1,4 +1,4 @@
-name: CI
+name: CI test
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
 jobs:
   lint-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
@@ -36,7 +36,7 @@ jobs:
           profile: minimal
           toolchain: 1.58.1
           override: true
-      - run: rustup component add clippy rustfmt
+      - run: rustup component add rustfmt
       - name: Prepare sccache
         uses: actions/cache@v2
         continue-on-error: false

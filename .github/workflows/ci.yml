@@ -49,11 +49,11 @@ jobs:
       - name: Start sccache server
         run: sccache --start-server
 
-      - name: Run Clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-targets --all-features
+      #- name: Run Clippy
+      #  uses: actions-rs/clippy-check@v1
+      #  with:
+      #    token: ${{ secrets.GITHUB_TOKEN }}
+      #    args: --all-targets --all-features
 
       - name: Test
         uses: actions-rs/cargo@v1

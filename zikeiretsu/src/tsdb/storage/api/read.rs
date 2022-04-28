@@ -36,7 +36,7 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
 ) -> Result<Vec<Metrics>> {
     //TODO(tacogips) need some lock
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
-        if cloud_setting.update_block_list {
+        if cloud_setting.force_update_block_list {
             let block_file_urls = CloudBlockListFilePath::list_files_urls(cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
@@ -264,7 +264,7 @@ pub(crate) async fn read_block_list<'a>(
     let downloaded_from_cloud = if let Some((cloud_storage, cloud_setting)) =
         cloud_storage_and_setting
     {
-        if cloud_setting.update_block_list
+        if cloud_setting.force_update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
         {
             let cloud_block_list_file_path = CloudBlockListFilePath::new(metrics, cloud_storage);

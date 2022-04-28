@@ -32,7 +32,7 @@ impl CloudStorageSetting {
 
     pub fn builder() -> CloudStorageSettingBuilder {
         let CloudStorageSetting {
-            force_update_block_list: update_block_list,
+            force_update_block_list,
             download_block_list_if_not_exits,
             download_block_if_not_exits,
             upload_data_after_write,
@@ -40,7 +40,7 @@ impl CloudStorageSetting {
         } = CloudStorageSetting::default();
 
         CloudStorageSettingBuilder {
-            update_block_list,
+            force_update_block_list,
             download_block_list_if_not_exits,
             download_block_if_not_exits,
             upload_data_after_write,
@@ -50,7 +50,7 @@ impl CloudStorageSetting {
 }
 
 pub struct CloudStorageSettingBuilder {
-    update_block_list: bool,
+    force_update_block_list: bool,
     download_block_list_if_not_exits: bool,
     download_block_if_not_exits: bool,
     upload_data_after_write: bool,
@@ -58,16 +58,6 @@ pub struct CloudStorageSettingBuilder {
 }
 
 impl CloudStorageSettingBuilder {
-    pub fn new_with_sync_when_download() -> Self {
-        CloudStorageSettingBuilder {
-            update_block_list: true,
-            download_block_list_if_not_exits: true,
-            download_block_if_not_exits: true,
-            upload_data_after_write: false,
-            remove_local_file_after_upload: false,
-        }
-    }
-
     pub fn remove_local_file_after_upload(
         mut self,
         remove_local_file_after_upload: bool,
@@ -76,8 +66,11 @@ impl CloudStorageSettingBuilder {
         self
     }
 
-    pub fn update_block_list(mut self, update_block_list: bool) -> CloudStorageSettingBuilder {
-        self.update_block_list = update_block_list;
+    pub fn force_update_block_list(
+        mut self,
+        force_update_block_list: bool,
+    ) -> CloudStorageSettingBuilder {
+        self.force_update_block_list = force_update_block_list;
         self
     }
 
@@ -99,7 +92,7 @@ impl CloudStorageSettingBuilder {
 
     pub fn build(self) -> CloudStorageSetting {
         let CloudStorageSettingBuilder {
-            update_block_list,
+            force_update_block_list: update_block_list,
             download_block_list_if_not_exits,
             download_block_if_not_exits,
             upload_data_after_write,

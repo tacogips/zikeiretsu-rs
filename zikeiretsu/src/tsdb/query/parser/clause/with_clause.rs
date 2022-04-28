@@ -40,8 +40,8 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
         def_output: None,
         def_output_file_path: None,
         def_format_datetime: true,
-        def_use_cache: false,
-        def_force_sync_cloud: true,
+        def_use_cache: true,
+        def_force_sync_cloud: false,
     };
     for each in pair.into_inner() {
         if each.as_rule() == Rule::WITH_CLAUSE_DEFINES {

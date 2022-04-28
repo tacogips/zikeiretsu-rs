@@ -223,7 +223,10 @@ impl BlockList {
 
         let block_timestamps = self.block_timestamps.as_slice();
 
-        log::debug!("block_list. all block timestamps: {:?}", block_timestamps);
+        log::debug!(
+            "block_list. all block timestamps num: {:?}",
+            block_timestamps.len()
+        );
 
         match (since_inclusive, until_exclusive) {
             (Some(since), Some(until)) => {

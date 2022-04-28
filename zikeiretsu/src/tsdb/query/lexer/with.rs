@@ -89,7 +89,7 @@ pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult
 
         // cache setting
         if !with_clause.def_use_cache {
-            with.cache_setting = CacheSetting::none();
+            with.cache_setting = CacheSetting::only_write();
         }
 
         // cloud setting

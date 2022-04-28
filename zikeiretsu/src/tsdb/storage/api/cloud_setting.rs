@@ -20,16 +20,6 @@ impl Default for CloudStorageSetting {
 }
 
 impl CloudStorageSetting {
-    pub fn not_sync_to_cloud() -> Self {
-        Self {
-            force_update_block_list: false,
-            download_block_list_if_not_exits: false,
-            download_block_if_not_exits: false,
-            upload_data_after_write: false,
-            remove_local_file_after_upload: false,
-        }
-    }
-
     pub fn builder() -> CloudStorageSettingBuilder {
         let CloudStorageSetting {
             force_update_block_list,

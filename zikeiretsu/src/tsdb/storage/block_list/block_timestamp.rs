@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::Iterator;
 
-#[derive(Copy, Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Copy, Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
 pub struct BlockTimestamp {
     pub since_sec: TimestampSec,
     pub until_sec: TimestampSec,

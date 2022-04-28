@@ -154,6 +154,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
         Some(block_timestamps) => {
             let tasks = block_timestamps.iter().map(|block_timestamp| async move {
                 let mut block = read_block(
+                    database_name,
                     db_dir,
                     metrics,
                     field_selectors,
@@ -211,6 +212,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
 }
 
 async fn read_block(
+    database_name: &str,
     root_dir: &Path,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
@@ -221,6 +223,7 @@ async fn read_block(
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
+    let mut block_file_downloaded = false;
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if !block_file_path.exists() {
             if cloud_setting.download_block_if_not_exits {
@@ -228,6 +231,7 @@ async fn read_block(
                     CloudBlockFilePath::new(metrics, block_timestamp, cloud_storage);
 
                 let download_result = cloud_block_file_path.download(&block_file_path).await?;
+                block_file_downloaded = true;
 
                 if download_result.is_none() {
                     return Err(StorageApiError::NoBlockFile(
@@ -242,7 +246,45 @@ async fn read_block(
         }
     }
 
-    read_from_block_file(&block_file_path, field_selectors)
+    let cached_df = if cache_setting.read_cache && !block_file_downloaded {
+        let s_cache = shared_cache();
+        let mut cache = s_cache.write().await;
+        let cached_df = cache
+            .block_cache
+            .get(
+                database_name.to_string(),
+                metrics.clone(),
+                block_timestamp.clone(),
+            )
+            .await;
+        cached_df.cloned()
+    } else {
+        None
+    };
+
+    let read_df = match cached_df {
+        Some(cached_df) => {
+            log::debug!("block cache hit {},{}", metrics, block_timestamp);
+            cached_df
+        }
+        None => read_from_block_file(&block_file_path, field_selectors)?,
+    };
+
+    if cache_setting.write_cache {
+        let s_cache = shared_cache();
+        let mut cache = s_cache.write().await;
+        cache
+            .block_cache
+            .write(
+                database_name.to_string(),
+                metrics.clone(),
+                block_timestamp.clone(),
+                read_df.clone(),
+            )
+            .await;
+    }
+
+    Ok(read_df)
 }
 
 fn read_from_block_file(

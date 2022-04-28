@@ -1,4 +1,3 @@
-use std::ptr;
 use thiserror::*;
 
 type Result<T> = std::result::Result<T, VecOpeError>;
@@ -49,20 +48,25 @@ pub fn remove_range<T>(datas: &mut Vec<T>, range: (usize, usize)) -> Result<Vec<
     //}
 }
 
-pub fn prepend<T>(datas: &mut Vec<T>, new_datas: &mut [T]) {
-    let orig_len = datas.len();
-    let new_data_len = new_datas.len();
-    datas.reserve(new_data_len);
+pub fn prepend<T: Clone>(datas: &mut Vec<T>, new_datas: &mut [T]) {
+    datas.splice(0..0, new_datas.iter().cloned());
+    //
+    //causes malloc_consolidate(): unaligned fastbin chunk detected
+    //.splice(index..index, other.into_iter().cloned());
+    //
+    //let orig_len = datas.len();
+    //let new_data_len = new_datas.len();
+    //datas.reserve(new_data_len);
 
-    unsafe {
-        ptr::copy(
-            datas.as_ptr(),
-            datas.as_mut_ptr().add(new_data_len),
-            orig_len,
-        );
-        ptr::copy(new_datas.as_ptr(), datas.as_mut_ptr(), new_data_len);
-        datas.set_len(orig_len + new_data_len);
-    }
+    //unsafe {
+    //    ptr::copy(
+    //        datas.as_ptr(),
+    //        datas.as_mut_ptr().add(new_data_len),
+    //        orig_len,
+    //    );
+    //    ptr::copy(new_datas.as_ptr(), datas.as_mut_ptr(), new_data_len);
+    //    datas.set_len(orig_len + new_data_len);
+    //}
 }
 
 /// [0,1,2,3,4].trim(1,2) -> [1]

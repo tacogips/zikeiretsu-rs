@@ -251,11 +251,7 @@ async fn read_block(
         let mut cache = s_cache.write().await;
         let cached_df = cache
             .block_cache
-            .get(
-                database_name.to_string(),
-                metrics.clone(),
-                block_timestamp.clone(),
-            )
+            .get(database_name.to_string(), metrics.clone(), *block_timestamp)
             .await;
         cached_df.cloned()
     } else {
@@ -278,7 +274,7 @@ async fn read_block(
             .write(
                 database_name.to_string(),
                 metrics.clone(),
-                block_timestamp.clone(),
+                *block_timestamp,
                 read_df.clone(),
             )
             .await;

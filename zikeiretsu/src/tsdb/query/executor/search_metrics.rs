@@ -12,7 +12,7 @@ pub async fn execute_search_metrics(
     condition: &InterpretedQueryCondition,
 ) -> Result<Option<TimeSeriesDataFrame>, ExecuteError> {
     let dataframe = Engine::search(
-        &database_name,
+        database_name,
         &db_dir,
         &condition.metrics,
         condition.field_selectors.as_deref(),

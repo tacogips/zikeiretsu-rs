@@ -31,7 +31,7 @@ impl<'q> Default for With<'q> {
             column_index_map: None,
             column_name_aliases: None,
             output_file_path: None,
-            cache_setting: CacheSetting::only_write(),
+            cache_setting: CacheSetting::default(),
             cloud_setting: CloudStorageSetting::default(),
         }
     }

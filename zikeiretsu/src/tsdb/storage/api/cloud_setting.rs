@@ -1,6 +1,6 @@
 #[derive(Clone, Debug)]
 pub struct CloudStorageSetting {
-    pub update_block_list: bool,
+    pub force_update_block_list: bool,
     pub download_block_list_if_not_exits: bool,
     pub download_block_if_not_exits: bool,
     pub upload_data_after_write: bool,
@@ -10,7 +10,7 @@ pub struct CloudStorageSetting {
 impl Default for CloudStorageSetting {
     fn default() -> Self {
         Self {
-            update_block_list: true,
+            force_update_block_list: false,
             download_block_list_if_not_exits: true,
             download_block_if_not_exits: true,
             upload_data_after_write: true,
@@ -22,7 +22,7 @@ impl Default for CloudStorageSetting {
 impl CloudStorageSetting {
     pub fn not_sync_to_cloud() -> Self {
         Self {
-            update_block_list: false,
+            force_update_block_list: false,
             download_block_list_if_not_exits: false,
             download_block_if_not_exits: false,
             upload_data_after_write: false,
@@ -32,7 +32,7 @@ impl CloudStorageSetting {
 
     pub fn builder() -> CloudStorageSettingBuilder {
         let CloudStorageSetting {
-            update_block_list,
+            force_update_block_list: update_block_list,
             download_block_list_if_not_exits,
             download_block_if_not_exits,
             upload_data_after_write,
@@ -107,7 +107,7 @@ impl CloudStorageSettingBuilder {
         } = self;
 
         CloudStorageSetting {
-            update_block_list,
+            force_update_block_list: update_block_list,
             download_block_list_if_not_exits,
             download_block_if_not_exits,
             upload_data_after_write,

@@ -89,12 +89,14 @@ pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult
 
         // cache setting
         if !with_clause.def_use_cache {
-            with.cache_setting = CacheSetting::none();
+            with.cache_setting = CacheSetting::only_write();
         }
 
         // cloud setting
-        if !with_clause.def_sync_cloud {
-            with.cloud_setting = CloudStorageSetting::not_sync_to_cloud();
+        if with_clause.def_force_sync_cloud {
+            with.cloud_setting = CloudStorageSetting::builder()
+                .force_update_block_list(true)
+                .build();
         }
     }
     Ok(with)
@@ -120,7 +122,7 @@ mod test {
             def_output: None,
             def_output_file_path: None,
             def_use_cache: true,
-            def_sync_cloud: true,
+            def_force_sync_cloud: true,
         };
 
         let result = interpret_with(Some(with_clause)).unwrap();

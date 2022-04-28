@@ -2,23 +2,23 @@ use super::{file_path::*, CloudStorageError, Result};
 use crate::tsdb::storage::block_list;
 use crate::Metrics;
 use file_dougu;
-use lazy_static::lazy_static;
 use memmap2::MmapOptions;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
-lazy_static! {
-    static ref BLOCK_LIST_FILE_PATTERN: Regex = Regex::new(
+static BLOCK_LIST_FILE_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
         format!(
             r"gs://.*/{file_name_pattern}",
             file_name_pattern = block_list::BLOCK_LIST_FILE_NAME_PATTERN
         )
-        .as_str()
+        .as_str(),
     )
-    .unwrap();
-}
+    .unwrap()
+});
 
 fn create_parent_dir_if_not_exists(dest: &Path) -> Result<()> {
     let parent_dir = dest

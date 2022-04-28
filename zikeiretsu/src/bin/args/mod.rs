@@ -71,6 +71,9 @@ pub struct Args {
     #[clap(long = "port", help = "config for server and client. ")]
     pub port: Option<usize>,
 
+    #[clap(long = "cache_num", help = "config for server. ")]
+    pub cache_block_num: Option<usize>,
+
     #[clap(skip)]
     parsed_databases: Option<Vec<Database>>,
 
@@ -108,6 +111,10 @@ impl Args {
             self.port = Some(port);
         }
 
+        if let Some(cache_block_num) = config.cache_block_num {
+            self.cache_block_num = Some(cache_block_num);
+        }
+
         Ok(())
     }
 
@@ -127,6 +134,11 @@ impl Args {
         if let Some(service_account) = self.service_account_file_path.as_ref() {
             env::set_var("SERVICE_ACCOUNT", service_account);
         }
+
+        if let Some(block_cache_num) = self.cache_block_num.as_ref() {
+            env::set_var("ZDB_BLOCK_CACHE_SIZE", block_cache_num.to_string());
+        }
+
         Ok(())
     }
 

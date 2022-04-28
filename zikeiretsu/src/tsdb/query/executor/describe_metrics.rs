@@ -7,6 +7,7 @@ use futures::future;
 use serde::{Deserialize, Serialize};
 
 pub async fn execute_describe_metrics(
+    database_name: &str,
     db_dir: &str,
     db_config: &DBConfig,
     metrics_filter: Option<Metrics>,
@@ -30,7 +31,7 @@ pub async fn execute_describe_metrics(
         return Err(ExecuteError::MetricsNotFoundError("[empty]".to_string()));
     }
 
-    let describes = load_metrics_describes(db_dir, db_config, metricses).await?;
+    let describes = load_metrics_describes(database_name, db_dir, db_config, metricses).await?;
     let df = if show_block_list {
         describes_to_dataframe_with_block_list(describes.as_slice())?
     } else {
@@ -40,12 +41,13 @@ pub async fn execute_describe_metrics(
 }
 
 async fn load_metrics_describes(
+    database_name: &str,
     db_dir: &str,
     db_config: &DBConfig,
     metricses: Vec<Metrics>,
 ) -> Result<Vec<MetricsDescribe>, ExecuteError> {
     let metrics_descibes = metricses.into_iter().map(|metrics| async move {
-        Engine::block_list_data(db_dir, &metrics, db_config)
+        Engine::block_list_data(database_name, db_dir, &metrics, db_config)
             .await
             .map(|block_list| MetricsDescribe {
                 metrics,

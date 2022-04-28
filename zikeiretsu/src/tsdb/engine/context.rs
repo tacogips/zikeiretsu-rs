@@ -19,12 +19,16 @@ pub struct Database {
 }
 
 impl Database {
-    pub fn new(db_name: String, cloud_storage: Option<CloudStorage>) -> Self {
+    pub fn new(database_name: String, cloud_storage: Option<CloudStorage>) -> Self {
         Self {
-            database_name: db_name,
+            database_name,
             cloud_storage,
         }
     }
+    pub fn name(&self) -> String {
+        self.database_name.to_string()
+    }
+
     pub fn as_local_db_dir(&self, data_dir: &Path) -> PathBuf {
         let mut pb = PathBuf::new();
         let dir_str = match &self.cloud_storage {

@@ -8,19 +8,26 @@ use crate::tsdb::{
 };
 use crate::tsdb::{datapoint::*, metrics::Metrics, time_series_dataframe::*};
 use futures::future::join_all;
-use lazy_static::lazy_static;
 use lockfile::Lockfile;
 use log;
+use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use walkdir::WalkDir;
 
-lazy_static! {
-    static ref CACHE: Arc<RwLock<cache::Cache>> = Arc::new(RwLock::new(cache::Cache::new()));
-    static ref LOCAL_BLOCK_LIST_FILE_PATTERN: Regex =
-        Regex::new(block_list::BLOCK_LIST_FILE_NAME_PATTERN).unwrap();
+static CACHE: OnceCell<Arc<RwLock<cache::Cache>>> = OnceCell::new();
+static LOCAL_BLOCK_LIST_FILE_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(block_list::BLOCK_LIST_FILE_NAME_PATTERN).unwrap());
+
+fn shared_cache() -> Arc<RwLock<cache::Cache>> {
+    let block_cache_size = std::env::var("ZDB_BLOCK_CACHE_SIZE")
+        .unwrap_or_else(|_| "1000".to_string())
+        .parse::<usize>()
+        .unwrap_or(1000);
+    let cached = CACHE.get_or_init(|| Arc::new(RwLock::new(cache::Cache::new(block_cache_size))));
+    cached.clone()
 }
 
 pub async fn fetch_all_metrics<P: AsRef<Path>>(
@@ -29,7 +36,7 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
 ) -> Result<Vec<Metrics>> {
     //TODO(tacogips) need some lock
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
-        if cloud_setting.update_block_list {
+        if cloud_setting.force_update_block_list {
             let block_file_urls = CloudBlockListFilePath::list_files_urls(cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
@@ -102,6 +109,7 @@ pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
 }
 
 pub async fn search_dataframe<P: AsRef<Path>>(
+    database_name: &str,
     db_dir: P,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
@@ -117,8 +125,14 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     let lock_file_path = lockfile_path(db_dir, metrics);
     let _lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
-    let block_list =
-        read_block_list(db_dir, metrics, cache_setting, cloud_storage_and_setting).await?;
+    let block_list = read_block_list(
+        database_name,
+        db_dir,
+        metrics,
+        cache_setting,
+        cloud_storage_and_setting,
+    )
+    .await?;
 
     let (since_sec, until_sec) = condition.as_secs();
 
@@ -140,10 +154,12 @@ pub async fn search_dataframe<P: AsRef<Path>>(
         Some(block_timestamps) => {
             let tasks = block_timestamps.iter().map(|block_timestamp| async move {
                 let mut block = read_block(
+                    database_name,
                     db_dir,
                     metrics,
                     field_selectors,
                     block_timestamp,
+                    cache_setting,
                     cloud_storage_and_setting,
                 )
                 .await?;
@@ -196,15 +212,18 @@ pub async fn search_dataframe<P: AsRef<Path>>(
 }
 
 async fn read_block(
+    database_name: &str,
     root_dir: &Path,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
     block_timestamp: &block_list::BlockTimestamp,
+    cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<TimeSeriesDataFrame> {
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
+    let mut block_file_downloaded = false;
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
         if !block_file_path.exists() {
             if cloud_setting.download_block_if_not_exits {
@@ -212,6 +231,7 @@ async fn read_block(
                     CloudBlockFilePath::new(metrics, block_timestamp, cloud_storage);
 
                 let download_result = cloud_block_file_path.download(&block_file_path).await?;
+                block_file_downloaded = true;
 
                 if download_result.is_none() {
                     return Err(StorageApiError::NoBlockFile(
@@ -226,7 +246,41 @@ async fn read_block(
         }
     }
 
-    read_from_block_file(&block_file_path, field_selectors)
+    let cached_df = if cache_setting.read_cache && !block_file_downloaded {
+        let s_cache = shared_cache();
+        let mut cache = s_cache.write().await;
+        let cached_df = cache
+            .block_cache
+            .get(database_name.to_string(), metrics.clone(), *block_timestamp)
+            .await;
+        cached_df.cloned()
+    } else {
+        None
+    };
+
+    let read_df = match cached_df {
+        Some(cached_df) => {
+            log::debug!("block cache hit {},{}", metrics, block_timestamp);
+            cached_df
+        }
+        None => read_from_block_file(&block_file_path, field_selectors)?,
+    };
+
+    if cache_setting.write_cache {
+        let s_cache = shared_cache();
+        let mut cache = s_cache.write().await;
+        cache
+            .block_cache
+            .write(
+                database_name.to_string(),
+                metrics.clone(),
+                *block_timestamp,
+                read_df.clone(),
+            )
+            .await;
+    }
+
+    Ok(read_df)
 }
 
 fn read_from_block_file(
@@ -238,6 +292,7 @@ fn read_from_block_file(
 }
 
 pub(crate) async fn read_block_list<'a>(
+    database_name: &str,
     db_dir: &Path,
     metrics: &Metrics,
     cache_setting: &CacheSetting,
@@ -247,7 +302,7 @@ pub(crate) async fn read_block_list<'a>(
     let downloaded_from_cloud = if let Some((cloud_storage, cloud_setting)) =
         cloud_storage_and_setting
     {
-        if cloud_setting.update_block_list
+        if cloud_setting.force_update_block_list
             || (!block_list_path.exists() && cloud_setting.download_block_list_if_not_exits)
         {
             let cloud_block_list_file_path = CloudBlockListFilePath::new(metrics, cloud_storage);
@@ -264,16 +319,19 @@ pub(crate) async fn read_block_list<'a>(
     } else {
         false
     };
-    let use_cache = if downloaded_from_cloud {
+    let use_read_cache = if downloaded_from_cloud {
         false
     } else {
         cache_setting.read_cache
     };
 
-    let block_list = if use_cache {
-        let cache = CACHE.read().await;
-        //TODO(tacogips) block list caceh shoud be unique by database_naem and metrics name
-        let block_list = cache.block_list_cache.get(metrics).await;
+    let block_list = if use_read_cache {
+        let s_cache = shared_cache();
+        let cache = s_cache.read().await;
+        let block_list = cache
+            .block_list_cache
+            .get(database_name.to_string(), metrics.clone())
+            .await;
         block_list.cloned()
     } else {
         None
@@ -291,10 +349,15 @@ pub(crate) async fn read_block_list<'a>(
     };
 
     if cache_setting.write_cache {
-        let mut cache = CACHE.write().await;
+        let s_cache = shared_cache();
+        let mut cache = s_cache.write().await;
         cache
             .block_list_cache
-            .write(metrics, block_list.clone())
+            .write(
+                database_name.to_string(),
+                metrics.clone(),
+                block_list.clone(),
+            )
             .await;
     }
 

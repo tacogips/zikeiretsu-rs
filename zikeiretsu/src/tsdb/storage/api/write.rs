@@ -137,6 +137,7 @@ async fn write_datas_to_local(
     // write block list file first
     let block_list_file_path = {
         let block_list = super::read::read_block_list(
+            "", // buggy: database name is unnecessary if no cache wil be used
             db_dir,
             metrics,
             &cache_setting,

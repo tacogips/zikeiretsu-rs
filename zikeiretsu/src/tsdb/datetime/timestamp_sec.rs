@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::ops::{Add, Deref, Sub};
 
-#[derive(PartialEq, Debug, Copy, Clone, Eq, Ord, PartialOrd, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Copy, Clone, Eq, Ord, PartialOrd, Serialize, Deserialize, Hash)]
 pub struct TimestampSec(pub u64);
 impl TimestampSec {
     pub fn new(inner: u64) -> Self {

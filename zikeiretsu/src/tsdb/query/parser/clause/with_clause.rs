@@ -21,7 +21,7 @@ pub struct WithClause<'q> {
     pub def_output_file_path: Option<PathBuf>,
     pub def_use_cache: bool,
     pub def_format_datetime: bool,
-    pub def_sync_cloud: bool,
+    pub def_force_sync_cloud: bool,
 }
 
 pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
@@ -40,8 +40,8 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
         def_output: None,
         def_output_file_path: None,
         def_format_datetime: true,
-        def_use_cache: false,
-        def_sync_cloud: true,
+        def_use_cache: true,
+        def_force_sync_cloud: false,
     };
     for each in pair.into_inner() {
         if each.as_rule() == Rule::WITH_CLAUSE_DEFINES {
@@ -129,7 +129,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
                     Rule::DEFINE_CLOUD => {
                         for each_inner in each_define.into_inner() {
                             if each_inner.as_rule() == Rule::BOOLEAN_VALUE {
-                                with_clause.def_sync_cloud = parse_bool(each_inner)?;
+                                with_clause.def_force_sync_cloud = parse_bool(each_inner)?;
                             }
                         }
                     }

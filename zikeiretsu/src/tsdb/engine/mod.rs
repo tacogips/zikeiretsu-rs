@@ -117,11 +117,13 @@ impl Engine {
     }
 
     pub async fn block_list_data<P: AsRef<Path>>(
+        database_name: &str,
         db_dir: P,
         metrics: &Metrics,
         config: &DBConfig,
     ) -> Result<block_list::BlockList> {
         let block_list = api::read::read_block_list(
+            database_name,
             db_dir.as_ref(),
             metrics,
             &config.cache_setting,
@@ -140,6 +142,7 @@ impl Engine {
     }
 
     pub async fn search<P: AsRef<Path>>(
+        database_name: &str,
         db_dir: P,
         metrics: &Metrics,
         field_selectors: Option<&[usize]>,
@@ -147,6 +150,7 @@ impl Engine {
         db_config: &DBConfig,
     ) -> Result<Option<TimeSeriesDataFrame>> {
         let dataframe = api::read::search_dataframe(
+            database_name,
             db_dir,
             metrics,
             field_selectors,

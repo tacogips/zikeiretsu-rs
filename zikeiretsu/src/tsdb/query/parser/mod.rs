@@ -467,4 +467,20 @@ where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
 
         assert!(parsed_query.is_ok());
     }
+
+    #[test]
+    fn parse_query_9() {
+        let query = r#"with
+        force_sync_cloud = true,
+  	    cols = [_, volume, price],
+  	    tz = JST
+     select ts, volume, price
+     from trades
+     where ts in (yesterday() + 9:00, today() + 2 hours )
+ "#;
+
+        let parsed_query = parse_query(query);
+
+        assert!(parsed_query.is_ok());
+    }
 }

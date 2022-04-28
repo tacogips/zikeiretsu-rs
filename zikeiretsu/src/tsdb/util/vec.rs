@@ -51,8 +51,8 @@ pub fn remove_range<T>(datas: &mut Vec<T>, range: (usize, usize)) -> Result<Vec<
 pub fn prepend<T: Clone>(datas: &mut Vec<T>, new_datas: &mut [T]) {
     datas.splice(0..0, new_datas.iter().cloned());
     //
-    //causes malloc_consolidate(): unaligned fastbin chunk detected
-    //.splice(index..index, other.into_iter().cloned());
+    //
+    //following codes: causes malloc_consolidate(): unaligned fastbin chunk detected
     //
     //let orig_len = datas.len();
     //let new_data_len = new_datas.len();

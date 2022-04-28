@@ -7,7 +7,7 @@ on:
       - master
 
 jobs:
-  lint-test:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -60,8 +60,8 @@ jobs:
         with:
           command: test
 
-      - name: Print sccache stats
-        run: sccache --show-stats
+      #- name: Print sccache stats
+      #  run: sccache --show-stats
 
-      - name: Stop sccache server
-        run: sccache --stop-server || true
+      #- name: Stop sccache server
+      #  run: sccache --stop-server || true

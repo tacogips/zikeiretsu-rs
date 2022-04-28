@@ -140,11 +140,12 @@ with
 
   cols       = [is_buy, volume, price],  // column alias
 
-  use_cache  = false,                    // use onmemory cache.
 
-  sync_cloud = true,                     // download block_list,and block files from cloud storage
-                                         // before execute the query.
-                                         // this flag will be ignored if use_cache = true
+  force_sync_cloud = false,              // be sure to download block_list from the cloud storage
+                                         // before execute the query, even if `use_cache` flag is true. default:false
+
+  use_cache  = true,                     //  if it turns off the query not use on memory cache when the fetching and the result won't
+                                         // be stored in cache. default:true.
 
   format = table,                        // output format: {json, table, parquet, paruqet_snappy}. default: table,
 

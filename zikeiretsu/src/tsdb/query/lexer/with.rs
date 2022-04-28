@@ -88,8 +88,8 @@ pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult
         with.format_datetime = with_clause.def_format_datetime;
 
         // cache setting
-        if with_clause.def_use_cache {
-            with.cache_setting = CacheSetting::both();
+        if !with_clause.def_use_cache {
+            with.cache_setting = CacheSetting::none();
         }
 
         // cloud setting

@@ -201,16 +201,13 @@ where ts in ('2022-04-26', +2 minutes);
 #### show metadatas
 ```
 select  * from .metrics;
-+--------------------------------------------+
-| metrics                                    |
-+--------------------------------------------+
-| bitflyer_fx_FX_BTC_JPY_execution           |
-| bitflyer_fx_FX_BTC_JPY_order_book_snapshot |
-| bitflyer_fx_FX_BTC_JPY_order_book_update   |
-| bitflyer_spot_BTC_JPY_execution            |
-| bitflyer_spot_BTC_JPY_order_book_snapshot  |
-| bitflyer_spot_BTC_JPY_order_book_update    |
-+--------------------------------------------+
++-----------------+
+| metrics         |
++-----------------+
+| your_metrics_1  |
+| your_metrics_2  |
+| your_metrics_3  |
++-----------------+
 
 
 select  * from .block_list;

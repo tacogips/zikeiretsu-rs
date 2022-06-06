@@ -623,27 +623,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "file-dougu"
-version = "0.1.10"
-source = "git+https://github.com/tacogips/file-dougu-rs?tag=0.1.10#e63eaca39392dc47879d48ab5158e4dd5e1d4b0b"
-dependencies = [
- "backoff",
- "bytes",
- "cloud-storage",
- "flate2",
- "futures",
- "futures-util",
- "http",
- "lazy_static",
- "log",
- "regex 1.5.5",
- "reqwest",
- "thiserror",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "fixedbitset"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

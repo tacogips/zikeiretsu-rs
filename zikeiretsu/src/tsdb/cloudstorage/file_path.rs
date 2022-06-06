@@ -157,7 +157,7 @@ mod test {
     pub fn test_cloud_block_list_file_path() {
         let metrics = Metrics::new("some_metrics").unwrap();
 
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir"));
         let file_path = CloudBlockListFilePath::new(&metrics, &storage);
 
         assert_eq!(
@@ -170,7 +170,7 @@ mod test {
     pub fn test_cloud_block_file_path() {
         let metrics = Metrics::new("some_metrics").unwrap();
 
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir"));
 
         let ts = BlockTimestamp::new(TimestampSec::new(1629745452), TimestampSec::new(1629745453));
 
@@ -187,11 +187,24 @@ mod test {
     pub fn test_cloud_lock_file_path() {
         let metrics = Metrics::new("some_metrics").unwrap();
 
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir"));
         let file_path = CloudLockfilePath::new(&metrics, &storage);
 
         assert_eq!(
             "gs://some_bucket/some_dir/some_metrics.lock".to_string(),
+            file_path.as_url()
+        );
+    }
+
+    #[test]
+    pub fn test_cloud_lock_file_path_2() {
+        let metrics = Metrics::new("some_metrics").unwrap();
+
+        let storage = CloudStorage::new_gcp("some_bucket", None);
+        let file_path = CloudLockfilePath::new(&metrics, &storage);
+
+        assert_eq!(
+            "gs://some_bucket/some_metrics.lock".to_string(),
             file_path.as_url()
         );
     }

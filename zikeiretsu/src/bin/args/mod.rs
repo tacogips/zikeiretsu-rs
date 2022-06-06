@@ -250,7 +250,7 @@ mod test {
                 data_dir,
                 vec![Database {
                     database_name: "t_db".to_string(),
-                    cloud_storage: Some(CloudStorage::new_gcp("some", "thing")),
+                    cloud_storage: Some(CloudStorage::new_gcp("some", Some("thing"))),
                 }]
             )
         )
@@ -274,7 +274,7 @@ mod test {
                 vec![
                     Database {
                         database_name: "t_db".to_string(),
-                        cloud_storage: Some(CloudStorage::new_gcp("some", "thing")),
+                        cloud_storage: Some(CloudStorage::new_gcp("some", Some("thing"))),
                     },
                     Database {
                         database_name: "t_db2".to_string(),
@@ -282,7 +282,39 @@ mod test {
                     },
                     Database {
                         database_name: "t_db_3".to_string(),
-                        cloud_storage: Some(CloudStorage::new_gcp("some", "thing/else")),
+                        cloud_storage: Some(CloudStorage::new_gcp("some", Some("thing/else"))),
+                    },
+                ]
+            )
+        )
+    }
+
+    #[test]
+    fn test_parse_databases_3() {
+        let mut args = Args::default();
+        let mut data_dir = PathBuf::new();
+        data_dir.push("/tmp/test_dir/");
+        args.data_dir = Some(data_dir.clone());
+        args.databases = Some("t_db=gs://some/thing,t_db2, t_db_3 = gs://some/".to_string());
+        args.init(false).unwrap();
+
+        let db_context = args.as_db_context().unwrap();
+        assert_eq!(
+            db_context,
+            DBContext::new(
+                data_dir,
+                vec![
+                    Database {
+                        database_name: "t_db".to_string(),
+                        cloud_storage: Some(CloudStorage::new_gcp("some", Some("thing"))),
+                    },
+                    Database {
+                        database_name: "t_db2".to_string(),
+                        cloud_storage: None
+                    },
+                    Database {
+                        database_name: "t_db_3".to_string(),
+                        cloud_storage: Some(CloudStorage::new_gcp("some", None)),
                     },
                 ]
             )

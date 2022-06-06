@@ -33,13 +33,18 @@ impl Database {
         let mut pb = PathBuf::new();
         let dir_str = match &self.cloud_storage {
             Some(cloud_storage) => match cloud_storage {
-                CloudStorage::Gcp(Bucket(bucket), SubDir(subdir)) => {
-                    format!(
+                CloudStorage::Gcp(Bucket(bucket), subdir) => match subdir {
+                    Some(SubDir(subdir)) => format!(
                         "{data_dir}/{db_name}_{bucket}/{subdir}",
                         data_dir = data_dir.display(),
                         db_name = self.database_name
-                    )
-                }
+                    ),
+                    None => format!(
+                        "{data_dir}/{db_name}_{bucket}",
+                        data_dir = data_dir.display(),
+                        db_name = self.database_name
+                    ),
+                },
             },
             None => {
                 format!(
@@ -98,7 +103,7 @@ mod test {
             database_name: "test_db".to_string(),
             cloud_storage: Some(CloudStorage::Gcp(
                 Bucket("test_bucket".to_string()),
-                SubDir("test_dir/aaa".to_string()),
+                Some(SubDir("test_dir/aaa".to_string())),
             )),
         };
 

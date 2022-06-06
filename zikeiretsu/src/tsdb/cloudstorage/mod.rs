@@ -2,7 +2,7 @@ pub mod file_path;
 
 pub mod gcp;
 
-use file_dougu::gcs::{FileUtilGcsError, GcsFile};
+use file_dougu::gcs::{FileUtilGcsError, GcsBucket, GcsFile};
 use file_dougu::FileUtilError;
 pub use file_path::*;
 use std::fmt::{Display, Formatter, Result as FormatterResult};
@@ -56,7 +56,6 @@ impl Display for Bucket {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SubDir(pub String);
-
 impl Display for SubDir {
     fn fmt(&self, f: &mut Formatter<'_>) -> FormatterResult {
         write!(f, "{subdir}", subdir = self.0)
@@ -65,24 +64,27 @@ impl Display for SubDir {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CloudStorage {
-    Gcp(Bucket, SubDir),
+    Gcp(Bucket, Option<SubDir>),
 }
 
 impl CloudStorage {
-    pub fn new_gcp(bucket: &str, sub_dir: &str) -> Self {
-        let sub_dir = {
-            let sub_dir: &str = if let Some(stripped) = sub_dir.strip_suffix('/') {
-                stripped
-            } else {
-                sub_dir
-            };
+    pub fn new_gcp(bucket: &str, sub_dir: Option<&str>) -> Self {
+        let sub_dir = match sub_dir {
+            Some(sub_dir) => {
+                let sub_dir: &str = if let Some(stripped) = sub_dir.strip_suffix('/') {
+                    stripped
+                } else {
+                    sub_dir
+                };
 
-            let sub_dir: &str = if let Some(stripped) = sub_dir.strip_prefix('/') {
-                stripped
-            } else {
-                sub_dir
-            };
-            SubDir(sub_dir.to_string())
+                let sub_dir: &str = if let Some(stripped) = sub_dir.strip_prefix('/') {
+                    stripped
+                } else {
+                    sub_dir
+                };
+                Some(SubDir(sub_dir.to_string()))
+            }
+            None => None,
         };
 
         Self::Gcp(Bucket(bucket.to_string()), sub_dir)
@@ -90,10 +92,14 @@ impl CloudStorage {
 
     pub fn as_url(&self) -> String {
         match self {
-            Self::Gcp(Bucket(bucket_str), sub_dir) => {
-                let gcs_url = format!("gs://{bucket_str}/{sub_dir}/");
-                gcs_url
-            }
+            Self::Gcp(Bucket(bucket_str), sub_dir) => match sub_dir {
+                Some(sub_dir) => {
+                    format!("gs://{bucket_str}/{sub_dir}/")
+                }
+                None => {
+                    format!("gs://{bucket_str}/")
+                }
+            },
         }
     }
 
@@ -101,13 +107,15 @@ impl CloudStorage {
         let url = Url::parse(url)
             .map_err(|e| CloudStorageError::InvalidUrl(format!("{} ({:?})", url, e)))?;
 
-        if let Ok(GcsFile { bucket, name, .. }) = GcsFile::new_with_url(&url) {
-            Ok(CloudStorage::new_gcp(&bucket, &name))
-        } else {
-            Err(CloudStorageError::UnsupportedCloudStorageUrl(format!(
-                "{}",
-                url
-            )))
+        match GcsFile::new_with_url(&url) {
+            Ok(GcsFile { bucket, name, .. }) => Ok(CloudStorage::new_gcp(&bucket, Some(&name))),
+            Err(_e) => match GcsBucket::new_with_url(&url) {
+                Ok(GcsBucket { bucket }) => Ok(CloudStorage::new_gcp(&bucket, None)),
+                Err(_e) => Err(CloudStorageError::UnsupportedCloudStorageUrl(format!(
+                    "{}",
+                    url
+                ))),
+            },
         }
     }
 }
@@ -118,14 +126,14 @@ mod test {
 
     #[test]
     pub fn cloud_block_list_file_path_1() {
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir"));
 
         assert_eq!("gs://some_bucket/some_dir/".to_string(), storage.as_url());
     }
 
     #[test]
     pub fn cloud_block_list_file_path_2() {
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir"));
 
         assert_eq!(
             CloudStorage::from_url("gs://some_bucket/some_dir/").unwrap(),
@@ -135,7 +143,7 @@ mod test {
 
     #[test]
     pub fn cloud_block_list_file_path_3() {
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir/aaa");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir/aaa"));
 
         assert_eq!(
             CloudStorage::from_url("gs://some_bucket/some_dir/aaa").unwrap(),
@@ -145,11 +153,18 @@ mod test {
 
     #[test]
     pub fn cloud_block_list_file_path_5() {
-        let storage = CloudStorage::new_gcp("some_bucket", "some_dir/aaa");
+        let storage = CloudStorage::new_gcp("some_bucket", Some("some_dir/aaa"));
 
         assert_eq!(
             CloudStorage::from_url("gs://some_bucket/some_dir/aaa/").unwrap(),
             storage
         );
+    }
+
+    #[test]
+    pub fn cloud_block_list_file_path_6() {
+        let storage = CloudStorage::new_gcp("some_bucket", None);
+
+        assert_eq!(CloudStorage::from_url("gs://some_bucket").unwrap(), storage);
     }
 }

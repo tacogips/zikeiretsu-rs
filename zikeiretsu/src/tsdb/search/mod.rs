@@ -536,6 +536,60 @@ mod test {
     }
 
     #[test]
+    fn binsearch_test_18() {
+        let data_points: Vec<DataPoint> = empty_data_points!(2, 3, 4, 5, 6, 7, 8, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&3),
+            BinaryRangeSearchType::AtLeastExclusive,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 2);
+    }
+
+    #[test]
+    fn binsearch_test_19() {
+        let data_points: Vec<DataPoint> = empty_data_points!(2, 3, 4, 5, 6, 7, 8, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&10),
+            BinaryRangeSearchType::AtLeastExclusive,
+        );
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn binsearch_test_20() {
+        let data_points: Vec<DataPoint> = empty_data_points!(2, 3, 4, 5, 6, 7, 8, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&1),
+            BinaryRangeSearchType::AtLeastExclusive,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn binsearch_test_21() {
+        let data_points: Vec<DataPoint> = empty_data_points!(2, 3, 4, 5, 6, 7, 8, 10);
+
+        let result = binary_search_by(
+            &data_points,
+            |datapoint| datapoint.timestamp_nano.cmp(&2),
+            BinaryRangeSearchType::AtLeastExclusive,
+        );
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result, 1);
+    }
+
+    #[test]
     fn linear_search_same_timestamp_1() {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30);
 

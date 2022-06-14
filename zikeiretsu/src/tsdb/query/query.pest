@@ -26,6 +26,7 @@ KW_DESC = @{ ^"DESC" ~ !ASCII_ALPHANUMERIC }
 //TODO(tacogips) limit and offset are not supported yet.
 //KW_OFFSET = @{ ^"OFFSET" ~ !ASCII_ALPHANUMERIC }
 //KW_LIMIT  = @{ ^"LIMIT" ~ !ASCII_ALPHANUMERIC }
+KW_TS_LIMIT  = @{ ^"TS_LIMIT" ~ !ASCII_ALPHANUMERIC }
 
 KW_COLS    = @{ ^"COLS" ~ !ASCII_ALPHANUMERIC }
 KW_TZ      = @{ ^"TZ" ~ !ASCII_ALPHANUMERIC }
@@ -132,7 +133,8 @@ ORDER_CLAUSE = { KW_ORDER  ~ KW_BY ~  KW_TIMESTAMP ~ (KW_DESC | KW_ASC)?  }
 //OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allowed now
 //ORDER_OR_LIMIT_CLAUSE = { (  ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE ) + }
 
-ORDER_OR_LIMIT_CLAUSE = {   ORDER_CLAUSE   }
+TS_LIMIT_CLAUSE  = { KW_TS_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
+ORDER_OR_LIMIT_CLAUSE = { ( ORDER_CLAUSE | TS_LIMIT_CLAUSE ) + }
 
 // === Query =================
 QUERY = {

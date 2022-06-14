@@ -18,6 +18,7 @@ pub struct WithClause<'q> {
     pub def_database: Option<&'q str>,
     pub def_timezone: Option<FixedOffset>,
     pub def_output: Option<OutputFormat>,
+    pub def_output_to_memory: bool,
     pub def_output_file_path: Option<PathBuf>,
     pub def_use_cache: bool,
     pub def_format_datetime: bool,
@@ -38,6 +39,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
         def_database: None,
         def_timezone: None,
         def_output: None,
+        def_output_to_memory: false,
         def_output_file_path: None,
         def_format_datetime: true,
         def_use_cache: true,
@@ -101,6 +103,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
                         }
                     }
 
+                    Rule::DEFINE_OUTPUT_MEMORY => with_clause.def_output_to_memory = true,
                     Rule::DEFINE_OUTPUT_FILE => {
                         for each_in_output_file in each_define.into_inner() {
                             if each_in_output_file.as_rule() == Rule::FILE_PATH {

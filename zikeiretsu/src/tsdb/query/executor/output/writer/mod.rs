@@ -7,7 +7,7 @@ use arrow::record_batch::RecordBatch;
 pub async fn output_records(
     record_batch: RecordBatch,
     output_condition: OutputCondition,
-) -> Result<()> {
+) -> Result<Option<RecordBatch>> {
     match output_condition.output_wirter()? {
         crate::tsdb::lexer::OutputWriter::Stdout => {
             let out = std::io::stdout();
@@ -21,40 +21,42 @@ pub async fn output_records(
                 };
 
             destination.output(record_batch)?;
-        }
-        crate::tsdb::lexer::OutputWriter::File(file) => {
-            let mut destination: Box<dyn ArrowDataFrameOutput> =
-                match &output_condition.output_format {
-                    OutputFormat::Json => {
-                        let out = std::io::BufWriter::new(file);
-                        Box::new(JsonDfOutput(out))
-                    }
-                    OutputFormat::Table => {
-                        let out = std::io::BufWriter::new(file);
-                        Box::new(TableDfOutput(out))
-                    }
-                    OutputFormat::Parquet => {
-                        ParquetOutput {
-                            file,
-                            snappy_compress: false,
-                        }
-                        .output(record_batch)?;
-                        return Ok(());
-                    }
 
-                    OutputFormat::ParquetSnappy => {
-                        ParquetOutput {
-                            file,
-                            snappy_compress: true,
-                        }
-                        .output(record_batch)?;
-                        return Ok(());
-                    }
-                };
-
-            destination.output(record_batch)?;
+            Ok(None)
         }
+
+        crate::tsdb::lexer::OutputWriter::Memory => Ok(Some(record_batch)),
+        crate::tsdb::lexer::OutputWriter::File(file) => match &output_condition.output_format {
+            OutputFormat::Json => {
+                let out = std::io::BufWriter::new(file);
+                let mut destination = Box::new(JsonDfOutput(out));
+                destination.output(record_batch)?;
+                Ok(None)
+            }
+            OutputFormat::Table => {
+                let out = std::io::BufWriter::new(file);
+                let mut destination = Box::new(TableDfOutput(out));
+                destination.output(record_batch)?;
+                Ok(None)
+            }
+
+            OutputFormat::Parquet => {
+                ParquetOutput {
+                    file,
+                    snappy_compress: false,
+                }
+                .output(record_batch)?;
+                Ok(None)
+            }
+
+            OutputFormat::ParquetSnappy => {
+                ParquetOutput {
+                    file,
+                    snappy_compress: true,
+                }
+                .output(record_batch)?;
+                Ok(None)
+            }
+        },
     }
-
-    Ok(())
 }

@@ -13,6 +13,7 @@ pub(crate) struct With<'q> {
     pub format_datetime: bool,
     pub column_index_map: Option<HashMap<&'q str, usize>>,
     pub column_name_aliases: Option<Vec<String>>,
+    pub output_to_memory: bool,
     pub output_file_path: Option<PathBuf>,
     pub cache_setting: CacheSetting,
     pub cloud_setting: CloudStorageSetting,
@@ -30,6 +31,7 @@ impl<'q> Default for With<'q> {
             database: None,
             column_index_map: None,
             column_name_aliases: None,
+            output_to_memory: false,
             output_file_path: None,
             cache_setting: CacheSetting::default(),
             cloud_setting: CloudStorageSetting::default(),
@@ -76,6 +78,9 @@ pub(crate) fn interpret_with(with_clause: Option<WithClause<'_>>) -> LexerResult
             with.timezone = tz
         }
 
+        // output to memory
+        with.output_to_memory = with_clause.def_output_to_memory;
+
         // output file path
         with.output_file_path = with_clause.def_output_file_path;
 
@@ -120,6 +125,7 @@ mod test {
             def_timezone: None,
             def_format_datetime: true,
             def_output: None,
+            def_output_to_memory: false,
             def_output_file_path: None,
             def_use_cache: true,
             def_force_sync_cloud: true,

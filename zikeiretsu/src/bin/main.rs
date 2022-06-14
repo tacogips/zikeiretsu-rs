@@ -77,7 +77,9 @@ pub async fn main() -> Result<()> {
             )
         };
         match args.query {
-            Some(query) => executor_interface.execute_query(&ctx, &query).await?,
+            Some(query) => {
+                executor_interface.execute_query(&ctx, &query).await?;
+            }
             None => repl(&mut ctx, executor_interface).await?,
         }
     };

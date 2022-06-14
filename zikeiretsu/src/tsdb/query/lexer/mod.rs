@@ -59,6 +59,12 @@ pub enum OutputError {
 
     #[error("invalid output destination : {0}")]
     InvalidOutputDestination(String),
+
+    #[error("invalid output format : {0}")]
+    InvalidOutputFormat(String),
+
+    #[error("cannot output to file: {0}")]
+    CannotOutputToFile(String),
 }
 
 #[derive(Debug)]
@@ -90,6 +96,7 @@ pub struct QuerySetting {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct OutputCondition {
     pub output_format: OutputFormat,
+    pub output_to_memory: bool,
     pub output_file_path: Option<PathBuf>,
 }
 
@@ -108,17 +115,30 @@ pub struct DescribeBlockList {
 pub enum OutputWriter {
     Stdout,
     File(fs::File),
+    Memory,
 }
 impl OutputWriter {
     fn validate_available_for_format(&self, format: &OutputFormat) -> StdResult<(), OutputError> {
-        match format {
-            OutputFormat::Json => Ok(()),
-            OutputFormat::Table => Ok(()),
-            OutputFormat::Parquet | OutputFormat::ParquetSnappy => match &self {
-                OutputWriter::File(_) => Ok(()),
-                OutputWriter::Stdout => Err(OutputError::InvalidOutputDestination(
-                    "parquet format can output to only a file".to_string(),
+        match self {
+            OutputWriter::Memory => match format {
+                OutputFormat::Table => Ok(()),
+                _ => Err(OutputError::InvalidOutputFormat(
+                    "output format must be 'Table' when output to memory".to_string(),
                 )),
+            },
+
+            OutputWriter::File(_) => Ok(()),
+            OutputWriter::Stdout => match format {
+                OutputFormat::Json => Ok(()),
+                OutputFormat::Table => Ok(()),
+                OutputFormat::Parquet | OutputFormat::ParquetSnappy => match self {
+                    OutputWriter::File(_) => Ok(()),
+                    OutputWriter::Stdout | OutputWriter::Memory => {
+                        Err(OutputError::InvalidOutputDestination(
+                            "parquet format can output to only a file".to_string(),
+                        ))
+                    }
+                },
             },
         }
     }
@@ -126,30 +146,38 @@ impl OutputWriter {
 
 impl OutputCondition {
     pub fn output_wirter(&self) -> StdResult<OutputWriter, OutputError> {
-        let output_destination = match &self.output_file_path {
-            None => Ok(OutputWriter::Stdout),
+        if self.output_to_memory {
+            if self.output_file_path.is_some() {
+                Err(OutputError::CannotOutputToFile("memory".to_string()))
+            } else {
+                Ok(OutputWriter::Memory)
+            }
+        } else {
+            let output_destination = match &self.output_file_path {
+                None => Ok(OutputWriter::Stdout),
 
-            Some(output_file_path) => match output_file_path.parent() {
-                None => Err(OutputError::InvalidPath(format!("{:?} ", output_file_path))),
-                Some(output_dir) => {
-                    if Path::new(output_file_path).exists() {
-                        Err(OutputError::OutputFileAlreadyExists(
-                            output_file_path.clone(),
-                        ))
-                    } else {
-                        if output_dir.exists() {
-                            fs::create_dir_all(output_dir)?;
+                Some(output_file_path) => match output_file_path.parent() {
+                    None => Err(OutputError::InvalidPath(format!("{:?} ", output_file_path))),
+                    Some(output_dir) => {
+                        if Path::new(output_file_path).exists() {
+                            Err(OutputError::OutputFileAlreadyExists(
+                                output_file_path.clone(),
+                            ))
+                        } else {
+                            if output_dir.exists() {
+                                fs::create_dir_all(output_dir)?;
+                            }
+
+                            let f = fs::File::create(output_file_path)?;
+                            Ok(OutputWriter::File(f))
                         }
-
-                        let f = fs::File::create(output_file_path)?;
-                        Ok(OutputWriter::File(f))
                     }
-                }
-            },
-        }?;
+                },
+            }?;
 
-        output_destination.validate_available_for_format(&self.output_format)?;
-        Ok(output_destination)
+            output_destination.validate_available_for_format(&self.output_format)?;
+            Ok(output_destination)
+        }
     }
 }
 
@@ -212,6 +240,7 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
 
     let output_condition = OutputCondition {
         output_format: with.output_format,
+        output_to_memory: with.output_to_memory,
         output_file_path: with.output_file_path,
     };
 
@@ -256,6 +285,7 @@ pub(crate) fn interpret_buildin_metrics(
                 database_name,
                 OutputCondition {
                     output_format: with.output_format,
+                    output_to_memory: with.output_to_memory,
                     output_file_path: with.output_file_path,
                 },
                 query_setting,
@@ -265,6 +295,7 @@ pub(crate) fn interpret_buildin_metrics(
         from::BuildinMetrics::DescribeMetrics => {
             let output_condition = OutputCondition {
                 output_format: with.output_format,
+                output_to_memory: with.output_to_memory,
                 output_file_path: with.output_file_path,
             };
 
@@ -286,6 +317,7 @@ pub(crate) fn interpret_buildin_metrics(
         from::BuildinMetrics::DescribeBlockList => {
             let output_condition = OutputCondition {
                 output_format: with.output_format,
+                output_to_memory: with.output_to_memory,
                 output_file_path: with.output_file_path,
             };
 
@@ -315,4 +347,74 @@ fn invalid_if_metrics_filter_exists(where_clause: Option<&WhereClause<'_>>) -> R
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    use tempfile::tempfile;
+    #[test]
+    fn test_output_writer_validate() {
+        {
+            //stdout
+            let writer = OutputWriter::Stdout;
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Json)
+                .is_ok());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Table)
+                .is_ok());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Parquet)
+                .is_err());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::ParquetSnappy)
+                .is_err());
+        }
+
+        {
+            //file
+            let f = tempfile().unwrap();
+            let writer = OutputWriter::File(f);
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Json)
+                .is_ok());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Table)
+                .is_ok());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Parquet)
+                .is_ok());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::ParquetSnappy)
+                .is_ok());
+        }
+
+        {
+            let writer = OutputWriter::Memory;
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Json)
+                .is_err());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Table)
+                .is_ok());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::Parquet)
+                .is_err());
+
+            assert!(writer
+                .validate_available_for_format(&OutputFormat::ParquetSnappy)
+                .is_err());
+        }
+    }
 }

@@ -38,7 +38,11 @@ impl ArrowFlightClientInterface {
 
 #[async_trait]
 impl ExecutorInterface for ArrowFlightClientInterface {
-    async fn execute_query(&mut self, _ctx: &DBContext, query: &str) -> Result<()> {
+    async fn execute_query(
+        &mut self,
+        _ctx: &DBContext,
+        query: &str,
+    ) -> Result<Option<RecordBatch>> {
         let ticket = Ticket {
             ticket: query.as_bytes().to_vec(),
         };
@@ -63,7 +67,7 @@ impl ExecutorInterface for ArrowFlightClientInterface {
             }
         }
 
-        Ok(())
+        Ok(None)
     }
 }
 

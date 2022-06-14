@@ -25,19 +25,19 @@ fn datetime_filter_to_condition<'q>(
             Some(from.to_timestamp_nano(timezone)),
             Some(to.to_timestamp_nano(timezone)),
         )),
-        DatetimeFilter::Gte(_, from) => Ok(DatapointSearchCondition::new(
+        DatetimeFilter::Gte(_, from, limit) => Ok(DatapointSearchCondition::new(
             Some(from.to_timestamp_nano(timezone)),
             None,
         )),
-        DatetimeFilter::Gt(_, from) => Ok(DatapointSearchCondition::new(
+        DatetimeFilter::Gt(_, from, limit) => Ok(DatapointSearchCondition::new(
             Some(from.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
             None,
         )),
-        DatetimeFilter::Lte(_, to) => Ok(DatapointSearchCondition::new(
+        DatetimeFilter::Lte(_, to, limit) => Ok(DatapointSearchCondition::new(
             None,
             Some(to.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
         )),
-        DatetimeFilter::Lt(_, to) => Ok(DatapointSearchCondition::new(
+        DatetimeFilter::Lt(_, to, limit) => Ok(DatapointSearchCondition::new(
             None,
             Some(to.to_timestamp_nano(timezone)),
         )),

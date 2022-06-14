@@ -105,7 +105,7 @@ mod test {
         assert_eq!(
             parsed.unwrap(),
             WhereClause {
-                datetime_filter: Some(DatetimeFilter::Gte(ColumnName("ts"), expected)),
+                datetime_filter: Some(DatetimeFilter::Gte(ColumnName("ts"), expected, None)),
 
                 metrics_filter: None,
             }
@@ -241,6 +241,114 @@ mod test {
                     expected_from,
                     expected_to
                 )),
+                metrics_filter: None,
+            }
+        );
+    }
+
+    #[test]
+    fn parse_where_5() {
+        let where_clause = r"where  ts >=|2 '2012-12-30'
+            ";
+
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, where_clause);
+
+        assert!(pairs.is_ok());
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        assert!(parsed.is_ok());
+
+        let mut dt = chrono_format::Parsed::new();
+        chrono_format::parse(
+            &mut dt,
+            "2012-12-30",
+            chrono_format::StrftimeItems::new("%Y-%m-%d"),
+        )
+        .unwrap();
+
+        let expected_datetime = DateTime::from_utc(
+            NaiveDateTime::new(dt.to_naive_date().unwrap(), NaiveTime::from_hms(0, 0, 0)),
+            Utc,
+        );
+        let expected = DatetimeFilterValue::DateString(expected_datetime, None);
+
+        assert_eq!(
+            parsed.unwrap(),
+            WhereClause {
+                datetime_filter: Some(DatetimeFilter::Gte(ColumnName("ts"), expected, Some(2))),
+
+                metrics_filter: None,
+            }
+        );
+    }
+
+    #[test]
+    fn parse_where_6() {
+        let where_clause = r"where  ts <=|10 '2012-12-30'
+            ";
+
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, where_clause);
+
+        assert!(pairs.is_ok());
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        assert!(parsed.is_ok());
+
+        let mut dt = chrono_format::Parsed::new();
+        chrono_format::parse(
+            &mut dt,
+            "2012-12-30",
+            chrono_format::StrftimeItems::new("%Y-%m-%d"),
+        )
+        .unwrap();
+
+        let expected_datetime = DateTime::from_utc(
+            NaiveDateTime::new(dt.to_naive_date().unwrap(), NaiveTime::from_hms(0, 0, 0)),
+            Utc,
+        );
+        let expected = DatetimeFilterValue::DateString(expected_datetime, None);
+
+        assert_eq!(
+            parsed.unwrap(),
+            WhereClause {
+                datetime_filter: Some(DatetimeFilter::Lte(ColumnName("ts"), expected, Some(10))),
+
+                metrics_filter: None,
+            }
+        );
+    }
+
+    #[test]
+    fn parse_where_7() {
+        let where_clause = r"where  ts <|10 '2012-12-30'
+            ";
+
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, where_clause);
+
+        assert!(pairs.is_ok());
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        assert!(parsed.is_ok());
+
+        let mut dt = chrono_format::Parsed::new();
+        chrono_format::parse(
+            &mut dt,
+            "2012-12-30",
+            chrono_format::StrftimeItems::new("%Y-%m-%d"),
+        )
+        .unwrap();
+
+        let expected_datetime = DateTime::from_utc(
+            NaiveDateTime::new(dt.to_naive_date().unwrap(), NaiveTime::from_hms(0, 0, 0)),
+            Utc,
+        );
+        let expected = DatetimeFilterValue::DateString(expected_datetime, None);
+
+        assert_eq!(
+            parsed.unwrap(),
+            WhereClause {
+                datetime_filter: Some(DatetimeFilter::Lt(ColumnName("ts"), expected, Some(10))),
+
                 metrics_filter: None,
             }
         );

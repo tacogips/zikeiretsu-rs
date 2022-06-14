@@ -8,10 +8,10 @@ use chrono::{DateTime, Duration, Utc};
 #[derive(Debug, PartialEq)]
 pub enum DatetimeFilter<'q> {
     In(ColumnName<'q>, DatetimeFilterValue, DatetimeFilterValue),
-    Gte(ColumnName<'q>, DatetimeFilterValue),
-    Gt(ColumnName<'q>, DatetimeFilterValue),
-    Lte(ColumnName<'q>, DatetimeFilterValue),
-    Lt(ColumnName<'q>, DatetimeFilterValue),
+    Gte(ColumnName<'q>, DatetimeFilterValue, Option<usize>),
+    Gt(ColumnName<'q>, DatetimeFilterValue, Option<usize>),
+    Lte(ColumnName<'q>, DatetimeFilterValue, Option<usize>),
+    Lt(ColumnName<'q>, DatetimeFilterValue, Option<usize>),
     Equal(ColumnName<'q>, DatetimeFilterValue),
 }
 
@@ -38,14 +38,49 @@ impl<'q> DatetimeFilter<'q> {
                 }
                 Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
             },
-            ">=" => Ok(DatetimeFilter::Gte(column_name, datetime_1)),
-            ">" => Ok(DatetimeFilter::Gt(column_name, datetime_1)),
-            "<=" => Ok(DatetimeFilter::Lte(column_name, datetime_1)),
-            "<" => Ok(DatetimeFilter::Lt(column_name, datetime_1)),
+            ">=" => Ok(DatetimeFilter::Gte(column_name, datetime_1, None)),
+            ">" => Ok(DatetimeFilter::Gt(column_name, datetime_1, None)),
+            "<=" => Ok(DatetimeFilter::Lte(column_name, datetime_1, None)),
+            "<" => Ok(DatetimeFilter::Lt(column_name, datetime_1, None)),
             "=" => Ok(DatetimeFilter::Equal(column_name, datetime_1)),
-            invalid_operator => Err(ParserError::InvalidDatetimeFilterOperator(
-                invalid_operator.to_string(),
-            )),
+            other_operator => {
+                // ge,le with limit
+                // >|{n}, >=|{n},
+                // <|{n}, <=|{n},
+                if other_operator.len() >= 3 {
+                    match &other_operator[..3] {
+                        ">=|" => {
+                            let limit = other_operator[3..].parse::<usize>()?;
+                            return Ok(DatetimeFilter::Gte(column_name, datetime_1, Some(limit)));
+                        }
+                        "<=|" => {
+                            let limit = other_operator[3..].parse::<usize>()?;
+                            return Ok(DatetimeFilter::Lte(column_name, datetime_1, Some(limit)));
+                        }
+                        _ => { /**/ }
+                    }
+
+                    match &other_operator[..2] {
+                        ">|" => {
+                            let limit = other_operator[2..].parse::<usize>()?;
+                            return Ok(DatetimeFilter::Gt(column_name, datetime_1, Some(limit)));
+                        }
+                        "<|" => {
+                            let limit = other_operator[2..].parse::<usize>()?;
+                            return Ok(DatetimeFilter::Lt(column_name, datetime_1, Some(limit)));
+                        }
+                        _ => { /**/ }
+                    }
+
+                    Err(ParserError::InvalidDatetimeFilterOperator(
+                        other_operator.to_string(),
+                    ))
+                } else {
+                    Err(ParserError::InvalidDatetimeFilterOperator(
+                        other_operator.to_string(),
+                    ))
+                }
+            }
         }
     }
 }
@@ -56,6 +91,7 @@ pub enum DatetimeDelta {
     MicroSec(i64),
     Composit(Box<DatetimeDelta>, Box<DatetimeDelta>),
 }
+
 impl DatetimeDelta {
     pub fn to_composit_if_some(self, other: Option<Self>) -> Self {
         match other {
@@ -388,6 +424,28 @@ mod test {
     fn parse_datetime_range_close_1() {
         let dt_delta = r"+  2 hours";
         let pairs = QueryGrammer::parse(Rule::DATETIME_RANGE_CLOSE, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_filter_2() {
+        let dt_delta = r"ts >= '2012-12-30'";
+        let pairs = QueryGrammer::parse(Rule::FILTER, dt_delta);
+        assert!(pairs.is_ok());
+
+        let dt_delta = r"where ts >= '2012-12-30'";
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, dt_delta);
+        assert!(pairs.is_ok());
+    }
+
+    #[test]
+    fn parse_datetime_filter_3() {
+        let dt_delta = r"ts >= '2012-12-30'";
+        let pairs = QueryGrammer::parse(Rule::FILTER, dt_delta);
+        assert!(pairs.is_ok());
+
+        let dt_delta = r"where ts >= '2012-12-30'";
+        let pairs = QueryGrammer::parse(Rule::WHERE_CLAUSE, dt_delta);
         assert!(pairs.is_ok());
     }
 }

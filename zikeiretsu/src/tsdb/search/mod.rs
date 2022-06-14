@@ -3,18 +3,28 @@ use std::cmp::Ordering;
 #[derive(Eq, PartialEq)]
 pub enum BinaryRangeSearchType {
     AtLeastInclusive,
+    AtLeastExclusive,
     AtMostInclusive,
     AtMostExclusive,
 }
 
-/// - search at most inclusive 3 from [4,6,10] => None
-/// - search at most inclusive 5 from [4,6,10] => 4
+/// - search at most inclusive 3 from [4,5,6,10] => None
+/// - search at most inclusive 5 from [4,5,6,10] => 5
+/// - search at most inclusive 6 from [4,5,6,10] => 6
+///
 /// - search at most exclusive 4 from [4,5,6,10] => None
+/// - search at most exclusive 5 from [4,5,6,10] => 4
 /// - search at most exclusive 6 from [4,5,6,10] => 5
+///
 /// - search at least inclusive 3 from [4,6,10] => 4
 /// - search at least inclusive 5 from [4,6,10] => 6
 /// - search at least inclusive 5 from [4,5,6,10] => 5
 /// - search at least inclusive 11 from [4,5,6,10] => None
+///
+/// - search at least exclusive 3 from [4,6,10] => 4
+/// - search at least exclusive 5 from [4,6,10] => 6
+/// - search at least exclusive 5 from [4,5,6,10] => 6
+/// - search at least exclusive 11 from [4,5,6,10] => None
 pub fn binary_search_by<T, F>(
     datas: &[T],
     cond: F,
@@ -30,18 +40,29 @@ where
         let curr_idx = (left + right) / 2;
 
         let curr_val = unsafe { datas.get_unchecked(curr_idx) };
-        let cmp = cond(curr_val);
+        let cmp_current_value_is = cond(curr_val);
 
-        if cmp == Ordering::Less {
+        if cmp_current_value_is == Ordering::Less {
             left = curr_idx + 1;
             if condition_order == BinaryRangeSearchType::AtMostInclusive
                 || condition_order == BinaryRangeSearchType::AtMostExclusive
             {
                 latest_hit_idx.replace(curr_idx);
             }
-        } else if cmp == Ordering::Greater {
+        } else if cmp_current_value_is == Ordering::Greater {
+            // means curr_val is Greater than condition value
+            // | 1,2,3,4,5,6 |
+            //   l   ^     r
+            //
+            //  to below in next loop
+            //
+            // | 1,2,3,4,5,6 |
+            //   l ^ r
+            //
             right = curr_idx;
-            if condition_order == BinaryRangeSearchType::AtLeastInclusive {
+            if condition_order == BinaryRangeSearchType::AtLeastInclusive
+                || condition_order == BinaryRangeSearchType::AtLeastExclusive
+            {
                 latest_hit_idx.replace(curr_idx);
             }
         } else {
@@ -49,9 +70,18 @@ where
             break;
         }
     }
+    // latest_hit_idx supposed tobe
+    // nearest value greater than, or equal to the base value when the ccondition is AtLeast{Inclusive|Exclusive}
+    // nearest value smaller than, or equal to the base value when the ccondition is AtMost{Inclusive|Exclusive}
 
     if let Some(latest_choice_idx) = latest_hit_idx {
         if condition_order == BinaryRangeSearchType::AtLeastInclusive && latest_choice_idx > 0 {
+            // finding
+            // [1,2,3,3,3,4,5,5,5,6]
+            //      ^
+            // from
+            // [1,2,3,3,3,4,5,5,5,6]
+            //          ^
             if let Some(new_idx) = linear_search_last_index_which_match_rule(
                 datas,
                 latest_choice_idx - 1,
@@ -60,9 +90,39 @@ where
             ) {
                 latest_hit_idx.replace(new_idx);
             }
+        } else if condition_order == BinaryRangeSearchType::AtLeastExclusive {
+            // finding
+            // [1,2,3,3,3,4,5,5,5,6]
+            //            ^
+            // from
+            // [1,2,3,3,3,4,5,5,5,6]
+            //        ^
+            // return none if search at least excusive 4 from
+            // [1,2,3,3,3,4]
+            //            ^
+            match linear_search_first_index_which_match_rule(
+                datas,
+                latest_choice_idx,
+                |data| matches!(cond(data), Ordering::Greater),
+                LinearSearchDirection::Asc,
+            ) {
+                Some(new_idx) => {
+                    latest_hit_idx.replace(new_idx);
+                }
+                None => {
+                    latest_hit_idx = None;
+                }
+            }
         } else if condition_order == BinaryRangeSearchType::AtMostInclusive
             && latest_choice_idx < datas.len()
         {
+            // finding
+            // [1,2,3,3,3,4,5,5,5,6]
+            //          ^
+            // from
+            // [1,2,3,3,3,4,5,5,5,6]
+            //        ^
+            //
             if let Some(new_idx) = linear_search_last_index_which_match_rule(
                 datas,
                 latest_choice_idx + 1,
@@ -72,6 +132,15 @@ where
                 latest_hit_idx.replace(new_idx);
             }
         } else if condition_order == BinaryRangeSearchType::AtMostExclusive {
+            // finding
+            // [1,2,2,3,3,4,5,5,5,6]
+            //      ^
+            // from
+            // [1,2,2,3,3,4,5,5,5,6]
+            //        ^
+            // return none if search at most excusive 2 from
+            // [2,3,3,3,4]
+            //  ^
             match linear_search_first_index_which_match_rule(
                 datas,
                 latest_choice_idx,

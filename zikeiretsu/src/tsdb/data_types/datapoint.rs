@@ -73,6 +73,12 @@ impl DataPoint {
     }
 }
 
+pub enum SortCondition {
+    Desc,
+}
+
+//Limit
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct DatapointSearchCondition {
     pub inner_since_inclusive: Option<TimestampNano>,

@@ -23,11 +23,6 @@ KW_OR  = @{ ^"OR" ~ !ASCII_ALPHANUMERIC }
 KW_ASC  = @{ ^"ASC" ~ !ASCII_ALPHANUMERIC }
 KW_DESC = @{ ^"DESC" ~ !ASCII_ALPHANUMERIC }
 
-//TODO(tacogips) limit and offset are not supported yet.
-//KW_OFFSET = @{ ^"OFFSET" ~ !ASCII_ALPHANUMERIC }
-//KW_LIMIT  = @{ ^"LIMIT" ~ !ASCII_ALPHANUMERIC }
-KW_TS_LIMIT  = @{ ^"TS_LIMIT" ~ !ASCII_ALPHANUMERIC }
-
 KW_COLS    = @{ ^"COLS" ~ !ASCII_ALPHANUMERIC }
 KW_TZ      = @{ ^"TZ" ~ !ASCII_ALPHANUMERIC }
 KW_FORMAT  = @{ ^"FORMAT" ~ !ASCII_ALPHANUMERIC }
@@ -102,6 +97,8 @@ DURATION_DELTA     = { POS_NEG? ~ ASCII_DIGITS ~ DURATION_UNIT }
 DATETIME_DELTA     = { DURATION_DELTA | CLOCK_DELTA }
 DATETIME_FN        = { FN_TODAY | FN_YESTERDAY | FN_TOMORROW }
 
+SIGNED_DIGITS      = {POS_NEG? ~ ASCII_DIGITS}
+
 DATETIME =   { ( DATETIME_FN  | DATETIME_STR ) ~ DATETIME_DELTA? }
 DATETIME_RANGE_CLOSE = { DATETIME_DELTA | DATETIME }
 DATETIME_RANGE =  { "(" ~ DATETIME ~"," ~ DATETIME_RANGE_CLOSE ~ ")"}
@@ -128,16 +125,6 @@ FROM_CLAUSE   = { KW_FROM ~ METRICS_NAME  }
 
 WHERE_CLAUSE  = { KW_WHERE ~ FILTER } // only simple condition is allowed now
 
-ORDER_CLAUSE = { KW_ORDER  ~ KW_BY ~  KW_TIMESTAMP ~ (KW_DESC | KW_ASC)?  }
-
-//TODO(tacogips) limit and offset are not supported yet.
-//LIMIT_CLAUSE  = { KW_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
-//OFFSET_CLAUSE  = { KW_OFFSET ~ ASCII_DIGITS  } // only simple condition is allowed now
-//ORDER_OR_LIMIT_CLAUSE = { (  ORDER_CLAUSE | OFFSET_CLAUSE | LIMIT_CLAUSE ) + }
-
-TS_LIMIT_CLAUSE  = { KW_TS_LIMIT ~ ASCII_DIGITS } // only simple condition is allowed now
-ORDER_OR_LIMIT_CLAUSE = { ( ORDER_CLAUSE | TS_LIMIT_CLAUSE ) + }
-
 // === Query =================
 QUERY = {
 		SOI
@@ -145,7 +132,6 @@ QUERY = {
 	~ SELECT_CLAUSE
 	~ FROM_CLAUSE
 	~ WHERE_CLAUSE?
-	~ ORDER_OR_LIMIT_CLAUSE*
 	~ KW_SEMICOLON?
 	~ EOI }
 

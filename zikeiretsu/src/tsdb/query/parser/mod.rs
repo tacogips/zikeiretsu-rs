@@ -99,7 +99,6 @@ pub struct ParsedQuery<'q> {
     pub select: Option<SelectClause<'q>>,
     pub from: Option<FromClause<'q>>,
     pub r#where: Option<WhereClause<'q>>,
-    pub order_or_limit: Option<OrderOrLimitClause<'q>>,
 }
 
 impl<'q> ParsedQuery<'q> {
@@ -109,7 +108,6 @@ impl<'q> ParsedQuery<'q> {
             select: None,
             from: None,
             r#where: None,
-            order_or_limit: None,
         }
     }
 }
@@ -154,10 +152,6 @@ pub fn parse_query<'q>(query_str: &'q str) -> Result<ParsedQuery<'q>> {
             Rule::WHERE_CLAUSE => {
                 let where_clause = where_clause::parse(each_pair)?;
                 parsed_query.r#where = Some(where_clause);
-            }
-            Rule::ORDER_OR_LIMIT_CLAUSE => {
-                let order_or_limit_clause = order_or_limit_clause::parse(each_pair)?;
-                parsed_query.order_or_limit = Some(order_or_limit_clause);
             }
 
             Rule::KW_SEMICOLON => { /* do nothing*/ }
@@ -381,8 +375,6 @@ select *
 from trades
 
  where ts in today()
- order by ts asc
-
  "#;
 
         let parsed_query = parse_query(query);

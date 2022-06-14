@@ -73,26 +73,28 @@ impl DataPoint {
     }
 }
 
-pub enum SortCondition {
-    Desc,
+pub enum Limit {
+    SinceLimit(usize),
+    UntilLimit(usize),
 }
-
-//Limit
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DatapointSearchCondition {
     pub inner_since_inclusive: Option<TimestampNano>,
     pub inner_until_exclusive: Option<TimestampNano>,
+    pub limit: Option<Limit>,
 }
 
 impl DatapointSearchCondition {
     pub fn new(
         inner_since_inclusive: Option<TimestampNano>,
         inner_until_exclusive: Option<TimestampNano>,
+        limit: Option<Limit>,
     ) -> Self {
         Self {
             inner_since_inclusive,
             inner_until_exclusive,
+            limit,
         }
     }
 
@@ -100,13 +102,21 @@ impl DatapointSearchCondition {
         Self {
             inner_since_inclusive: None,
             inner_until_exclusive: None,
+            None,
         }
     }
 
-    pub fn as_ref(&self) -> (Option<&TimestampNano>, Option<&TimestampNano>) {
+    pub fn as_ref(
+        &self,
+    ) -> (
+        Option<&TimestampNano>,
+        Option<&TimestampNano>,
+        Option<&Limit>,
+    ) {
         (
             self.inner_since_inclusive.as_ref(),
             self.inner_until_exclusive.as_ref(),
+            self.limit.as_ref(),
         )
     }
 
@@ -121,6 +131,7 @@ impl DatapointSearchCondition {
         Self {
             inner_since_inclusive: Some(since),
             inner_until_exclusive: None,
+            limit: None,
         }
     }
 
@@ -128,6 +139,7 @@ impl DatapointSearchCondition {
         Self {
             inner_since_inclusive: None,
             inner_until_exclusive: Some(until),
+            limit: None,
         }
     }
 
@@ -138,6 +150,11 @@ impl DatapointSearchCondition {
 
     pub fn with_until(mut self, until: TimestampNano) -> Self {
         self.inner_until_exclusive = Some(until);
+        self
+    }
+
+    pub fn with_limit(mut self, limit: Limit) -> Self {
+        self.limit = Some(limit);
         self
     }
 
@@ -173,6 +190,7 @@ impl DatapointSearchCondition {
         Ok(DatapointSearchCondition {
             inner_since_inclusive: inner_since,
             inner_until_exclusive: inner_until,
+            limit: None,
         })
     }
 }
@@ -199,34 +217,37 @@ mod test {
 
         assert!(!DatapointSearchCondition::new(
             Some(TimestampNano::new(10)),
-            Some(TimestampNano::new(20))
+            Some(TimestampNano::new(20)),
+            None,
         )
         .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
 
         assert!(
-            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None)
+            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None, None)
                 .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
         );
 
         assert!(
-            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None)
+            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None, None)
                 .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
         );
 
         assert!(DatapointSearchCondition::new(
             Some(TimestampNano::new(10)),
-            Some(TimestampNano::new(21))
+            Some(TimestampNano::new(21)),
+            None
         )
         .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
 
         assert!(!DatapointSearchCondition::new(
             Some(TimestampNano::new(10)),
-            Some(TimestampNano::new(21))
+            Some(TimestampNano::new(21)),
+            None
         )
         .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20)));
 
         assert!(
-            DatapointSearchCondition::new(None, Some(TimestampNano::new(21)))
+            DatapointSearchCondition::new(None, Some(TimestampNano::new(21)), None)
                 .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20))
         );
     }

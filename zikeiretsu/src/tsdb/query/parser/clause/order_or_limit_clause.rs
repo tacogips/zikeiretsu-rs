@@ -5,6 +5,7 @@ use crate::tsdb::query::parser::*;
 #[derive(Debug, PartialEq)]
 pub struct OrderOrLimitClause<'q> {
     order_by: Option<Order<'q>>,
+    ts_limit: Option<usize>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,11 +24,16 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     }
 
     let mut order_by: Option<Order<'q>> = None;
+    let mut ts_limit: Option<usize> = None;
 
     for each_inner in pair.into_inner() {
         match each_inner.as_rule() {
             Rule::ORDER_CLAUSE => {
                 order_by = Some(parse_order(each_inner)?);
+            }
+
+            Rule::TS_LIMIT_CLAUSE => {
+                ts_limit = Some(parse_ts_limit(each_inner)?);
             }
 
             r => {
@@ -39,9 +45,37 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<OrderOrLimitClause<'q>> {
     }
 
     //TODO(tacogips) imple
-    Ok(OrderOrLimitClause { order_by })
+    Ok(OrderOrLimitClause { order_by, ts_limit })
 }
 
+pub fn parse_ts_limit<'q>(pair: Pair<'q, Rule>) -> Result<usize> {
+    #[cfg(debug_assertions)]
+    if pair.as_rule() != Rule::TS_LIMIT_CLAUSE {
+        return Err(ParserError::UnexpectedPair(
+            format!("{:?}", Rule::TS_LIMIT_CLAUSE),
+            format!("{:?}", pair.as_rule()),
+        ));
+    }
+
+    for each_inner in pair.into_inner() {
+        match each_inner.as_rule() {
+            Rule::KW_TS_LIMIT => { /* */ }
+            Rule::ASCII_DIGITS => {
+                let val = parse_ascii_digits(each_inner)?;
+                return Ok(val as usize);
+            }
+            r => {
+                return Err(ParserError::InvalidGrammer(format!(
+                    "unknown term ts limit : {r:?}"
+                )));
+            }
+        }
+    }
+
+    Err(ParserError::InvalidGrammer(
+        "no value in ts_limit".to_string(),
+    ))
+}
 pub fn parse_order<'q>(pair: Pair<'q, Rule>) -> Result<Order<'q>> {
     #[cfg(debug_assertions)]
     if pair.as_rule() != Rule::ORDER_CLAUSE {
@@ -97,6 +131,7 @@ mod test {
             parsed.unwrap(),
             OrderOrLimitClause {
                 order_by: Some(Order::AscBy(ColumnName("ts"))),
+                ts_limit: None,
             }
         )
     }
@@ -116,6 +151,28 @@ mod test {
             parsed.unwrap(),
             OrderOrLimitClause {
                 order_by: Some(Order::DescBy(ColumnName("ts"))),
+                ts_limit: None,
+            }
+        )
+    }
+
+    #[test]
+    fn parse_order_limit_3() {
+        let order_clause = r"order by ts desc ts_limit 3
+            ";
+
+        let pairs = QueryGrammer::parse(Rule::ORDER_OR_LIMIT_CLAUSE, order_clause);
+
+        assert!(pairs.is_ok());
+
+        let parsed = parse(pairs.unwrap().next().unwrap());
+
+        println!("{parsed:?}");
+        assert_eq!(
+            parsed.unwrap(),
+            OrderOrLimitClause {
+                order_by: Some(Order::DescBy(ColumnName("ts"))),
+                ts_limit: Some(3),
             }
         )
     }

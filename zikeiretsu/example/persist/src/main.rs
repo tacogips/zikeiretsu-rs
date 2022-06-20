@@ -86,7 +86,7 @@ async fn write_datas(temp_db_dir: &PathBuf) {
         .build();
     wr.lock().await.push_multi(prices).await.unwrap();
     // persist all datapoints
-    let condition = PersistCondition::new(DatapointSearchCondition::all(), true);
+    let condition = PersistCondition::new(DatapointsRange::all(), true);
     wr.lock().await.persist(condition).await.unwrap();
 }
 

@@ -3,7 +3,7 @@ mod select;
 mod r#where;
 mod with;
 
-use crate::tsdb::datapoint::DatapointSearchCondition;
+use crate::tsdb::datapoint::DatapointsRange;
 use crate::tsdb::metrics::Metrics;
 pub use crate::tsdb::query::parser::clause::{OutputFormat, WhereClause, WithClause};
 use crate::tsdb::query::parser::*;
@@ -186,7 +186,7 @@ pub struct InterpretedQueryCondition {
     pub metrics: Metrics,
     pub field_selectors: Option<Vec<usize>>,
     pub field_names: Option<Vec<String>>,
-    pub datetime_search_condition: DatapointSearchCondition,
+    pub datetime_search_condition: DatapointsRange,
     pub output_condition: OutputCondition,
     pub format_datetime: bool,
     pub timezone: FixedOffset,

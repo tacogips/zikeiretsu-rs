@@ -31,7 +31,7 @@ impl DataPoint {
 
     pub async fn search<'a>(
         datapoints: &'a [DataPoint],
-        cond: &DatapointSearchCondition,
+        cond: &DatapointsRange,
     ) -> Option<&'a [DataPoint]> {
         Self::search_with_indices(datapoints, cond)
             .await
@@ -40,7 +40,7 @@ impl DataPoint {
 
     pub async fn search_with_indices<'a>(
         datapoints: &'a [DataPoint],
-        cond: &DatapointSearchCondition,
+        cond: &DatapointsRange,
     ) -> Option<(&'a [DataPoint], (usize, usize))> {
         let since_cond = cond
             .inner_since_inclusive
@@ -79,12 +79,12 @@ pub enum Limit {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct DatapointSearchCondition {
+pub struct DatapointsRange {
     pub inner_since_inclusive: Option<TimestampNano>,
     pub inner_until_exclusive: Option<TimestampNano>,
 }
 
-impl DatapointSearchCondition {
+impl DatapointsRange {
     pub fn new(
         inner_since_inclusive: Option<TimestampNano>,
         inner_until_exclusive: Option<TimestampNano>,
@@ -169,14 +169,14 @@ impl DatapointSearchCondition {
             None => None,
         };
 
-        Ok(DatapointSearchCondition {
+        Ok(DatapointsRange {
             inner_since_inclusive: inner_since,
             inner_until_exclusive: inner_until,
         })
     }
 }
 
-impl fmt::Display for DatapointSearchCondition {
+impl fmt::Display for DatapointsRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -193,40 +193,32 @@ mod test {
 
     #[test]
     fn test_contain_whole() {
-        assert!(DatapointSearchCondition::all()
+        assert!(
+            DatapointsRange::all().contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
+        );
+
+        assert!(
+            !DatapointsRange::new(Some(TimestampNano::new(10)), Some(TimestampNano::new(20)),)
+                .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
+        );
+
+        assert!(DatapointsRange::new(Some(TimestampNano::new(10)), None)
             .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
 
-        assert!(!DatapointSearchCondition::new(
-            Some(TimestampNano::new(10)),
-            Some(TimestampNano::new(20)),
-        )
-        .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
+        assert!(DatapointsRange::new(Some(TimestampNano::new(10)), None)
+            .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
 
         assert!(
-            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None)
+            DatapointsRange::new(Some(TimestampNano::new(10)), Some(TimestampNano::new(21)))
                 .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
         );
 
         assert!(
-            DatapointSearchCondition::new(Some(TimestampNano::new(10)), None)
-                .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20))
-        );
-
-        assert!(DatapointSearchCondition::new(
-            Some(TimestampNano::new(10)),
-            Some(TimestampNano::new(21))
-        )
-        .contains_whole(&TimestampNano::new(10), &TimestampNano::new(20)));
-
-        assert!(!DatapointSearchCondition::new(
-            Some(TimestampNano::new(10)),
-            Some(TimestampNano::new(21))
-        )
-        .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20)));
-
-        assert!(
-            DatapointSearchCondition::new(None, Some(TimestampNano::new(21)))
+            !DatapointsRange::new(Some(TimestampNano::new(10)), Some(TimestampNano::new(21)))
                 .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20))
         );
+
+        assert!(DatapointsRange::new(None, Some(TimestampNano::new(21)))
+            .contains_whole(&TimestampNano::new(9), &TimestampNano::new(20)));
     }
 }

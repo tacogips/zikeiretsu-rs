@@ -9,13 +9,13 @@ impl<'a> DatapointSearcher<'a> {
         Self { datapoints }
     }
 
-    pub async fn search(&self, cond: &DatapointSearchCondition) -> Option<&[DataPoint]> {
+    pub async fn search(&self, cond: &DatapointsRange) -> Option<&[DataPoint]> {
         DataPoint::search(self.datapoints, cond).await
     }
 
     pub async fn search_with_indices(
         &self,
-        cond: DatapointSearchCondition,
+        cond: DatapointsRange,
     ) -> Option<(&[DataPoint], (usize, usize))> {
         DataPoint::search_with_indices(self.datapoints, &cond).await
     }
@@ -46,7 +46,7 @@ mod test {
     async fn binsearch_test_1() {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
-        let condition = DatapointSearchCondition::since(ts!(20)).with_until(ts!(51));
+        let condition = DatapointsRange::since(ts!(20)).with_until(ts!(51));
         let result = store.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -59,7 +59,7 @@ mod test {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
 
-        let condition = DatapointSearchCondition::since(ts!(20));
+        let condition = DatapointsRange::since(ts!(20));
         let result = store.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -72,7 +72,7 @@ mod test {
         let datas = empty_data_points!(9, 10, 19, 20, 20, 20, 30, 40, 50, 50, 51);
         let store = DatapointSearcher::new(&datas);
 
-        let condition = DatapointSearchCondition::until(ts!(41));
+        let condition = DatapointsRange::until(ts!(41));
         let result = store.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();

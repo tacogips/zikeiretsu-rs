@@ -113,7 +113,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
-    condition: &DatapointSearchCondition,
+    condition: &DatapointsRange,
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Option<TimeSeriesDataFrame>> {

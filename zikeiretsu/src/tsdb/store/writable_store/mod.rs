@@ -222,7 +222,7 @@ where
 
     pub async fn purge(
         &mut self,
-        datapoint_search_condition: DatapointSearchCondition,
+        datapoint_search_condition: DatapointsRange,
     ) -> Result<()> {
         let datapoints = self.datapoints().await?;
         let datapoints_searcher = DatapointSearcher::new(datapoints);

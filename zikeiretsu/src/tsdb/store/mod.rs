@@ -144,7 +144,7 @@ mod test {
             assert_eq!(*data_points, expected);
         }
 
-        let condition = DatapointSearchCondition::since(TimestampNano::new(1629745451_715063000))
+        let condition = DatapointsRange::since(TimestampNano::new(1629745451_715063000))
             .with_until(TimestampNano::new(1629745451_715065001));
 
         {
@@ -239,7 +239,7 @@ mod test {
 
         {
             let condition = PersistCondition {
-                datapoint_search_condition: DatapointSearchCondition::new(
+                datapoint_search_condition: DatapointsRange::new(
                     Some(TimestampNano::new(1629745451_715061000)),
                     Some(TimestampNano::new(1629745451_715066001)),
                 ),
@@ -267,7 +267,7 @@ mod test {
         }
 
         {
-            let condition = DatapointSearchCondition::new(
+            let condition = DatapointsRange::new(
                 Some(TimestampNano::new(1629745451_715062000)),
                 Some(TimestampNano::new(1629745451_715066001)),
             );
@@ -304,7 +304,7 @@ mod test {
             }
 
             {
-                let another_condition = DatapointSearchCondition::new(
+                let another_condition = DatapointsRange::new(
                     Some(TimestampNano::new(1629745451_715063000)),
                     Some(TimestampNano::new(1629745451_715065001)),
                 );
@@ -371,7 +371,7 @@ mod test {
 
         {
             let condition = PersistCondition {
-                datapoint_search_condition: DatapointSearchCondition::new(None, None),
+                datapoint_search_condition: DatapointsRange::new(None, None),
                 remove_from_store_after_persisted: true,
             };
 
@@ -394,7 +394,7 @@ mod test {
         }
 
         {
-            let condition = DatapointSearchCondition::new(None, None);
+            let condition = DatapointsRange::new(None, None);
 
             let cache_setting = api::CacheSetting::none();
 
@@ -439,7 +439,7 @@ mod test {
             }
 
             {
-                let another_condition = DatapointSearchCondition::new(
+                let another_condition = DatapointsRange::new(
                     None,
                     Some(TimestampNano::new(1639745451_715061001)),
                 );

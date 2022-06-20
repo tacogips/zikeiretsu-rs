@@ -73,9 +73,25 @@ impl DataPoint {
     }
 }
 
-pub enum Limit {
-    SinceLimit(usize),
-    UntilLimit(usize),
+#[derive(Debug, PartialEq, Clone)]
+pub enum SearchDatapointsLimit {
+    Since(usize),
+    Until(usize),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct DatapointsSearchCondition {
+    pub datapoints_range: DatapointsRange,
+    pub limit: Option<SearchDatapointsLimit>,
+}
+
+impl DatapointsSearchCondition {
+    pub fn all() -> Self {
+        Self {
+            datapoints_range: DatapointsRange::all(),
+            limit: None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

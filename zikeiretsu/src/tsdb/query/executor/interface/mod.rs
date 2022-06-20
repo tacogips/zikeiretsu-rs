@@ -22,11 +22,16 @@ pub trait ExecutorInterface {
     async fn execute_query(&mut self, ctx: &DBContext, query: &str) -> Result<Option<RecordBatch>>;
 }
 
+pub type RecordExecuteOutputOnMemory = RecordBatch;
 pub struct AdhocExecutorInterface;
 
 #[async_trait]
 impl ExecutorInterface for AdhocExecutorInterface {
-    async fn execute_query(&mut self, ctx: &DBContext, query: &str) -> Result<Option<RecordBatch>> {
+    async fn execute_query(
+        &mut self,
+        ctx: &DBContext,
+        query: &str,
+    ) -> Result<Option<RecordExecuteOutputOnMemory>> {
         match execute_query(ctx, query).await {
             Err(e) => {
                 eprintln!("{}", e);
@@ -34,9 +39,9 @@ impl ExecutorInterface for AdhocExecutorInterface {
             }
             Ok(result) => {
                 if let Some(records) = result.records {
-                    let batch_record_if_not_spent =
+                    let batch_record_if_not_already_ouptput =
                         output_records(records, result.output_condition).await?;
-                    Ok(batch_record_if_not_spent)
+                    Ok(batch_record_if_not_already_ouptput)
                 } else {
                     println!("[empty]");
                     Ok(None)

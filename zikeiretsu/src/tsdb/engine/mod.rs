@@ -4,7 +4,8 @@ use crate::tsdb::data_types::TimeSeriesDataFrame;
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::store::writable_store::DatapointDefaultSorter;
-use crate::tsdb::{datapoint::DatapointsRange, storage::*, store::*};
+use crate::tsdb::{datapoint::DatapointsSearchCondition, storage::*, store::*};
+
 use crate::tsdb::{storage::api as storage_api, store};
 pub use context::*;
 use std::path::Path;
@@ -146,7 +147,7 @@ impl Engine {
         db_dir: P,
         metrics: &Metrics,
         field_selectors: Option<&[usize]>,
-        condition: &DatapointsRange,
+        condition: &DatapointsSearchCondition,
         db_config: &DBConfig,
     ) -> Result<Option<TimeSeriesDataFrame>> {
         let dataframe = api::read::search_dataframe(

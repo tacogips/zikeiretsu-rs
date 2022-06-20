@@ -113,13 +113,13 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     db_dir: P,
     metrics: &Metrics,
     field_selectors: Option<&[usize]>,
-    condition: &DatapointsRange,
+    condition: &DatapointsSearchCondition,
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Option<TimeSeriesDataFrame>> {
     log::debug!("search_dataframe. seaching db_dir: {:?}", db_dir.as_ref());
     log::debug!("search_dataframe. field_selectors: {:?}", field_selectors);
-    log::debug!("search_dataframe. condition: {}", condition);
+    log::debug!("search_dataframe. condition: {:?}", condition);
 
     let db_dir = db_dir.as_ref();
     let lock_file_path = lockfile_path(db_dir, metrics);
@@ -134,7 +134,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     )
     .await?;
 
-    let (since_sec, until_sec) = condition.as_secs();
+    let (since_sec, until_sec) = condition.datapoints_range.as_secs();
 
     let since_sec_ref = (&since_sec).as_ref();
     let until_sec_ref = (&until_sec).as_ref();
@@ -164,11 +164,11 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                 )
                 .await?;
                 // cut out partial datas from the dataframe
-                if !condition.contains_whole(
+                if !condition.datapoints_range.contains_whole(
                     &block_timestamp.since_sec.as_timestamp_nano(),
                     &(block_timestamp.until_sec + 1).as_timestamp_nano(),
                 ) {
-                    block.retain_matches(condition).await?;
+                    block.retain_matches(&condition.datapoints_range).await?;
                 }
 
                 Ok((block, block_timestamp))
@@ -183,6 +183,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
             if dataframes_of_blocks.is_empty() {
                 Ok(None)
             } else {
+                //TODO(tacogips) limit
                 let (mut merged_dataframe, mut prev_block_timestamp) =
                     dataframes_of_blocks.remove(0);
 

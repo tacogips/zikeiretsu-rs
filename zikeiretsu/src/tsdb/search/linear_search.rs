@@ -64,7 +64,8 @@ where
     None
 }
 
-// return the index which match slice convention
+// return n values  from left or right, with same values count as one.
+// return the index which matches slice literal
 //
 //  when search_direction: LinearSearchDirection::Asc
 //  retain target values by [..found_idx]
@@ -330,6 +331,12 @@ mod test {
     #[test]
     fn test_linear_search_grouped_n_datas_1_asc() {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30, 30);
+
+        {
+            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Asc);
+            assert_eq!(result, Some(1))
+        }
+
         {
             let result = linear_search_grouped_n_datas(&datapoints, 2, LinearSearchDirection::Asc);
             assert_eq!(result, Some(4))
@@ -349,6 +356,12 @@ mod test {
     #[test]
     fn test_linear_search_grouped_n_datas_2_desc() {
         let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30, 30);
+
+        {
+            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Desc);
+            assert_eq!(result, Some(4))
+        }
+
         {
             let result = linear_search_grouped_n_datas(&datapoints, 2, LinearSearchDirection::Desc);
             assert_eq!(result, Some(1))
@@ -362,6 +375,26 @@ mod test {
         {
             let result = linear_search_grouped_n_datas(&datapoints, 4, LinearSearchDirection::Desc);
             assert_eq!(result, Some(0))
+        }
+
+        {
+            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Desc);
+            assert_eq!(result, Some(4))
+        }
+    }
+
+    #[test]
+    fn test_linear_search_grouped_n_datas_3_asc() {
+        let datapoints: Vec<DataPoint> = empty_data_points!(10, 10, 20, 20, 20, 30, 30);
+
+        {
+            let result = linear_search_grouped_n_datas(&datapoints, 0, LinearSearchDirection::Asc);
+            assert_eq!(result, None)
+        }
+
+        {
+            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Asc);
+            assert_eq!(result, Some(2))
         }
     }
 }

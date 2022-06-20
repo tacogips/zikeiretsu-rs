@@ -92,8 +92,6 @@ mod test {
             {1629745451_715063000, vec![200f64,36f64]},
             {1629745451_715064000, vec![200f64,36f64]}
         );
-        ////TODO(tacogips) remove this
-        //store.apply_dirties().await.unwrap();
         let mut s = store.lock().await;
         let data_points = s.datapoints().await;
 
@@ -131,8 +129,6 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
 
-        ////TODO(tacogips) remove this
-        //store.apply_dirties().await.unwrap();
         {
             //getting datapoint first
 

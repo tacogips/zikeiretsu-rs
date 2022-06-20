@@ -183,7 +183,6 @@ pub async fn search_dataframe<P: AsRef<Path>>(
             if dataframes_of_blocks.is_empty() {
                 Ok(None)
             } else {
-                //TODO(tacogips) limit
                 let (mut merged_dataframe, mut prev_block_timestamp) =
                     dataframes_of_blocks.remove(0);
 
@@ -191,7 +190,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     dataframes_of_blocks.into_iter()
                 {
                     if prev_block_timestamp.is_before(each_block_timestamp)
-                        || prev_block_timestamp.adjacent_before_of(each_block_timestamp)
+                        || prev_block_timestamp.is_adjacent_before_of(each_block_timestamp)
                     {
                         merged_dataframe.append(&mut each_dataframes_block).unwrap();
                     } else {
@@ -204,6 +203,8 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     prev_block_timestamp = each_block_timestamp;
                 }
 
+                //TODO(tacogips) limit
+                //merged_dataframe
                 Ok(Some(merged_dataframe))
             }
         }

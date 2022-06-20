@@ -13,6 +13,12 @@ use crate::tsdb::search::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+pub enum TimeseriesDataframeRemain {
+    FromLeft(usize),
+    FromRight(usize),
+}
+
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 pub struct TimeSeriesDataFrame {
     #[serde(rename = "ts")]
     pub timestamp_nanos: Vec<TimestampNano>,
@@ -99,6 +105,39 @@ impl TimeSeriesDataFrame {
         };
 
         Ok(())
+    }
+
+    //  retain given number of timestamps. the same timestamps counts as one.
+    //
+    //  pseude datframes(only timestamps shown)
+    //  df = [`2022-09-05`,`2022-09-05`,`2022-09-06`,`2022-09-06`,`2022-09-07`]
+    //
+    //
+    //  df.remain_timestamps(FromLeft(1)):
+    //  # df ==  [`2022-09-05`,`2022-09-05`]
+    //
+    //  df.remain_timestamps(FromLeft(2)):
+    //  # df ==  [`2022-09-05`,`2022-09-05`,`2022-09-06`]
+    //
+    //  df.remain_timestamps(FromRight(2)):
+    //  # df ==  [`2022-09-06`,`2022-09-06`,`2022-09-07`]
+    //
+    //
+    //
+    //
+    pub fn retain_timestamps(
+        &mut self,
+        condition: TimeseriesDataframeRemain,
+    ) -> Option<&mut DataSeries> {
+        unimplemented!()
+        //prepend(&mut self.timestamp_nanos, &mut other.timestamp_nanos);
+        //for (idx, data_series) in self.columns.iter_mut().enumerate() {
+        //    match other.get_series_mut(idx) {
+        //        Some(other_series) => data_series.prepend(other_series)?,
+        //        None => return Err(DataframeError::DataSeriesIndexOutOfBound(idx, 0)),
+        //    }
+        //}
+        //Ok(())
     }
 
     pub fn prepend(&mut self, other: &mut TimeSeriesDataFrame) -> Result<()> {

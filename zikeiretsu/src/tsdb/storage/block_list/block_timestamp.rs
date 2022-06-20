@@ -19,7 +19,7 @@ impl BlockTimestamp {
         }
     }
 
-    pub fn adjacent_before_of(&self, other: &Self) -> bool {
+    pub fn is_adjacent_before_of(&self, other: &Self) -> bool {
         self.until_sec == other.since_sec
     }
 

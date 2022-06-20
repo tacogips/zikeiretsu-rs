@@ -130,8 +130,7 @@ impl TimeSeriesDataFrame {
 
         let first_timestamp = self.timestamp_nanos.first().unwrap();
         let last_timestamp = self.timestamp_nanos.last().unwrap();
-        let self_time_range =
-            DatapointsRange::new(Some(*first_timestamp), Some(*last_timestamp));
+        let self_time_range = DatapointsRange::new(Some(*first_timestamp), Some(*last_timestamp));
 
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;

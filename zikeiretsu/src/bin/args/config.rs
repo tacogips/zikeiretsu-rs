@@ -14,6 +14,7 @@ pub struct Config {
     pub host: Option<String>,
     pub port: Option<usize>,
     pub cache_block_num: Option<usize>,
+    pub default_database: Option<String>,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
@@ -81,6 +82,7 @@ mod test {
 
             data_dir = "/tmp/db_dir"
             service_account_file_path= "/path/to/service_account"
+
             https = false
             host = "localhost"
             port = 1234

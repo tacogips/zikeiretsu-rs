@@ -62,11 +62,16 @@ impl Database {
 #[derive(Debug, Clone, PartialEq)]
 pub struct DBContext {
     pub data_dir: PathBuf,
+    pub default_database: Option<String>,
     databases: HashMap<String, Database>,
 }
 
 impl DBContext {
-    pub fn new(data_dir: PathBuf, databases_vec: Vec<Database>) -> Self {
+    pub fn new(
+        data_dir: PathBuf,
+        default_database: Option<String>,
+        databases_vec: Vec<Database>,
+    ) -> Self {
         let mut databases = HashMap::<String, Database>::new();
         for each_database in databases_vec.into_iter() {
             databases.insert(each_database.database_name.clone(), each_database);
@@ -74,6 +79,7 @@ impl DBContext {
 
         Self {
             data_dir,
+            default_database,
             databases,
         }
     }
@@ -85,9 +91,12 @@ impl DBContext {
                 if self.databases.len() == 1 {
                     Ok(self.databases.values().next())
                 } else {
-                    Err(DBContextError::DatabaseNotFount(
-                        "no database name specified".to_string(),
-                    ))
+                    match self.default_database.as_ref() {
+                        Some(default_database) => Ok(self.databases.get(default_database)),
+                        None => Err(DBContextError::DatabaseNotFount(
+                            "no database name specified".to_string(),
+                        )),
+                    }
                 }
             }
         }

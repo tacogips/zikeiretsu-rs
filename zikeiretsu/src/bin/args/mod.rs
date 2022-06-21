@@ -48,6 +48,9 @@ pub struct Args {
     )]
     databases: Option<String>,
 
+    #[clap(long = "default_database", env = "ZDB_DEFAULT_DATABASE")]
+    default_database: Option<String>,
+
     #[clap(
         long = "service_account",
         env = "ZDB_SERVICE_ACCOUNT",
@@ -93,6 +96,10 @@ impl Args {
             }
 
             self.parsed_databases = Some(databases);
+        }
+
+        if let Some(default_database) = config.default_database {
+            self.default_database = Some(default_database);
         }
 
         if let Some(service_account_file_path) = config.service_account_file_path {
@@ -198,7 +205,7 @@ impl Args {
             None => return Err(ArgsError::NoDataDir),
         };
 
-        let ctx = DBContext::new(data_dir, parsed_databases);
+        let ctx = DBContext::new(data_dir, self.default_database.clone(), parsed_databases);
         Ok(ctx)
     }
 }
@@ -248,6 +255,7 @@ mod test {
             db_context,
             DBContext::new(
                 data_dir,
+                None,
                 vec![Database {
                     database_name: "t_db".to_string(),
                     cloud_storage: Some(CloudStorage::new_gcp("some", Some("thing"))),
@@ -271,6 +279,7 @@ mod test {
             db_context,
             DBContext::new(
                 data_dir,
+                None,
                 vec![
                     Database {
                         database_name: "t_db".to_string(),
@@ -303,6 +312,7 @@ mod test {
             db_context,
             DBContext::new(
                 data_dir,
+                None,
                 vec![
                     Database {
                         database_name: "t_db".to_string(),

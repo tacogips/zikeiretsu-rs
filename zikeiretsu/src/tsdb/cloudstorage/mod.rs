@@ -9,6 +9,7 @@ use std::fmt::{Display, Formatter, Result as FormatterResult};
 use std::io;
 use thiserror::Error;
 use url::Url;
+use uuid::Error as UuidError;
 
 type Result<T> = std::result::Result<T, CloudStorageError>;
 
@@ -43,6 +44,9 @@ pub enum CloudStorageError {
 
     #[error("unsupported cloud storage url. {0}")]
     UnsupportedCloudStorageUrl(String),
+
+    #[error("uuid error. {0}")]
+    UuidError(#[from] UuidError),
 }
 
 #[derive(Debug, Clone, PartialEq)]

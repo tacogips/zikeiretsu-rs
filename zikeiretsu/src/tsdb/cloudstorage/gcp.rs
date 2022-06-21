@@ -8,6 +8,7 @@ use regex::Regex;
 use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
+use uuid::Uuid;
 
 static BLOCK_LIST_FILE_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
@@ -141,12 +142,33 @@ pub async fn is_lock_file_exists<'a>(lock_file_path: &CloudLockfilePath<'a>) -> 
     Ok(exists)
 }
 
-pub async fn create_lock_file<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Result<()> {
+pub async fn create_lock_file<'a>(
+    lock_file_path: &CloudLockfilePath<'a>,
+    store_id: &Uuid,
+) -> Result<()> {
     let gcs_file = file_dougu::gcs::GcsFile::new(lock_file_path.as_url())?;
+
     gcs_file
-        .write_with_retry("l".as_bytes(), file_dougu::mime::MimeType::Text, None, None)
+        .write_with_retry(
+            store_id.as_bytes(),
+            file_dougu::mime::MimeType::Text,
+            None,
+            None,
+        )
         .await?;
     Ok(())
+}
+
+pub async fn read_lock_file<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Result<Option<Uuid>> {
+    let gcs_file = file_dougu::gcs::GcsFile::new(lock_file_path.as_url())?;
+
+    match gcs_file.download_with_retry(None, None).await? {
+        Some(contents) => {
+            let parsed_uuid = Uuid::try_parse_ascii(contents.as_slice())?;
+            Ok(Some(parsed_uuid))
+        }
+        None => Ok(None),
+    }
 }
 
 pub async fn remove_lock_file<'a>(lock_file_path: &CloudLockfilePath<'a>) -> Result<()> {

@@ -87,6 +87,7 @@ mod test {
             host = "localhost"
             port = 1234
             cache_block_num = 100
+            default_database = "default_db"
 
             [[databases]]
             database_name="test_db"
@@ -109,6 +110,7 @@ mod test {
                     cloud_storage_url: Some("gs://some/where".to_string()),
                 }]),
                 cache_block_num: Some(100),
+                default_database: Some("default_db".to_string()),
             }
         );
     }

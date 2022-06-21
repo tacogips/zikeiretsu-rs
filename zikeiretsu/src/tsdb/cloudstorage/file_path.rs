@@ -3,6 +3,7 @@ use super::{CloudStorage, Result};
 use crate::tsdb::metrics::Metrics;
 use crate::tsdb::storage::block_list;
 use std::path::Path;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct CloudBlockFilePath<'a> {
@@ -134,9 +135,15 @@ impl<'a> CloudLockfilePath<'a> {
         }
     }
 
-    pub async fn create(&self) -> Result<()> {
+    pub async fn create(&self, writer_id: &Uuid) -> Result<()> {
         match self.cloud_storage {
-            CloudStorage::Gcp(_, _) => gcp::create_lock_file(self).await,
+            CloudStorage::Gcp(_, _) => gcp::create_lock_file(self, writer_id).await,
+        }
+    }
+
+    pub async fn read_contents(&self) -> Result<Option<Uuid>> {
+        match self.cloud_storage {
+            CloudStorage::Gcp(_, _) => gcp::read_lock_file(self).await,
         }
     }
 

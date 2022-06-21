@@ -2,6 +2,7 @@ mod persistence;
 mod sorter;
 
 use super::*;
+use uuid::Uuid;
 
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
@@ -75,6 +76,7 @@ impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
 
     pub fn build(self) -> Arc<Mutex<WritableStore<S>>> {
         let store = WritableStore {
+            store_id: Uuid::new_v4(),
             metrics: self.metrics,
             field_types: self.field_types,
             convert_dirty_to_sorted_on_read: self.convert_dirty_to_sorted_on_read,
@@ -88,6 +90,7 @@ impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
 }
 
 pub struct WritableStore<S: DatapointSorter + 'static> {
+    store_id: Uuid,
     metrics: Metrics,
     field_types: Vec<FieldType>,
 
@@ -179,7 +182,6 @@ where
         let mut sorter = self.sorter.clone();
         self.dirty_datapoints.sort_by(|l, r| sorter.compare(l, r));
 
-        //let mut sorted_datapoints = self.sorted_datapoints.lock().await;
         if self.sorted_datapoints.is_empty() {
             self.sorted_datapoints.append(&mut self.dirty_datapoints);
         } else {
@@ -239,6 +241,7 @@ where
     pub async fn persist(&mut self, condition: PersistCondition) -> Result<Option<()>> {
         if let Persistence::Storage(db_dir, cloud_storage_and_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
+            let writer_id = self.store_id;
             let all_datapoints = self.datapoints().await?;
             let datapoints_searcher = DatapointSearcher::new(all_datapoints);
 
@@ -248,6 +251,7 @@ where
             {
                 storage_api::write::write_datas(
                     db_dir,
+                    &writer_id,
                     &metrics,
                     datapoints,
                     cloud_storage_and_setting
@@ -308,6 +312,20 @@ where
         clear_after_persisted: bool,
     ) -> PeriodicallyPeristenceShutdown {
         start_periodically_persistence(store, persist_interval_duration, clear_after_persisted)
+    }
+
+    pub async fn scavange_on_shutdown(&self) -> Result<()> {
+        if let Persistence::Storage(_, cloud_storage_and_setting) = self.persistence.clone() {
+            storage_api::write::remove_cloud_lock_file_if_same_writer(
+                &self.store_id,
+                &self.metrics,
+                cloud_storage_and_setting
+                    .as_ref()
+                    .map(|(cloud_strorage, cloud_setting)| (cloud_strorage, cloud_setting)),
+            )
+            .await?;
+        }
+        Ok(())
     }
 }
 

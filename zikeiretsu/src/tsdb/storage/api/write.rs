@@ -13,9 +13,11 @@ use log::*;
 use std::fs;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
+use uuid::Uuid;
 
 pub async fn write_datas<P: AsRef<Path>>(
     db_dir: P,
+    writer_id: &Uuid,
     metrics: &Metrics,
     data_points: &[DataPoint],
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
@@ -32,7 +34,7 @@ pub async fn write_datas<P: AsRef<Path>>(
                     lock_file_url = cloud_lock_file_path.as_url()
                 )));
             } else {
-                cloud_lock_file_path.create().await?;
+                cloud_lock_file_path.create(writer_id).await?;
                 Some((cloud_lock_file_path, cloud_storage, cloud_setting))
             }
         } else {
@@ -104,6 +106,26 @@ pub async fn write_datas<P: AsRef<Path>>(
 
     result
 }
+
+pub async fn remove_cloud_lock_file_if_same_writer(
+    writer_id: &Uuid,
+    metrics: &Metrics,
+    cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
+) -> Result<()> {
+    if let Some((cloud_storage, _)) = cloud_storage_and_setting {
+        let cloud_lock_file_path = CloudLockfilePath::new(metrics, cloud_storage);
+        if cloud_lock_file_path.exists().await? {
+            let lock_file_writer_id = cloud_lock_file_path.read_contents().await?;
+            if let Some(lock_file_writer_id) = lock_file_writer_id {
+                if lock_file_writer_id == *writer_id {
+                    cloud_lock_file_path.remove().await?;
+                }
+            }
+        }
+    };
+    Ok(())
+}
+
 struct WrittenBlockInfo {
     block_list_file_path: PathBuf,
     block_file_dir: PathBuf,

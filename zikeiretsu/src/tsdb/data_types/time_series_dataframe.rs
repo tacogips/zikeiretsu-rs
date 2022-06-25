@@ -1196,4 +1196,25 @@ mod test {
 
         assert_eq!(df, serialized_df);
     }
+
+    #[tokio::test]
+    async fn dataframe_limit_head() {
+        use serde_json;
+        let df = multi_dataframe!([
+            (2, 22, true),
+            (3, 33, false),
+            (4, 44, true),
+            (5, 55, false),
+            (6, 66, true),
+            (8, 88, true),
+            (10, 1010, true),
+        ]);
+        //TODO(tacogips) impl
+        //let serilized = serde_json::to_string(&df).unwrap();
+        //println!("{serilized}");
+        //let serialized_df: TimeSeriesDataFrame = serde_json::from_str(&serilized).unwrap();
+
+        //assert_eq!(df, serialized_df);
+        assert!(false)
+    }
 }

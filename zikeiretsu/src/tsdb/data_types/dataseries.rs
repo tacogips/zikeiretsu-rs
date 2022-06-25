@@ -120,32 +120,32 @@ impl DataSeries {
         }
     }
 
-    pub fn truncate_tail(&mut self, left_bound: usize) {
+    pub fn truncate_tail(&mut self, drop_bound: usize) {
         let self_len = self.len();
         match &mut self.values {
-            SeriesValues::Vacant(seriese_size) => *seriese_size = self_len - left_bound,
+            SeriesValues::Vacant(seriese_size) => *seriese_size = self_len - drop_bound,
             SeriesValues::Float64(vs) => {
-                vs.drain(..left_bound);
+                vs.drain(..drop_bound);
             }
 
             SeriesValues::UInt64(vs) => {
-                vs.drain(..left_bound);
+                vs.drain(..drop_bound);
             }
 
             SeriesValues::String(vs) => {
-                vs.drain(..left_bound);
+                vs.drain(..drop_bound);
             }
 
             SeriesValues::TimestampNano(vs) => {
-                vs.drain(..left_bound);
+                vs.drain(..drop_bound);
             }
 
             SeriesValues::TimestampSec(vs) => {
-                vs.drain(..left_bound);
+                vs.drain(..drop_bound);
             }
 
             SeriesValues::Bool(vs) => {
-                vs.drain(..left_bound);
+                vs.drain(..drop_bound);
             }
         }
     }

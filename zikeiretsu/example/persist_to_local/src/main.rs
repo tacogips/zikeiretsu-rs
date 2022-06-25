@@ -94,6 +94,7 @@ async fn main() {
 
     let db_context = DBContext::new(
         temp_data_dir.into_path(),
+        None,
         vec![Database::new("test_db".to_string(), None)],
     );
 

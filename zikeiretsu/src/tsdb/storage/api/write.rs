@@ -12,6 +12,7 @@ use log;
 use log::*;
 use std::fs;
 use std::fs::create_dir_all;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -54,8 +55,14 @@ pub async fn write_datas<P: AsRef<Path>>(
                 block_file_dir,
                 block_file_path,
                 block_timestamp,
-            } = match write_datas_to_local(db_dir, metrics, data_points, cloud_storage_and_setting)
-                .await
+            } = match write_datas_to_local(
+                db_dir,
+                writer_id,
+                metrics,
+                data_points,
+                cloud_storage_and_setting,
+            )
+            .await
             {
                 Ok(r) => r,
                 Err(e) => {
@@ -139,13 +146,20 @@ struct WrittenBlockInfo {
 
 async fn write_datas_to_local(
     db_dir: &Path,
+    writer_id: &Uuid,
     metrics: &Metrics,
     data_points: &[DataPoint],
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<WrittenBlockInfo> {
     let lock_file_path = lockfile_path(db_dir, metrics);
-    let _lockfile = Lockfile::create(&lock_file_path)
+    let mut lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
+    lockfile.write_all(writer_id.as_bytes()).map_err(|e| {
+        StorageApiError::CreateLockfileError(format!(
+            "could not write writer id to lock file {:?}, error:{}, path:{:?}",
+            writer_id, e, lock_file_path
+        ))
+    })?;
 
     let head = data_points.get(0).unwrap();
     let tail = data_points.get(data_points.len() - 1).unwrap();

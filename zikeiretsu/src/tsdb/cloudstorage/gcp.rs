@@ -150,7 +150,7 @@ pub async fn create_lock_file<'a>(
 
     gcs_file
         .write_with_retry(
-            store_id.as_bytes(),
+            store_id.to_string().as_bytes(),
             file_dougu::mime::MimeType::Text,
             None,
             None,

@@ -154,12 +154,14 @@ async fn write_datas_to_local(
     let lock_file_path = lockfile_path(db_dir, metrics);
     let mut lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
-    lockfile.write_all(writer_id.as_bytes()).map_err(|e| {
-        StorageApiError::CreateLockfileError(format!(
-            "could not write writer id to lock file {:?}, error:{}, path:{:?}",
-            writer_id, e, lock_file_path
-        ))
-    })?;
+    lockfile
+        .write_all(writer_id.to_string().as_bytes())
+        .map_err(|e| {
+            StorageApiError::CreateLockfileError(format!(
+                "could not write writer id to lock file {:?}, error:{}, path:{:?}",
+                writer_id, e, lock_file_path
+            ))
+        })?;
 
     let head = data_points.get(0).unwrap();
     let tail = data_points.get(data_points.len() - 1).unwrap();

@@ -315,7 +315,14 @@ where
     }
 
     pub async fn scavange_on_shutdown(&self) -> Result<()> {
-        if let Persistence::Storage(_, cloud_storage_and_setting) = self.persistence.clone() {
+        if let Persistence::Storage(db_dir, cloud_storage_and_setting) = self.persistence.clone() {
+            storage_api::write::remove_local_lock_file_if_same_writer(
+                db_dir,
+                &self.store_id,
+                &self.metrics,
+            )
+            .await?;
+
             storage_api::write::remove_cloud_lock_file_if_same_writer(
                 &self.store_id,
                 &self.metrics,

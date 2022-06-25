@@ -232,7 +232,7 @@ select  * from .describe;
 ```
 
 ### Write the datas
-you can't write the data with query. some coding will be needed.[see here](./zikeiretsu/example/persist_to_local/src/main.rs)
+you can't write the data with query. some coding will be needed.[see here](./zikeiretsu/example/persist/src/main.rs)
 
 ```rust
 

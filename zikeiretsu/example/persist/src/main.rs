@@ -1,4 +1,5 @@
 use chrono::DateTime;
+use dotenv::dotenv;
 use serde::Deserialize;
 use std::io;
 use std::path::PathBuf;
@@ -40,7 +41,22 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 
     // field type , [buy_side == bool, price == float64, size == float64]
     let fields = vec![FieldType::Bool, FieldType::Float64, FieldType::Float64];
-    let persistence = Persistence::Storage(temp_db_dir.as_path().to_path_buf(), None);
+
+    #[cfg(not(feature = "cloud"))]
+    let cloud_setting: Option<(CloudStorage, CloudStorageSetting)> = None;
+
+    #[cfg(feature = "cloud")]
+    std::env::var("SERVICE_ACCOUNT").unwrap(); // validation
+
+    #[cfg(feature = "cloud")]
+    let cloud_setting: Option<(CloudStorage, CloudStorageSetting)> = {
+        let storage =
+            CloudStorage::from_url(std::env::var("CLOUD_BUCKET_PATH").unwrap().as_str()).unwrap();
+        let cloud_setting = CloudStorageSetting::default();
+        Some((storage, cloud_setting))
+    };
+
+    let persistence = Persistence::Storage(temp_db_dir.as_path().to_path_buf(), cloud_setting);
 
     let wr = Engine::writable_store_builder("trades".try_into().unwrap(), fields.clone())
         .persistence(persistence)
@@ -76,6 +92,7 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
     std::env::set_var("RUST_LOG", "debug");
     let sub = tracing_subscriber::FmtSubscriber::builder()
         .with_writer(io::stderr)
@@ -94,6 +111,7 @@ async fn main() {
 
     let db_context = DBContext::new(
         temp_data_dir.into_path(),
+        None,
         vec![Database::new("test_db".to_string(), None)],
     );
 

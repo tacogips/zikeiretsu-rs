@@ -3,6 +3,7 @@ use super::{
     block, block_list, block_list_file_path, block_timestamp_to_block_file_path, cloud_setting::*,
     lockfile_path, persisted_error_file_path, Result, StorageApiError,
 };
+use std::fs::OpenOptions;
 
 use crate::tsdb::cloudstorage::*;
 use crate::tsdb::timestamp_nano::TimestampNano;
@@ -12,6 +13,7 @@ use log;
 use log::*;
 use std::fs;
 use std::fs::create_dir_all;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -44,61 +46,71 @@ pub async fn write_datas<P: AsRef<Path>>(
         None
     };
 
-    let db_dir = db_dir.as_ref();
+    let cloud_infos_clone = cloud_infos.clone();
+    let innner_writer_data = || async move {
+        let db_dir = db_dir.as_ref();
 
-    let write = || async {
-        let WrittenBlockInfo {
-            block_list_file_path,
-            block_file_dir,
-            block_file_path,
-            block_timestamp,
-        } = match write_datas_to_local(db_dir, metrics, data_points, cloud_storage_and_setting)
-            .await
-        {
-            Ok(r) => r,
-            Err(e) => {
-                log::error!("failed to write block file on local: {e}");
-                return Err(e);
-            }
-        };
-
-        if let Some((_, cloud_storage, cloud_setting)) = cloud_infos.as_ref() {
-            let upload_result = upload_to_cloud(
-                &block_list_file_path,
-                &block_file_path,
+        let write = || async {
+            let WrittenBlockInfo {
+                block_list_file_path,
+                block_file_dir,
+                block_file_path,
+                block_timestamp,
+            } = match write_datas_to_local(
+                db_dir,
+                writer_id,
                 metrics,
-                &block_timestamp,
-                cloud_storage,
+                data_points,
+                cloud_storage_and_setting,
             )
-            .await;
-            match upload_result {
-                Ok(_) => {
-                    if cloud_setting.remove_local_file_after_upload {
-                        fs::remove_dir_all(block_file_dir.as_path())
-                            .map_err(StorageApiError::RemoveBlockDirError)?;
-                        log::debug!(
-                            "remove block dir on local at {block_file_path}",
-                            block_file_path = block_file_dir.as_path().display()
-                        );
+            .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    log::error!("failed to write block file on local: {e}");
+                    return Err(e);
+                }
+            };
+
+            if let Some((_, cloud_storage, cloud_setting)) = cloud_infos_clone.as_ref() {
+                let upload_result = upload_to_cloud(
+                    &block_list_file_path,
+                    &block_file_path,
+                    metrics,
+                    &block_timestamp,
+                    cloud_storage,
+                )
+                .await;
+                match upload_result {
+                    Ok(_) => {
+                        if cloud_setting.remove_local_file_after_upload {
+                            fs::remove_dir_all(block_file_dir.as_path())
+                                .map_err(StorageApiError::RemoveBlockDirError)?;
+                            log::debug!(
+                                "remove block dir on local at {block_file_path}",
+                                block_file_path = block_file_dir.as_path().display()
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("failed to update block files to the cloud :{e:?}");
+                        write_error_file(
+                            db_dir,
+                            TimestampNano::now(),
+                            metrics,
+                            persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
+                            block_timestamp,
+                            Some(format!("error:{e:?}")),
+                        )
+                        .await?;
                     }
                 }
-                Err(e) => {
-                    log::error!("failed to update block files to the cloud :{e:?}");
-                    write_error_file(
-                        db_dir,
-                        TimestampNano::now(),
-                        metrics,
-                        persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
-                        block_timestamp,
-                        Some(format!("error:{e:?}")),
-                    )
-                    .await?;
-                }
             }
-        }
-        Ok(())
+            Ok(())
+        };
+        write().await
     };
-    let result = write().await;
+    let result = innner_writer_data().await;
 
     if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
         cloud_lock_file_path.remove().await?;
@@ -126,6 +138,33 @@ pub async fn remove_cloud_lock_file_if_same_writer(
     Ok(())
 }
 
+pub async fn remove_local_lock_file_if_same_writer<P: AsRef<Path>>(
+    db_dir: P,
+    writer_id: &Uuid,
+    metrics: &Metrics,
+) -> Result<()> {
+    let lock_file_path = lockfile_path(db_dir.as_ref(), metrics);
+    if lock_file_path.exists() {
+        let mut lockfile_opts = OpenOptions::new();
+        lockfile_opts.create_new(false).read(true).write(false);
+        match lockfile_opts.open(lock_file_path.as_path()) {
+            Err(e) => {
+                log::error!("could not remove local lock file manually {}", e);
+            }
+            Ok(mut lock_file) => {
+                let mut file_write_id: String = "".to_string();
+                lock_file.read_to_string(&mut file_write_id).ok();
+                if file_write_id.replace("\n", "") == writer_id.to_string() {
+                    if let Err(e) = fs::remove_file(lock_file_path) {
+                        log::error!("could not remove local lock file manually {}", e);
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 struct WrittenBlockInfo {
     block_list_file_path: PathBuf,
     block_file_dir: PathBuf,
@@ -135,13 +174,22 @@ struct WrittenBlockInfo {
 
 async fn write_datas_to_local(
     db_dir: &Path,
+    writer_id: &Uuid,
     metrics: &Metrics,
     data_points: &[DataPoint],
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<WrittenBlockInfo> {
     let lock_file_path = lockfile_path(db_dir, metrics);
-    let _lockfile = Lockfile::create(&lock_file_path)
+    let mut lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
+    lockfile
+        .write_all(writer_id.to_string().as_bytes())
+        .map_err(|e| {
+            StorageApiError::CreateLockfileError(format!(
+                "could not write writer id to lock file {:?}, error:{}, path:{:?}",
+                writer_id, e, lock_file_path
+            ))
+        })?;
 
     let head = data_points.get(0).unwrap();
     let tail = data_points.get(data_points.len() - 1).unwrap();

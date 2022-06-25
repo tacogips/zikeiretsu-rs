@@ -44,6 +44,10 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 
     #[cfg(not(feature = "cloud"))]
     let cloud_setting: Option<(CloudStorage, CloudStorageSetting)> = None;
+
+    #[cfg(feature = "cloud")]
+    std::env::var("SERVICE_ACCOUNT").unwrap(); // validation
+
     #[cfg(feature = "cloud")]
     let cloud_setting: Option<(CloudStorage, CloudStorageSetting)> = {
         let storage =

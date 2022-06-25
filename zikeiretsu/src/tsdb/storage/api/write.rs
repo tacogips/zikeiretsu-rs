@@ -111,9 +111,9 @@ pub async fn write_datas<P: AsRef<Path>>(
     };
     let result = innner_writer_data().await;
 
-    if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
-        cloud_lock_file_path.remove().await?;
-    }
+    //if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
+    //    cloud_lock_file_path.remove().await?;
+    //}
 
     result
 }

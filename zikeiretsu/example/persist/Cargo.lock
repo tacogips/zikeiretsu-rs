@@ -1640,6 +1640,7 @@ name = "persist"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "dotenv",
  "serde",
  "serde_json",
  "tempdir",

@@ -75,8 +75,8 @@ impl DataPoint {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum SearchDatapointsLimit {
-    Since(usize),
-    Until(usize),
+    Head(usize),
+    Tail(usize),
 }
 
 #[derive(Debug, PartialEq, Clone)]

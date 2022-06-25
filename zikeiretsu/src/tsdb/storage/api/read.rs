@@ -203,8 +203,9 @@ pub async fn search_dataframe<P: AsRef<Path>>(
                     prev_block_timestamp = each_block_timestamp;
                 }
 
-                //TODO(tacogips) limit
-                //merged_dataframe
+                if let Some(limit) = condition.limit.as_ref() {
+                    merged_dataframe.limit(limit);
+                }
                 Ok(Some(merged_dataframe))
             }
         }

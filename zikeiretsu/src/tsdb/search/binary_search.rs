@@ -171,7 +171,7 @@ where
     F2: Fn(&T) -> Ordering,
 {
     let result = binary_search_range_with_idx_by(datas, condition_at_least, condition_at_most);
-    result.map(|(datapoints, _indicex)| datapoints)
+    result.map(|(datapoints, _indices)| datapoints)
 }
 
 pub fn binary_search_range_with_idx_by<T, F1, F2>(

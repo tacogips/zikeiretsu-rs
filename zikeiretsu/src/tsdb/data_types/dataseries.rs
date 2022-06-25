@@ -91,6 +91,65 @@ impl DataSeries {
         Self { values }
     }
 
+    pub fn truncate(&mut self, size: usize) {
+        match &mut self.values {
+            SeriesValues::Vacant(seriese_size) => *seriese_size = size,
+            SeriesValues::Float64(vs) => {
+                vs.truncate(size);
+            }
+
+            SeriesValues::UInt64(vs) => {
+                vs.truncate(size);
+            }
+
+            SeriesValues::String(vs) => {
+                vs.truncate(size);
+            }
+
+            SeriesValues::TimestampNano(vs) => {
+                vs.truncate(size);
+            }
+
+            SeriesValues::TimestampSec(vs) => {
+                vs.truncate(size);
+            }
+
+            SeriesValues::Bool(vs) => {
+                vs.truncate(size);
+            }
+        }
+    }
+
+    pub fn truncate_tail(&mut self, left_bound: usize) {
+        let self_len = self.len();
+        match &mut self.values {
+            SeriesValues::Vacant(seriese_size) => *seriese_size = self_len - left_bound,
+            SeriesValues::Float64(vs) => {
+                vs.drain(..left_bound);
+            }
+
+            SeriesValues::UInt64(vs) => {
+                vs.drain(..left_bound);
+            }
+
+            SeriesValues::String(vs) => {
+                vs.drain(..left_bound);
+            }
+
+            SeriesValues::TimestampNano(vs) => {
+                vs.drain(..left_bound);
+            }
+
+            SeriesValues::TimestampSec(vs) => {
+                vs.drain(..left_bound);
+            }
+
+            SeriesValues::Bool(vs) => {
+                vs.drain(..left_bound);
+            }
+        }
+    }
+
     pub fn as_sub_dataseries(&self, start_idx: usize, finish_idx: usize) -> DataSeriesRef {
         let data_range = start_idx..=finish_idx;
         match &self.values {
@@ -479,5 +538,45 @@ impl From<DataSeriesRef<'_>> for DataSeries {
         };
 
         DataSeries::new(vs)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_truncate() {
+        {
+            let mut data_series = DataSeries::new(SeriesValues::UInt64(vec![0, 1, 2, 3, 4, 5]));
+
+            data_series.truncate(3);
+            assert_eq!(data_series.values, SeriesValues::UInt64(vec![0, 1, 2]));
+        }
+
+        {
+            let mut data_series = DataSeries::new(SeriesValues::Vacant(10));
+
+            data_series.truncate(3);
+            assert_eq!(data_series.values, SeriesValues::Vacant(3));
+        }
+    }
+
+    #[test]
+    fn test_truncate_tail() {
+        {
+            let mut data_series = DataSeries::new(SeriesValues::UInt64(vec![0, 1, 2, 3, 4, 5]));
+
+            data_series.truncate_tail(2);
+            assert_eq!(data_series.values, SeriesValues::UInt64(vec![2, 3, 4, 5]));
+        }
+
+        {
+            let mut data_series = DataSeries::new(SeriesValues::Vacant(10));
+
+            data_series.truncate_tail(2);
+            assert_eq!(data_series.values, SeriesValues::Vacant(8));
+        }
     }
 }

@@ -88,10 +88,6 @@ where
             datas,
             &mut counter,
             |prev, current, each_counter| {
-                println!(
-                    "=== prev:{:?} current:{:?} each_counter{:?}",
-                    prev, current, each_counter
-                );
                 match prev {
                     None => *each_counter = 1,
                     Some(prev) => {
@@ -100,7 +96,6 @@ where
                         }
                     }
                 }
-                println!("--- after each counter: {}", *each_counter);
                 //  use '>' rather than '>=' to count through same values at the tail
                 *each_counter > limit
             },

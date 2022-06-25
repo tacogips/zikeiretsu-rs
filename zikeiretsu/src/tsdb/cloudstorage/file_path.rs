@@ -108,6 +108,7 @@ impl<'a> CloudBlockListFilePath<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct CloudLockfilePath<'a> {
     metrics: &'a Metrics,
     cloud_storage: &'a CloudStorage,

@@ -44,61 +44,65 @@ pub async fn write_datas<P: AsRef<Path>>(
         None
     };
 
-    let db_dir = db_dir.as_ref();
+    let cloud_infos_clone = cloud_infos.clone();
+    let innner_writer_data = || async move {
+        let db_dir = db_dir.as_ref();
 
-    let write = || async {
-        let WrittenBlockInfo {
-            block_list_file_path,
-            block_file_dir,
-            block_file_path,
-            block_timestamp,
-        } = match write_datas_to_local(db_dir, metrics, data_points, cloud_storage_and_setting)
-            .await
-        {
-            Ok(r) => r,
-            Err(e) => {
-                log::error!("failed to write block file on local: {e}");
-                return Err(e);
-            }
-        };
+        let write = || async {
+            let WrittenBlockInfo {
+                block_list_file_path,
+                block_file_dir,
+                block_file_path,
+                block_timestamp,
+            } = match write_datas_to_local(db_dir, metrics, data_points, cloud_storage_and_setting)
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    log::error!("failed to write block file on local: {e}");
+                    return Err(e);
+                }
+            };
 
-        if let Some((_, cloud_storage, cloud_setting)) = cloud_infos.as_ref() {
-            let upload_result = upload_to_cloud(
-                &block_list_file_path,
-                &block_file_path,
-                metrics,
-                &block_timestamp,
-                cloud_storage,
-            )
-            .await;
-            match upload_result {
-                Ok(_) => {
-                    if cloud_setting.remove_local_file_after_upload {
-                        fs::remove_dir_all(block_file_dir.as_path())
-                            .map_err(StorageApiError::RemoveBlockDirError)?;
-                        log::debug!(
-                            "remove block dir on local at {block_file_path}",
-                            block_file_path = block_file_dir.as_path().display()
-                        );
+            if let Some((_, cloud_storage, cloud_setting)) = cloud_infos_clone.as_ref() {
+                let upload_result = upload_to_cloud(
+                    &block_list_file_path,
+                    &block_file_path,
+                    metrics,
+                    &block_timestamp,
+                    cloud_storage,
+                )
+                .await;
+                match upload_result {
+                    Ok(_) => {
+                        if cloud_setting.remove_local_file_after_upload {
+                            fs::remove_dir_all(block_file_dir.as_path())
+                                .map_err(StorageApiError::RemoveBlockDirError)?;
+                            log::debug!(
+                                "remove block dir on local at {block_file_path}",
+                                block_file_path = block_file_dir.as_path().display()
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("failed to update block files to the cloud :{e:?}");
+                        write_error_file(
+                            db_dir,
+                            TimestampNano::now(),
+                            metrics,
+                            persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
+                            block_timestamp,
+                            Some(format!("error:{e:?}")),
+                        )
+                        .await?;
                     }
                 }
-                Err(e) => {
-                    log::error!("failed to update block files to the cloud :{e:?}");
-                    write_error_file(
-                        db_dir,
-                        TimestampNano::now(),
-                        metrics,
-                        persisted_error::PersistedErrorType::FailedToUploadBlockOrBLockList,
-                        block_timestamp,
-                        Some(format!("error:{e:?}")),
-                    )
-                    .await?;
-                }
             }
-        }
-        Ok(())
+            Ok(())
+        };
+        write().await
     };
-    let result = write().await;
+    let result = innner_writer_data().await;
 
     if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
         cloud_lock_file_path.remove().await?;

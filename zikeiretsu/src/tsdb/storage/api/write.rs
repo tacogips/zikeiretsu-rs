@@ -3,6 +3,7 @@ use super::{
     block, block_list, block_list_file_path, block_timestamp_to_block_file_path, cloud_setting::*,
     lockfile_path, persisted_error_file_path, Result, StorageApiError,
 };
+use std::fs::OpenOptions;
 
 use crate::tsdb::cloudstorage::*;
 use crate::tsdb::timestamp_nano::TimestampNano;
@@ -12,7 +13,7 @@ use log;
 use log::*;
 use std::fs;
 use std::fs::create_dir_all;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
@@ -111,9 +112,9 @@ pub async fn write_datas<P: AsRef<Path>>(
     };
     let result = innner_writer_data().await;
 
-    //if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
-    //    cloud_lock_file_path.remove().await?;
-    //}
+    if let Some((cloud_lock_file_path, _, _)) = cloud_infos {
+        cloud_lock_file_path.remove().await?;
+    }
 
     result
 }
@@ -134,6 +135,33 @@ pub async fn remove_cloud_lock_file_if_same_writer(
             }
         }
     };
+    Ok(())
+}
+
+pub async fn remove_local_lock_file_if_same_writer<P: AsRef<Path>>(
+    db_dir: P,
+    writer_id: &Uuid,
+    metrics: &Metrics,
+) -> Result<()> {
+    let lock_file_path = lockfile_path(db_dir.as_ref(), metrics);
+    if lock_file_path.exists() {
+        let mut lockfile_opts = OpenOptions::new();
+        lockfile_opts.create_new(false).read(true).write(false);
+        match lockfile_opts.open(lock_file_path.as_path()) {
+            Err(e) => {
+                log::error!("could not remove local lock file manually {}", e);
+            }
+            Ok(mut lock_file) => {
+                let mut file_write_id: String = "".to_string();
+                lock_file.read_to_string(&mut file_write_id).ok();
+                if file_write_id.replace("\n", "") == writer_id.to_string() {
+                    if let Err(e) = fs::remove_file(lock_file_path) {
+                        log::error!("could not remove local lock file manually {}", e);
+                    }
+                }
+            }
+        }
+    }
     Ok(())
 }
 

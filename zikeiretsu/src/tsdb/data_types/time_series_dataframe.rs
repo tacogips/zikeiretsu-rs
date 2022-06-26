@@ -1244,6 +1244,25 @@ mod test {
 
         {
             let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(0);
+            df.limit(&limit);
+
+            let values1 = Vec::<f64>::new();
+            let values2 = Vec::<bool>::new();
+            let expected = TimeSeriesDataFrame::new(
+                vec![],
+                vec![
+                    DataSeries::new(SeriesValues::Float64(values1)),
+                    DataSeries::new(SeriesValues::Bool(values2)),
+                ],
+                None,
+            );
+
+            assert_eq!(df, expected);
+        }
+
+        {
+            let mut df = create_df();
             let limit = SearchDatapointsLimit::Head(1);
             df.limit(&limit);
 
@@ -1291,15 +1310,63 @@ mod test {
             let limit = SearchDatapointsLimit::Tail(1);
             df.limit(&limit);
 
+            assert_eq!(df, multi_dataframe!([(10, 1010, true), (10, 1011, true),]));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_dataframe_limit_2() {
+        fn create_df() -> TimeSeriesDataFrame {
+            let df = multi_dataframe!([
+                (2, 22, true),
+                (3, 33, false),
+                (3, 34, false),
+                (4, 44, true),
+                (5, 55, false),
+                (6, 66, true),
+                (8, 88, true),
+                (8, 89, true),
+                (10, 1010, true),
+            ]);
+            df
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(1);
+            df.limit(&limit);
+
+            assert_eq!(df, multi_dataframe!([(2, 22, true)]),);
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(2);
+            df.limit(&limit);
+
             assert_eq!(
                 df,
-                multi_dataframe!([
-                    (8, 88, true),
-                    (8, 89, true),
-                    (10, 1010, true),
-                    (10, 1011, true),
-                ]),
+                multi_dataframe!([(2, 22, true), (3, 33, false), (3, 34, false),]),
             );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([(8, 88, true), (8, 89, true), (10, 1010, true),]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(1);
+            df.limit(&limit);
+
+            assert_eq!(df, multi_dataframe!([(10, 1010, true)]));
         }
     }
 }

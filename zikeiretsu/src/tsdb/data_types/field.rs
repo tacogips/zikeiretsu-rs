@@ -21,6 +21,7 @@ pub enum FieldError {
     TooManyField(usize, usize),
 }
 
+#[cfg(feature = "validate")]
 const MAX_FIELD_SIZE: usize = 255;
 
 type Result<T> = std::result::Result<T, FieldError>;
@@ -84,6 +85,7 @@ impl fmt::Display for FieldValue {
     }
 }
 
+#[cfg(feature = "validate")]
 pub fn same_field_types(types: &[FieldType], values: &[FieldValue]) -> bool {
     if types.len() == values.len() {
         (0..types.len())
@@ -182,6 +184,7 @@ impl<'data> Iterator for FieldValuesIter<'data> {
     }
 }
 
+#[cfg(feature = "validate")]
 pub(crate) fn check_fields_are_valid(datapoints: &[DataPoint]) -> Result<()> {
     if datapoints.is_empty() {
         Ok(())

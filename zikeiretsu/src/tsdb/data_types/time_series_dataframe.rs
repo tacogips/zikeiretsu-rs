@@ -119,6 +119,12 @@ impl TimeSeriesDataFrame {
     //
     pub fn limit(&mut self, limit: &SearchDatapointsLimit) {
         match limit {
+            SearchDatapointsLimit::Head(0) | SearchDatapointsLimit::Tail(0) => {
+                self.timestamp_nanos.truncate(0);
+                for each_column in self.columns.iter_mut() {
+                    each_column.truncate(0);
+                }
+            }
             SearchDatapointsLimit::Head(limit_size) => {
                 let right_bound = linear_search_grouped_n_datas(
                     &self.timestamp_nanos,
@@ -1198,23 +1204,102 @@ mod test {
     }
 
     #[tokio::test]
-    async fn dataframe_limit_head() {
-        use serde_json;
-        let df = multi_dataframe!([
-            (2, 22, true),
-            (3, 33, false),
-            (4, 44, true),
-            (5, 55, false),
-            (6, 66, true),
-            (8, 88, true),
-            (10, 1010, true),
-        ]);
-        //TODO(tacogips) impl
-        //let serilized = serde_json::to_string(&df).unwrap();
-        //println!("{serilized}");
-        //let serialized_df: TimeSeriesDataFrame = serde_json::from_str(&serilized).unwrap();
+    async fn test_dataframe_limit_1() {
+        fn create_df() -> TimeSeriesDataFrame {
+            let df = multi_dataframe!([
+                (2, 22, true),
+                (2, 23, true),
+                (2, 24, true),
+                (3, 33, false),
+                (3, 34, false),
+                (4, 44, true),
+                (5, 55, false),
+                (6, 66, true),
+                (8, 88, true),
+                (8, 89, true),
+                (10, 1010, true),
+                (10, 1011, true),
+            ]);
+            df
+        }
 
-        //assert_eq!(df, serialized_df);
-        assert!(false)
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(0);
+            df.limit(&limit);
+
+            let values1 = Vec::<f64>::new();
+            let values2 = Vec::<bool>::new();
+            let expected = TimeSeriesDataFrame::new(
+                vec![],
+                vec![
+                    DataSeries::new(SeriesValues::Float64(values1)),
+                    DataSeries::new(SeriesValues::Bool(values2)),
+                ],
+                None,
+            );
+
+            assert_eq!(df, expected);
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(1);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([(2, 22, true), (2, 23, true), (2, 24, true),]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([
+                    (2, 22, true),
+                    (2, 23, true),
+                    (2, 24, true),
+                    (3, 33, false),
+                    (3, 34, false),
+                ]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([
+                    (8, 88, true),
+                    (8, 89, true),
+                    (10, 1010, true),
+                    (10, 1011, true),
+                ]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(1);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([
+                    (8, 88, true),
+                    (8, 89, true),
+                    (10, 1010, true),
+                    (10, 1011, true),
+                ]),
+            );
+        }
     }
 }

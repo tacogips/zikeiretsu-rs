@@ -131,7 +131,7 @@ async fn main() {
         .unwrap();
 
     println!("");
-    println!("show limit 1 from head ");
+    println!("show limit 2 greater than or equal the datetime from head ");
     let query = r#"
     with
         cols = [is_buy,price,size],
@@ -140,8 +140,24 @@ async fn main() {
     select *
 
     from trades
-    where ts  >=|1 '2021-09-27 09:42'
+    where ts  >=|2 '2021-09-27 09:42:40.741778000'
         "#;
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
+
+    println!("");
+    println!("show limit 2 greater than the datetime from head ");
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = table
+
+    select *
+
+    from trades
+    where ts  >|2 '2021-09-27 09:42:40.741778000' "#;
     AdhocExecutorInterface
         .execute_query(&db_context, &query)
         .await

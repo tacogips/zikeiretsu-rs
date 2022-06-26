@@ -66,6 +66,7 @@ pub fn datetime_formats() -> &'static [(chrono_format::StrftimeItems<'static>, N
         chrono_format::StrftimeItems::new(s)
     }
 
+    // the second element of the tuple says either native datetime or not
     DATETIME_FORMATS
         .get_or_init(|| {
             vec![
@@ -129,6 +130,9 @@ mod test {
         assert!(parse_result.is_ok());
 
         let parse_result = parse_datetime_str("'2019-12-13 23:33:12.023'");
+        assert!(parse_result.is_ok());
+
+        let parse_result = parse_datetime_str("'2021-09-27 09:42:40.741778000'");
         assert!(parse_result.is_ok());
 
         let parse_result = parse_datetime_str("'2019-12-13 23:33'");

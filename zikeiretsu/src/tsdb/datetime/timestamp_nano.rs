@@ -9,7 +9,7 @@ use std::ops::{Add, Deref, Sub};
 
 pub const SEC_IN_NANOSEC: i64 = 1_000_000_000;
 
-#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize, PartialOrd)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize, PartialOrd, Ord)]
 pub struct TimestampNano(pub u64);
 impl TimestampNano {
     pub fn new(inner: u64) -> Self {

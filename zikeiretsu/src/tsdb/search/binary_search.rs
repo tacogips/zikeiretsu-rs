@@ -246,7 +246,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&20),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(20)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_some());
@@ -260,7 +260,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&20),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(20)),
             BinaryRangeSearchType::AtMostInclusive,
         );
         assert!(result.is_some());
@@ -274,7 +274,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&20),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(20)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_some());
@@ -288,7 +288,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&20),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(20)),
             BinaryRangeSearchType::AtMostInclusive,
         );
         assert!(result.is_some());
@@ -302,7 +302,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&1),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(1)),
             BinaryRangeSearchType::AtMostInclusive,
         );
         assert!(result.is_none());
@@ -314,7 +314,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&41),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(41)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_none());
@@ -326,7 +326,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&13),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(13)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_some());
@@ -340,7 +340,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&13),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(13)),
             BinaryRangeSearchType::AtMostInclusive,
         );
         assert!(result.is_some());
@@ -354,7 +354,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&13),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(13)),
             BinaryRangeSearchType::AtMostExclusive,
         );
         assert!(result.is_some());
@@ -368,7 +368,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&10),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(10)),
             BinaryRangeSearchType::AtMostExclusive,
         );
         assert!(result.is_none());
@@ -380,7 +380,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&11),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(11)),
             BinaryRangeSearchType::AtMostExclusive,
         );
         assert!(result.is_some());
@@ -394,7 +394,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&41),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(41)),
             BinaryRangeSearchType::AtMostExclusive,
         );
         assert!(result.is_some());
@@ -408,7 +408,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&5),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(5)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_some());
@@ -422,7 +422,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&5),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(5)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_some());
@@ -436,7 +436,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&3),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(3)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_some());
@@ -450,7 +450,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&11),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(11)),
             BinaryRangeSearchType::AtLeastInclusive,
         );
         assert!(result.is_none());
@@ -462,7 +462,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&3),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(3)),
             BinaryRangeSearchType::AtMostExclusive,
         );
         assert!(result.is_some());
@@ -476,7 +476,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&3),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(3)),
             BinaryRangeSearchType::AtLeastExclusive,
         );
         assert!(result.is_some());
@@ -490,7 +490,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&10),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(10)),
             BinaryRangeSearchType::AtLeastExclusive,
         );
         assert!(result.is_none());
@@ -502,7 +502,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&1),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(1)),
             BinaryRangeSearchType::AtLeastExclusive,
         );
         assert!(result.is_some());
@@ -516,7 +516,7 @@ mod test {
 
         let result = binary_search_by(
             &data_points,
-            |datapoint| datapoint.timestamp_nano.cmp(&2),
+            |datapoint| datapoint.timestamp_nano.cmp(&ts!(2)),
             BinaryRangeSearchType::AtLeastExclusive,
         );
         assert!(result.is_some());

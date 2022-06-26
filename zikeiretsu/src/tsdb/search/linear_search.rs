@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 #[derive(Eq, PartialEq)]
 pub enum LinearSearchDirection {
     Asc,
@@ -78,7 +79,24 @@ pub fn linear_search_grouped_n_datas<T>(
     search_direction: LinearSearchDirection,
 ) -> usize
 where
-    T: PartialEq,
+    T: Ord,
+{
+    linear_search_grouped_n_datas_with_func(
+        datas,
+        limit,
+        |prev, current| prev.cmp(current),
+        search_direction,
+    )
+}
+
+pub fn linear_search_grouped_n_datas_with_func<T, F>(
+    datas: &[T],
+    limit: usize,
+    compare: F,
+    search_direction: LinearSearchDirection,
+) -> usize
+where
+    F: Fn(&T, &T) -> Ordering,
 {
     if limit == 0 {
         match search_direction {
@@ -94,7 +112,7 @@ where
                 match prev {
                     None => *each_counter = 1,
                     Some(prev) => {
-                        if prev != current {
+                        if compare(prev, current) != Ordering::Equal {
                             *each_counter += 1
                         }
                     }
@@ -162,6 +180,14 @@ mod test {
         ($($timestamp:expr),*) => {
             vec![
             $(DataPoint::new(TimestampNano::new($timestamp),vec![])),*
+            ]
+        };
+    }
+
+    macro_rules! tss {
+        ($($timestamp:expr),*) => {
+            vec![
+            $(TimestampNano::new($timestamp)),*
             ]
         };
     }
@@ -328,75 +354,75 @@ mod test {
 
     #[test]
     fn test_linear_search_grouped_n_datas_1_asc() {
-        let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30, 30);
+        let tss = tss!(10, 20, 20, 20, 30, 30);
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Asc);
+            let result = linear_search_grouped_n_datas(&tss, 1, LinearSearchDirection::Asc);
             assert_eq!(result, 1)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 2, LinearSearchDirection::Asc);
+            let result = linear_search_grouped_n_datas(&tss, 2, LinearSearchDirection::Asc);
             assert_eq!(result, 4)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 3, LinearSearchDirection::Asc);
-            assert_eq!(result, datapoints.len())
+            let result = linear_search_grouped_n_datas(&tss, 3, LinearSearchDirection::Asc);
+            assert_eq!(result, tss.len())
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 4, LinearSearchDirection::Asc);
-            assert_eq!(result, datapoints.len())
+            let result = linear_search_grouped_n_datas(&tss, 4, LinearSearchDirection::Asc);
+            assert_eq!(result, tss.len())
         }
     }
 
     #[test]
     fn test_linear_search_grouped_n_datas_2_desc() {
-        let datapoints: Vec<DataPoint> = empty_data_points!(10, 20, 20, 20, 30, 30);
+        let tss = tss!(10, 20, 20, 20, 30, 30);
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Desc);
+            let result = linear_search_grouped_n_datas(&tss, 1, LinearSearchDirection::Desc);
             assert_eq!(result, 4)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 2, LinearSearchDirection::Desc);
+            let result = linear_search_grouped_n_datas(&tss, 2, LinearSearchDirection::Desc);
             assert_eq!(result, 1)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 3, LinearSearchDirection::Desc);
+            let result = linear_search_grouped_n_datas(&tss, 3, LinearSearchDirection::Desc);
             assert_eq!(result, 0)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 4, LinearSearchDirection::Desc);
+            let result = linear_search_grouped_n_datas(&tss, 4, LinearSearchDirection::Desc);
             assert_eq!(result, 0)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Desc);
+            let result = linear_search_grouped_n_datas(&tss, 1, LinearSearchDirection::Desc);
             assert_eq!(result, 4)
         }
     }
 
     #[test]
     fn test_linear_search_grouped_n_datas_3_asc() {
-        let datapoints: Vec<DataPoint> = empty_data_points!(10, 10, 20, 20, 20, 30, 30);
+        let tss = tss!(10, 10, 20, 20, 20, 30, 30);
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 0, LinearSearchDirection::Asc);
+            let result = linear_search_grouped_n_datas(&tss, 0, LinearSearchDirection::Asc);
             assert_eq!(result, 0)
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 0, LinearSearchDirection::Desc);
-            assert_eq!(result, datapoints.len())
+            let result = linear_search_grouped_n_datas(&tss, 0, LinearSearchDirection::Desc);
+            assert_eq!(result, tss.len())
         }
 
         {
-            let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Asc);
+            let result = linear_search_grouped_n_datas(&tss, 1, LinearSearchDirection::Asc);
             assert_eq!(result, 2)
         }
     }

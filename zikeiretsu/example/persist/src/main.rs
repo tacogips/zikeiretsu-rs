@@ -93,7 +93,7 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    std::env::set_var("RUST_LOG", "debug");
+    std::env::set_var("RUST_LOG", "info");
     let sub = tracing_subscriber::FmtSubscriber::builder()
         .with_writer(io::stderr)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
@@ -124,6 +124,40 @@ async fn main() {
 
     from trades
     where ts  in ('2021-09-27 09:42',+3 minute)
+        "#;
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
+
+    println!("");
+    println!("show limit 1 from head ");
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = table
+
+    select *
+
+    from trades
+    where ts  >=|1 '2021-09-27 09:42'
+        "#;
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
+
+    println!("");
+    println!("show limit 10 from head ");
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = table
+
+    select *
+
+    from trades
+    where ts  >=|10 '2021-09-27 09:42'
         "#;
     AdhocExecutorInterface
         .execute_query(&db_context, &query)

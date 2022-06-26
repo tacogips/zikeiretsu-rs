@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
+    TimestampNano,
 };
 
 use crate::tsdb::util;
@@ -288,9 +289,44 @@ where
         Ok(&mut self.sorted_datapoints)
     }
 
-    //pub async fn datapoints_limit(&mut self) -> Result<&mut Vec<DataPoint>> {
-    //    let datapoints = self.datapoints();
-    //}
+    pub async fn datapoints(&mut self) -> Result<&Vec<DataPoint>> {
+        if self.convert_dirty_to_sorted_on_read {
+            self.apply_dirties().await?;
+        }
+        Ok(&self.sorted_datapoints)
+    }
+
+    pub async fn datapoints_tail_limit(&mut self, limit: usize) -> Result<&[DataPoint]> {
+        let datapoints = self.datapoints().await?.as_slice();
+        //let datapoinsts_len = datapoints.len();
+        //let batch_size = limit * 2;
+
+        //let mut group_left_index: usize = if batch_size >= datapoinsts_len {
+        //    0
+        //} else {
+        //    datapoinsts_len - batch_size
+        //};
+
+        //loop {
+        //    let timestamps: Vec<&TimestampNano> = datapoints
+        //        [group_left_index..(group_left_index + batch_size)]
+        //        .iter()
+        //        .map(|each| &each.timestamp_nano)
+        //        .collect();
+        //    let find_index =
+        //        linear_search_grouped_n_datas(&timestamps, limit, LinearSearchDirection::Desc);
+        //    match find_index {
+        //        Some(found_index) => Ok(&datapoints[found_index..]),
+        //        None => Ok(&datapoints[..0]),
+        //    }
+        //}
+
+        let timestamps: Vec<&TimestampNano> =
+            datapoints.iter().map(|each| &each.timestamp_nano).collect();
+        let found_index =
+            linear_search_grouped_n_datas(&timestamps, limit, LinearSearchDirection::Desc);
+        Ok(&datapoints[found_index..])
+    }
 
     pub fn create_sink_channel(
         store: Arc<Mutex<WritableStore<S>>>,

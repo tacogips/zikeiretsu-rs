@@ -76,12 +76,15 @@ pub fn linear_search_grouped_n_datas<T>(
     datas: &[T],
     limit: usize,
     search_direction: LinearSearchDirection,
-) -> Option<usize>
+) -> usize
 where
-    T: PartialEq + std::fmt::Debug,
+    T: PartialEq,
 {
     if limit == 0 {
-        None
+        match search_direction {
+            LinearSearchDirection::Asc => 0,
+            LinearSearchDirection::Desc => datas.len(),
+        }
     } else {
         let mut counter: usize = 0;
         let found_intermediate_index = linear_search_by_condition(
@@ -105,16 +108,16 @@ where
             Some(idx) => {
                 debug_assert!(idx <= datas.len());
                 if search_direction == LinearSearchDirection::Asc {
-                    Some(idx)
+                    idx
                 } else {
-                    Some(idx + 1)
+                    idx + 1
                 }
             }
             None => {
                 if search_direction == LinearSearchDirection::Asc {
-                    Some(datas.len())
+                    datas.len()
                 } else {
-                    Some(0)
+                    0
                 }
             }
         }
@@ -329,22 +332,22 @@ mod test {
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Asc);
-            assert_eq!(result, Some(1))
+            assert_eq!(result, 1)
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 2, LinearSearchDirection::Asc);
-            assert_eq!(result, Some(4))
+            assert_eq!(result, 4)
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 3, LinearSearchDirection::Asc);
-            assert_eq!(result, Some(datapoints.len()))
+            assert_eq!(result, datapoints.len())
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 4, LinearSearchDirection::Asc);
-            assert_eq!(result, Some(datapoints.len()))
+            assert_eq!(result, datapoints.len())
         }
     }
 
@@ -354,27 +357,27 @@ mod test {
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Desc);
-            assert_eq!(result, Some(4))
+            assert_eq!(result, 4)
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 2, LinearSearchDirection::Desc);
-            assert_eq!(result, Some(1))
+            assert_eq!(result, 1)
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 3, LinearSearchDirection::Desc);
-            assert_eq!(result, Some(0))
+            assert_eq!(result, 0)
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 4, LinearSearchDirection::Desc);
-            assert_eq!(result, Some(0))
+            assert_eq!(result, 0)
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Desc);
-            assert_eq!(result, Some(4))
+            assert_eq!(result, 4)
         }
     }
 
@@ -384,12 +387,17 @@ mod test {
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 0, LinearSearchDirection::Asc);
-            assert_eq!(result, None)
+            assert_eq!(result, 0)
+        }
+
+        {
+            let result = linear_search_grouped_n_datas(&datapoints, 0, LinearSearchDirection::Desc);
+            assert_eq!(result, datapoints.len())
         }
 
         {
             let result = linear_search_grouped_n_datas(&datapoints, 1, LinearSearchDirection::Asc);
-            assert_eq!(result, Some(2))
+            assert_eq!(result, 2)
         }
     }
 }

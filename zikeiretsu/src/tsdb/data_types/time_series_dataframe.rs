@@ -132,12 +132,6 @@ impl TimeSeriesDataFrame {
                     LinearSearchDirection::Asc,
                 );
 
-                let right_bound = if let Some(right_bound) = right_bound {
-                    right_bound
-                } else {
-                    return;
-                };
-
                 self.timestamp_nanos.truncate(right_bound);
                 for each_column in self.columns.iter_mut() {
                     each_column.truncate(right_bound);
@@ -149,12 +143,6 @@ impl TimeSeriesDataFrame {
                     *limit_size,
                     LinearSearchDirection::Desc,
                 );
-
-                let left_bound = if let Some(left_bound) = left_bound {
-                    left_bound
-                } else {
-                    return;
-                };
 
                 self.timestamp_nanos.drain(..left_bound);
                 for each_column in self.columns.iter_mut() {

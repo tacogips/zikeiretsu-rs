@@ -541,4 +541,100 @@ mod test {
             }
         }
     }
+
+    #[tokio::test]
+    async fn write_store_limit_test_3() {
+        let field_types = vec![FieldType::Float64, FieldType::Float64];
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
+
+        let persistence = Persistence::OnMemory;
+        let store = WritableStore::builder(metrics.clone(), field_types)
+            .persistence(persistence)
+            .build();
+
+        {
+            let input_datapoints = float_data_points!(
+                {1629745451_715062000, vec![100f64,12f64]},
+                {1629745451_715066000, vec![300f64,36f64]},
+                {1629745451_715063000, vec![200f64,36f64]},
+                {1629745451_715065000, vec![300f64,36f64]},
+                {1629745451_715064000, vec![200f64,37f64]},
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]},
+                {1639745451_715062000, vec![1201f64,38f64]}
+            );
+
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
+            assert!(result.is_ok());
+
+            {
+                let mut s = store.lock().await;
+                let datapoints = s.datapoints_tail_limit(7).await.unwrap();
+
+                let expected = float_data_points!(
+                    {1629745451_715062000, vec![100f64,12f64]},
+                    {1629745451_715063000, vec![200f64,36f64]},
+                    {1629745451_715064000, vec![200f64,37f64]},
+                    {1629745451_715065000, vec![300f64,36f64]},
+                    {1629745451_715066000, vec![300f64,36f64]},
+                    {1639745451_715061000, vec![1300f64,36f64]},
+                    {1639745451_715062000, vec![1200f64,37f64]},
+                    {1639745451_715062000, vec![1201f64,38f64]}
+                );
+
+                assert_eq!(*datapoints, expected);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn write_store_limit_test_4() {
+        let field_types = vec![FieldType::Float64, FieldType::Float64];
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
+
+        let persistence = Persistence::OnMemory;
+        let store = WritableStore::builder(metrics.clone(), field_types)
+            .persistence(persistence)
+            .build();
+
+        {
+            let input_datapoints = float_data_points!(
+                {1629745451_715062000, vec![100f64,12f64]},
+                {1629745451_715066000, vec![300f64,36f64]},
+                {1629745451_715063000, vec![200f64,36f64]},
+                {1629745451_715065000, vec![300f64,36f64]},
+                {1629745451_715064000, vec![200f64,37f64]},
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]},
+                {1639745451_715062000, vec![1201f64,38f64]}
+            );
+
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
+            assert!(result.is_ok());
+
+            {
+                let mut s = store.lock().await;
+                let datapoints = s.datapoints_tail_limit(8).await.unwrap();
+
+                let expected = float_data_points!(
+                    {1629745451_715062000, vec![100f64,12f64]},
+                    {1629745451_715063000, vec![200f64,36f64]},
+                    {1629745451_715064000, vec![200f64,37f64]},
+                    {1629745451_715065000, vec![300f64,36f64]},
+                    {1629745451_715066000, vec![300f64,36f64]},
+                    {1639745451_715061000, vec![1300f64,36f64]},
+                    {1639745451_715062000, vec![1200f64,37f64]},
+                    {1639745451_715062000, vec![1201f64,38f64]}
+                );
+
+                assert_eq!(*datapoints, expected);
+            }
+        }
+    }
 }

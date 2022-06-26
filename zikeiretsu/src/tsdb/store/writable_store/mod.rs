@@ -313,9 +313,12 @@ where
         //        .iter()
         //        .map(|each| &each.timestamp_nano)
         //        .collect();
-        //    let find_index =
+        //    let found_index =
         //        linear_search_grouped_n_datas(&timestamps, limit, LinearSearchDirection::Desc);
-        //    match find_index {
+        //    if found_index != 0 {
+        //        &datapoints[group_left_index + found_index..]
+        //    }
+        //    match found_index {
         //        Some(found_index) => Ok(&datapoints[found_index..]),
         //        None => Ok(&datapoints[..0]),
         //    }

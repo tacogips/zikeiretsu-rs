@@ -93,7 +93,7 @@ mod test {
             {1629745451_715064000, vec![200f64,36f64]}
         );
         let mut s = store.lock().await;
-        let data_points = s.datapoints().await;
+        let data_points = s.datapoints_mut().await;
 
         assert!(data_points.is_ok());
         let data_points = data_points.unwrap();
@@ -133,7 +133,7 @@ mod test {
             //getting datapoint first
 
             let mut s = store.lock().await;
-            let data_points = s.datapoints().await;
+            let data_points = s.datapoints_mut().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -155,7 +155,7 @@ mod test {
                 {1629745451_715066000, vec![300f64,36f64]}
             );
             let mut s = store.lock().await;
-            let data_points = s.datapoints().await;
+            let data_points = s.datapoints_mut().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -199,7 +199,7 @@ mod test {
             );
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -227,7 +227,7 @@ mod test {
             );
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
 
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
@@ -257,7 +257,7 @@ mod test {
             );
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -362,7 +362,7 @@ mod test {
 
             let stored_datapoints = {
                 let mut s = store.lock().await;
-                s.datapoints().await.unwrap().clone()
+                s.datapoints_mut().await.unwrap().clone()
             };
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
@@ -387,7 +387,7 @@ mod test {
             let expected_datapoints = float_data_points!();
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }

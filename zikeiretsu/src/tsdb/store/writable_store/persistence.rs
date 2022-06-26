@@ -92,10 +92,8 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 break;
             }
 
-            let datapoint_search_condition = DatapointsRange::new(
-                None,
-                Some(TimestampNano::now() + Duration::nanoseconds(1)),
-            );
+            let datapoint_search_condition =
+                DatapointsRange::new(None, Some(TimestampNano::now() + Duration::nanoseconds(1)));
             let condition = PersistCondition {
                 datapoint_search_condition,
                 remove_from_store_after_persisted,

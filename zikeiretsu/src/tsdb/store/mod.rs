@@ -93,7 +93,7 @@ mod test {
             {1629745451_715064000, vec![200f64,36f64]}
         );
         let mut s = store.lock().await;
-        let data_points = s.datapoints().await;
+        let data_points = s.datapoints_mut().await;
 
         assert!(data_points.is_ok());
         let data_points = data_points.unwrap();
@@ -133,7 +133,7 @@ mod test {
             //getting datapoint first
 
             let mut s = store.lock().await;
-            let data_points = s.datapoints().await;
+            let data_points = s.datapoints_mut().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -155,7 +155,7 @@ mod test {
                 {1629745451_715066000, vec![300f64,36f64]}
             );
             let mut s = store.lock().await;
-            let data_points = s.datapoints().await;
+            let data_points = s.datapoints_mut().await;
 
             assert!(data_points.is_ok());
             let data_points = data_points.unwrap();
@@ -199,7 +199,7 @@ mod test {
             );
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -227,7 +227,7 @@ mod test {
             );
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
 
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
@@ -257,7 +257,7 @@ mod test {
             );
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -362,7 +362,7 @@ mod test {
 
             let stored_datapoints = {
                 let mut s = store.lock().await;
-                s.datapoints().await.unwrap().clone()
+                s.datapoints_mut().await.unwrap().clone()
             };
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
@@ -387,7 +387,7 @@ mod test {
             let expected_datapoints = float_data_points!();
 
             let mut s = store.lock().await;
-            let stored_datapoints = s.datapoints().await.unwrap();
+            let stored_datapoints = s.datapoints_mut().await.unwrap();
             assert_eq!(stored_datapoints.len(), expected_datapoints.len());
             assert_eq!(stored_datapoints.clone(), expected_datapoints);
         }
@@ -456,6 +456,184 @@ mod test {
                         {1639745451_715061000, vec![1300f64,36f64]}
                     )
                 );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn write_store_limit_test_1() {
+        let field_types = vec![FieldType::Float64, FieldType::Float64];
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
+
+        let persistence = Persistence::OnMemory;
+        let store = WritableStore::builder(metrics.clone(), field_types)
+            .persistence(persistence)
+            .build();
+
+        {
+            let input_datapoints = float_data_points!(
+                {1629745451_715062000, vec![100f64,12f64]},
+                {1629745451_715066000, vec![300f64,36f64]},
+                {1629745451_715063000, vec![200f64,36f64]},
+                {1629745451_715065000, vec![300f64,36f64]},
+                {1629745451_715064000, vec![200f64,37f64]},
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]},
+                {1639745451_715062000, vec![1201f64,38f64]}
+            );
+
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
+            assert!(result.is_ok());
+
+            {
+                let mut s = store.lock().await;
+                let datapoints = s.datapoints_tail_limit(2).await.unwrap();
+
+                let expected = float_data_points!(
+                    {1639745451_715061000, vec![1300f64,36f64]},
+                    {1639745451_715062000, vec![1200f64,37f64]},
+                    {1639745451_715062000, vec![1201f64,38f64]}
+                );
+
+                assert_eq!(*datapoints, expected);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn write_store_limit_test_2() {
+        let field_types = vec![FieldType::Float64, FieldType::Float64];
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
+
+        let persistence = Persistence::OnMemory;
+        let store = WritableStore::builder(metrics.clone(), field_types)
+            .persistence(persistence)
+            .build();
+
+        {
+            let input_datapoints = float_data_points!(
+                {1629745451_715062000, vec![100f64,12f64]},
+                {1629745451_715066000, vec![300f64,36f64]},
+                {1629745451_715063000, vec![200f64,36f64]},
+                {1629745451_715065000, vec![300f64,36f64]},
+                {1629745451_715064000, vec![200f64,37f64]},
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]},
+                {1639745451_715062000, vec![1201f64,38f64]}
+            );
+
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
+            assert!(result.is_ok());
+
+            {
+                let mut s = store.lock().await;
+                let datapoints = s.datapoints_tail_limit(0).await.unwrap();
+
+                let expected = float_data_points!();
+
+                assert_eq!(*datapoints, expected);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn write_store_limit_test_3() {
+        let field_types = vec![FieldType::Float64, FieldType::Float64];
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
+
+        let persistence = Persistence::OnMemory;
+        let store = WritableStore::builder(metrics.clone(), field_types)
+            .persistence(persistence)
+            .build();
+
+        {
+            let input_datapoints = float_data_points!(
+                {1629745451_715062000, vec![100f64,12f64]},
+                {1629745451_715066000, vec![300f64,36f64]},
+                {1629745451_715063000, vec![200f64,36f64]},
+                {1629745451_715065000, vec![300f64,36f64]},
+                {1629745451_715064000, vec![200f64,37f64]},
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]},
+                {1639745451_715062000, vec![1201f64,38f64]}
+            );
+
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
+            assert!(result.is_ok());
+
+            {
+                let mut s = store.lock().await;
+                let datapoints = s.datapoints_tail_limit(7).await.unwrap();
+
+                let expected = float_data_points!(
+                    {1629745451_715062000, vec![100f64,12f64]},
+                    {1629745451_715063000, vec![200f64,36f64]},
+                    {1629745451_715064000, vec![200f64,37f64]},
+                    {1629745451_715065000, vec![300f64,36f64]},
+                    {1629745451_715066000, vec![300f64,36f64]},
+                    {1639745451_715061000, vec![1300f64,36f64]},
+                    {1639745451_715062000, vec![1200f64,37f64]},
+                    {1639745451_715062000, vec![1201f64,38f64]}
+                );
+
+                assert_eq!(*datapoints, expected);
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn write_store_limit_test_4() {
+        let field_types = vec![FieldType::Float64, FieldType::Float64];
+        let metrics: Metrics = "test_metrics".try_into().unwrap();
+
+        let persistence = Persistence::OnMemory;
+        let store = WritableStore::builder(metrics.clone(), field_types)
+            .persistence(persistence)
+            .build();
+
+        {
+            let input_datapoints = float_data_points!(
+                {1629745451_715062000, vec![100f64,12f64]},
+                {1629745451_715066000, vec![300f64,36f64]},
+                {1629745451_715063000, vec![200f64,36f64]},
+                {1629745451_715065000, vec![300f64,36f64]},
+                {1629745451_715064000, vec![200f64,37f64]},
+                {1639745451_715061000, vec![1300f64,36f64]},
+                {1639745451_715062000, vec![1200f64,37f64]},
+                {1639745451_715062000, vec![1201f64,38f64]}
+            );
+
+            let result = {
+                let mut s = store.lock().await;
+                s.push_multi(input_datapoints.clone()).await
+            };
+            assert!(result.is_ok());
+
+            {
+                let mut s = store.lock().await;
+                let datapoints = s.datapoints_tail_limit(8).await.unwrap();
+
+                let expected = float_data_points!(
+                    {1629745451_715062000, vec![100f64,12f64]},
+                    {1629745451_715063000, vec![200f64,36f64]},
+                    {1629745451_715064000, vec![200f64,37f64]},
+                    {1629745451_715065000, vec![300f64,36f64]},
+                    {1629745451_715066000, vec![300f64,36f64]},
+                    {1639745451_715061000, vec![1300f64,36f64]},
+                    {1639745451_715062000, vec![1200f64,37f64]},
+                    {1639745451_715062000, vec![1201f64,38f64]}
+                );
+
+                assert_eq!(*datapoints, expected);
             }
         }
     }

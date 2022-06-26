@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
+    TimestampNano,
 };
 
 use crate::tsdb::util;
@@ -222,7 +223,7 @@ where
     }
 
     pub async fn purge(&mut self, datapoint_search_condition: DatapointsRange) -> Result<()> {
-        let datapoints = self.datapoints().await?;
+        let datapoints = self.datapoints_mut().await?;
         let datapoints_searcher = DatapointSearcher::new(datapoints);
 
         if let Some((_, indices)) = datapoints_searcher
@@ -240,7 +241,7 @@ where
         if let Persistence::Storage(db_dir, cloud_storage_and_setting) = self.persistence.clone() {
             let metrics = self.metrics.clone();
             let writer_id = self.store_id;
-            let all_datapoints = self.datapoints().await?;
+            let all_datapoints = self.datapoints_mut().await?;
             let datapoints_searcher = DatapointSearcher::new(all_datapoints);
 
             if let Some((datapoints, indices)) = datapoints_searcher
@@ -281,11 +282,30 @@ where
         }
     }
 
-    pub async fn datapoints(&mut self) -> Result<&mut Vec<DataPoint>> {
+    pub async fn datapoints_mut(&mut self) -> Result<&mut Vec<DataPoint>> {
         if self.convert_dirty_to_sorted_on_read {
             self.apply_dirties().await?;
         }
         Ok(&mut self.sorted_datapoints)
+    }
+
+    pub async fn datapoints(&mut self) -> Result<&Vec<DataPoint>> {
+        if self.convert_dirty_to_sorted_on_read {
+            self.apply_dirties().await?;
+        }
+        Ok(&self.sorted_datapoints)
+    }
+
+    pub async fn datapoints_tail_limit(&mut self, limit: usize) -> Result<&[DataPoint]> {
+        let datapoints = self.datapoints().await?.as_slice();
+        let found_index = linear_search_grouped_n_datas_with_func(
+            &datapoints,
+            limit,
+            |prev, current| prev.timestamp_nano.cmp(&current.timestamp_nano),
+            LinearSearchDirection::Desc,
+        );
+
+        Ok(&datapoints[found_index..])
     }
 
     pub fn create_sink_channel(

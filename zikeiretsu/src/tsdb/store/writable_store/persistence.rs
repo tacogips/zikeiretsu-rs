@@ -13,12 +13,12 @@ use tokio::{task, time};
 
 #[derive(Clone)]
 pub struct PersistCondition {
-    pub datapoint_search_condition: DatapointSearchCondition,
+    pub datapoint_search_condition: DatapointsRange,
     pub remove_from_store_after_persisted: bool,
 }
 impl PersistCondition {
     pub fn new(
-        datapoint_search_condition: DatapointSearchCondition,
+        datapoint_search_condition: DatapointsRange,
         remove_from_store_after_persisted: bool,
     ) -> Self {
         Self {
@@ -64,7 +64,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
             if waiting_shutdown.is_ok() {
                 log::info!("breaking the periodicaly persistence loop");
 
-                let datapoint_search_condition = DatapointSearchCondition::new(
+                let datapoint_search_condition = DatapointsRange::new(
                     None,
                     Some(TimestampNano::now() + Duration::nanoseconds(1)),
                 );
@@ -92,7 +92,7 @@ pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
                 break;
             }
 
-            let datapoint_search_condition = DatapointSearchCondition::new(
+            let datapoint_search_condition = DatapointsRange::new(
                 None,
                 Some(TimestampNano::now() + Duration::nanoseconds(1)),
             );

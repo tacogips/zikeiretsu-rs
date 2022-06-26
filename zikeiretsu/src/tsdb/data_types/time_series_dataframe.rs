@@ -1,9 +1,10 @@
 use super::arrow_dataframe::*;
 use super::dataframe::{DataframeError, Result};
+use super::datapoint::SearchDatapointsLimit;
 use super::dataseries::*;
 use super::dataseries_ref::*;
 use super::field::*;
-use super::{datapoint::DataPoint, DatapointSearchCondition};
+use super::{datapoint::DataPoint, DatapointsRange};
 use crate::tsdb::datetime::*;
 use crate::tsdb::util::{prepend, trim_values};
 
@@ -101,6 +102,68 @@ impl TimeSeriesDataFrame {
         Ok(())
     }
 
+    //  retain given number of timestamps. the same timestamps counts as one.
+    //
+    //  pseude datframes (only timestamps are shown)
+    //  df = [`2022-09-05`,`2022-09-05`,`2022-09-06`,`2022-09-06`,`2022-09-07`]
+    //
+    //
+    //  df.limit(head(1)):
+    //  # df ==  [`2022-09-05`,`2022-09-05`]
+    //
+    //  df.limit(FromLeft(2)):
+    //  # df ==  [`2022-09-05`,`2022-09-05`,`2022-09-06`]
+    //
+    //  df.remain_timestamps(Tail(2)):
+    //  # df ==  [`2022-09-06`,`2022-09-06`,`2022-09-07`]
+    //
+    pub fn limit(&mut self, limit: &SearchDatapointsLimit) {
+        match limit {
+            SearchDatapointsLimit::Head(0) | SearchDatapointsLimit::Tail(0) => {
+                self.timestamp_nanos.truncate(0);
+                for each_column in self.columns.iter_mut() {
+                    each_column.truncate(0);
+                }
+            }
+            SearchDatapointsLimit::Head(limit_size) => {
+                let right_bound = linear_search_grouped_n_datas(
+                    &self.timestamp_nanos,
+                    *limit_size,
+                    LinearSearchDirection::Asc,
+                );
+
+                let right_bound = if let Some(right_bound) = right_bound {
+                    right_bound
+                } else {
+                    return;
+                };
+
+                self.timestamp_nanos.truncate(right_bound);
+                for each_column in self.columns.iter_mut() {
+                    each_column.truncate(right_bound);
+                }
+            }
+            SearchDatapointsLimit::Tail(limit_size) => {
+                let left_bound = linear_search_grouped_n_datas(
+                    &self.timestamp_nanos,
+                    *limit_size,
+                    LinearSearchDirection::Desc,
+                );
+
+                let left_bound = if let Some(left_bound) = left_bound {
+                    left_bound
+                } else {
+                    return;
+                };
+
+                self.timestamp_nanos.drain(..left_bound);
+                for each_column in self.columns.iter_mut() {
+                    each_column.truncate_tail(left_bound);
+                }
+            }
+        };
+    }
+
     pub fn prepend(&mut self, other: &mut TimeSeriesDataFrame) -> Result<()> {
         prepend(&mut self.timestamp_nanos, &mut other.timestamp_nanos);
         for (idx, data_series) in self.columns.iter_mut().enumerate() {
@@ -130,8 +193,7 @@ impl TimeSeriesDataFrame {
 
         let first_timestamp = self.timestamp_nanos.first().unwrap();
         let last_timestamp = self.timestamp_nanos.last().unwrap();
-        let self_time_range =
-            DatapointSearchCondition::new(Some(*first_timestamp), Some(*last_timestamp));
+        let self_time_range = DatapointsRange::new(Some(*first_timestamp), Some(*last_timestamp));
 
         let (mut prefix_data_frames, mut suffix_data_frames) =
             other.retain_matches(&self_time_range).await?;
@@ -198,7 +260,7 @@ impl TimeSeriesDataFrame {
 
     pub async fn search<'a>(
         &'a self,
-        cond: &DatapointSearchCondition,
+        cond: &DatapointsRange,
     ) -> Option<TimeSeriesDataFrameRef<'a>> {
         self.search_with_indices(cond)
             .await
@@ -207,7 +269,7 @@ impl TimeSeriesDataFrame {
 
     pub async fn retain_matches<'a>(
         &mut self,
-        cond: &DatapointSearchCondition,
+        cond: &DatapointsRange,
     ) -> Result<(TimeSeriesDataFrame, TimeSeriesDataFrame)> {
         let (match_start_idx, match_end_index, retain_data) = match self
             .search_with_indices(cond)
@@ -304,7 +366,7 @@ impl TimeSeriesDataFrame {
 
     pub async fn search_with_indices<'a>(
         &'a self,
-        cond: &DatapointSearchCondition,
+        cond: &DatapointsRange,
     ) -> Option<(TimeSeriesDataFrameRef<'a>, (usize, usize))> {
         let since_inclusive_cond = cond
             .inner_since_inclusive
@@ -501,7 +563,7 @@ mod test {
             (50, 10),
             (51, 11)
         ]);
-        let condition = DatapointSearchCondition::since(ts!(20)).with_until(ts!(50));
+        let condition = DatapointsRange::since(ts!(20)).with_until(ts!(50));
         let result = df.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -535,7 +597,7 @@ mod test {
             (51, 11)
         ]);
 
-        let condition = DatapointSearchCondition::since(ts!(20));
+        let condition = DatapointsRange::since(ts!(20));
         let result = df.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -587,7 +649,7 @@ mod test {
             (51, 11)
         ]);
 
-        let condition = DatapointSearchCondition::until(ts!(40));
+        let condition = DatapointsRange::until(ts!(40));
         let result = df.search(&condition).await;
         assert!(result.is_some());
         let result = result.unwrap();
@@ -617,7 +679,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let condition = DatapointSearchCondition::new(some_ts!(0), some_ts!(3));
+        let condition = DatapointsRange::new(some_ts!(0), some_ts!(3));
 
         let result = df.search(&condition).await;
         assert!(result.is_some());
@@ -849,7 +911,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let cond = DatapointSearchCondition::new(some_ts!(4), some_ts!(8));
+        let cond = DatapointsRange::new(some_ts!(4), some_ts!(8));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(prefix, dataframe!([(2, 22), (3, 33)]));
@@ -872,7 +934,7 @@ mod test {
             (10, 1010)
         ]);
 
-        let cond = DatapointSearchCondition::new(some_ts!(0), some_ts!(3));
+        let cond = DatapointsRange::new(some_ts!(0), some_ts!(3));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(
@@ -912,7 +974,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let cond = DatapointSearchCondition::new(some_ts!(8), some_ts!(13));
+        let cond = DatapointsRange::new(some_ts!(8), some_ts!(13));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(
@@ -944,7 +1006,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let cond = DatapointSearchCondition::new(some_ts!(11), None);
+        let cond = DatapointsRange::new(some_ts!(11), None);
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(
@@ -992,7 +1054,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let cond = DatapointSearchCondition::new(None, some_ts!(2));
+        let cond = DatapointsRange::new(None, some_ts!(2));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(
@@ -1039,7 +1101,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let cond = DatapointSearchCondition::new(some_ts!(1), some_ts!(2));
+        let cond = DatapointsRange::new(some_ts!(1), some_ts!(2));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(
@@ -1086,7 +1148,7 @@ mod test {
             (8, 88),
             (10, 1010)
         ]);
-        let cond = DatapointSearchCondition::new(some_ts!(11), some_ts!(12));
+        let cond = DatapointsRange::new(some_ts!(11), some_ts!(12));
         let (prefix, suffix) = df.retain_matches(&cond).await.unwrap();
 
         assert_eq!(
@@ -1139,5 +1201,172 @@ mod test {
         let serialized_df: TimeSeriesDataFrame = serde_json::from_str(&serilized).unwrap();
 
         assert_eq!(df, serialized_df);
+    }
+
+    #[tokio::test]
+    async fn test_dataframe_limit_1() {
+        fn create_df() -> TimeSeriesDataFrame {
+            let df = multi_dataframe!([
+                (2, 22, true),
+                (2, 23, true),
+                (2, 24, true),
+                (3, 33, false),
+                (3, 34, false),
+                (4, 44, true),
+                (5, 55, false),
+                (6, 66, true),
+                (8, 88, true),
+                (8, 89, true),
+                (10, 1010, true),
+                (10, 1011, true),
+            ]);
+            df
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(0);
+            df.limit(&limit);
+
+            let values1 = Vec::<f64>::new();
+            let values2 = Vec::<bool>::new();
+            let expected = TimeSeriesDataFrame::new(
+                vec![],
+                vec![
+                    DataSeries::new(SeriesValues::Float64(values1)),
+                    DataSeries::new(SeriesValues::Bool(values2)),
+                ],
+                None,
+            );
+
+            assert_eq!(df, expected);
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(0);
+            df.limit(&limit);
+
+            let values1 = Vec::<f64>::new();
+            let values2 = Vec::<bool>::new();
+            let expected = TimeSeriesDataFrame::new(
+                vec![],
+                vec![
+                    DataSeries::new(SeriesValues::Float64(values1)),
+                    DataSeries::new(SeriesValues::Bool(values2)),
+                ],
+                None,
+            );
+
+            assert_eq!(df, expected);
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(1);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([(2, 22, true), (2, 23, true), (2, 24, true),]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([
+                    (2, 22, true),
+                    (2, 23, true),
+                    (2, 24, true),
+                    (3, 33, false),
+                    (3, 34, false),
+                ]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([
+                    (8, 88, true),
+                    (8, 89, true),
+                    (10, 1010, true),
+                    (10, 1011, true),
+                ]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(1);
+            df.limit(&limit);
+
+            assert_eq!(df, multi_dataframe!([(10, 1010, true), (10, 1011, true),]));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_dataframe_limit_2() {
+        fn create_df() -> TimeSeriesDataFrame {
+            let df = multi_dataframe!([
+                (2, 22, true),
+                (3, 33, false),
+                (3, 34, false),
+                (4, 44, true),
+                (5, 55, false),
+                (6, 66, true),
+                (8, 88, true),
+                (8, 89, true),
+                (10, 1010, true),
+            ]);
+            df
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(1);
+            df.limit(&limit);
+
+            assert_eq!(df, multi_dataframe!([(2, 22, true)]),);
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Head(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([(2, 22, true), (3, 33, false), (3, 34, false),]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(2);
+            df.limit(&limit);
+
+            assert_eq!(
+                df,
+                multi_dataframe!([(8, 88, true), (8, 89, true), (10, 1010, true),]),
+            );
+        }
+
+        {
+            let mut df = create_df();
+            let limit = SearchDatapointsLimit::Tail(1);
+            df.limit(&limit);
+
+            assert_eq!(df, multi_dataframe!([(10, 1010, true)]));
+        }
     }
 }

@@ -86,14 +86,14 @@ async fn write_datas(temp_db_dir: &PathBuf) {
         .build();
     wr.lock().await.push_multi(prices).await.unwrap();
     // persist all datapoints
-    let condition = PersistCondition::new(DatapointSearchCondition::all(), true);
+    let condition = PersistCondition::new(DatapointsRange::all(), true);
     wr.lock().await.persist(condition).await.unwrap();
 }
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    std::env::set_var("RUST_LOG", "debug");
+    std::env::set_var("RUST_LOG", "info");
     let sub = tracing_subscriber::FmtSubscriber::builder()
         .with_writer(io::stderr)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
@@ -124,6 +124,56 @@ async fn main() {
 
     from trades
     where ts  in ('2021-09-27 09:42',+3 minute)
+        "#;
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
+
+    println!("");
+    println!("show limit 2 greater than or equal the datetime from head ");
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = table
+
+    select *
+
+    from trades
+    where ts  >=|2 '2021-09-27 09:42:40.741778000'
+        "#;
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
+
+    println!("");
+    println!("show limit 2 greater than the datetime from head ");
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = table
+
+    select *
+
+    from trades
+    where ts  >|2 '2021-09-27 09:42:40.741778000' "#;
+    AdhocExecutorInterface
+        .execute_query(&db_context, &query)
+        .await
+        .unwrap();
+
+    println!("");
+    println!("show limit 10 from head ");
+    let query = r#"
+    with
+        cols = [is_buy,price,size],
+        format = table
+
+    select *
+
+    from trades
+    where ts  >=|10 '2021-09-27 09:42'
         "#;
     AdhocExecutorInterface
         .execute_query(&db_context, &query)

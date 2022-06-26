@@ -92,6 +92,7 @@ impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
 pub struct WritableStore<S: DatapointSorter + 'static> {
     store_id: Uuid,
     metrics: Metrics,
+    #[allow(dead_code)]
     field_types: Vec<FieldType>,
 
     convert_dirty_to_sorted_on_read: bool,
@@ -119,7 +120,7 @@ where
     pub async fn push(&mut self, data_point: DataPoint) -> Result<()> {
         #[cfg(feature = "validate")]
         if !same_field_types(&self.field_types, &data_point.field_values) {
-            let expectged = self
+            let expected = self
                 .field_types
                 .iter()
                 .map(|e| e.to_string())
@@ -134,7 +135,7 @@ where
                 .join(",");
 
             return Err(StoreError::DataFieldTypesMismatched(
-                expectged,
+                expected,
                 data_point_fields,
             ));
         }
@@ -147,7 +148,7 @@ where
         #[cfg(feature = "validate")]
         for data_point in data_points.iter() {
             if !same_field_types(&self.field_types, &data_point.field_values) {
-                let expectged = self
+                let expected = self
                     .field_types
                     .iter()
                     .map(|e| e.to_string())
@@ -162,7 +163,7 @@ where
                     .join(",");
 
                 return Err(StoreError::DataFieldTypesMismatched(
-                    expectged,
+                    expected,
                     data_point_fields,
                 ));
             }
@@ -220,10 +221,7 @@ where
         self.sorted_datapoints.shrink_to_fit();
     }
 
-    pub async fn purge(
-        &mut self,
-        datapoint_search_condition: DatapointSearchCondition,
-    ) -> Result<()> {
+    pub async fn purge(&mut self, datapoint_search_condition: DatapointsRange) -> Result<()> {
         let datapoints = self.datapoints().await?;
         let datapoints_searcher = DatapointSearcher::new(datapoints);
 
@@ -290,7 +288,7 @@ where
         Ok(&mut self.sorted_datapoints)
     }
 
-    pub fn push_multi_sender(
+    pub fn create_sink_channel(
         store: Arc<Mutex<WritableStore<S>>>,
     ) -> mpsc::UnboundedSender<Vec<DataPoint>> {
         let (datapoints_tx, mut datapoints_rx) = mpsc::unbounded_channel::<Vec<DataPoint>>();

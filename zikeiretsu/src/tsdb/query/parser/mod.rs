@@ -99,7 +99,6 @@ pub struct ParsedQuery<'q> {
     pub select: Option<SelectClause<'q>>,
     pub from: Option<FromClause<'q>>,
     pub r#where: Option<WhereClause<'q>>,
-    pub order_or_limit: Option<OrderOrLimitClause<'q>>,
 }
 
 impl<'q> ParsedQuery<'q> {
@@ -109,7 +108,6 @@ impl<'q> ParsedQuery<'q> {
             select: None,
             from: None,
             r#where: None,
-            order_or_limit: None,
         }
     }
 }
@@ -154,10 +152,6 @@ pub fn parse_query<'q>(query_str: &'q str) -> Result<ParsedQuery<'q>> {
             Rule::WHERE_CLAUSE => {
                 let where_clause = where_clause::parse(each_pair)?;
                 parsed_query.r#where = Some(where_clause);
-            }
-            Rule::ORDER_OR_LIMIT_CLAUSE => {
-                let order_or_limit_clause = order_or_limit_clause::parse(each_pair)?;
-                parsed_query.order_or_limit = Some(order_or_limit_clause);
             }
 
             Rule::KW_SEMICOLON => { /* do nothing*/ }
@@ -381,8 +375,6 @@ select *
 from trades
 
  where ts in today()
- order by ts asc
-
  "#;
 
         let parsed_query = parse_query(query);
@@ -477,6 +469,22 @@ where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
      select ts, volume, price
      from trades
      where ts in (yesterday() + 9:00, today() + 2 hours )
+ "#;
+
+        let parsed_query = parse_query(query);
+
+        assert!(parsed_query.is_ok());
+    }
+
+    #[test]
+    fn parse_query_10() {
+        let query = r#"with
+        force_sync_cloud = true,
+  	    cols = [_, volume, price],
+  	    tz = JST
+     select ts, volume, price
+     from trades
+     where ts >=|2 yesterday()
  "#;
 
         let parsed_query = parse_query(query);

@@ -92,8 +92,6 @@ mod test {
             {1629745451_715063000, vec![200f64,36f64]},
             {1629745451_715064000, vec![200f64,36f64]}
         );
-        ////TODO(tacogips) remove this
-        //store.apply_dirties().await.unwrap();
         let mut s = store.lock().await;
         let data_points = s.datapoints().await;
 
@@ -131,8 +129,6 @@ mod test {
             {1629745451_715066000, vec![300f64,36f64]}
         );
 
-        ////TODO(tacogips) remove this
-        //store.apply_dirties().await.unwrap();
         {
             //getting datapoint first
 
@@ -144,7 +140,7 @@ mod test {
             assert_eq!(*data_points, expected);
         }
 
-        let condition = DatapointSearchCondition::since(TimestampNano::new(1629745451_715063000))
+        let condition = DatapointsRange::since(TimestampNano::new(1629745451_715063000))
             .with_until(TimestampNano::new(1629745451_715065001));
 
         {
@@ -239,7 +235,7 @@ mod test {
 
         {
             let condition = PersistCondition {
-                datapoint_search_condition: DatapointSearchCondition::new(
+                datapoint_search_condition: DatapointsRange::new(
                     Some(TimestampNano::new(1629745451_715061000)),
                     Some(TimestampNano::new(1629745451_715066001)),
                 ),
@@ -267,10 +263,13 @@ mod test {
         }
 
         {
-            let condition = DatapointSearchCondition::new(
-                Some(TimestampNano::new(1629745451_715062000)),
-                Some(TimestampNano::new(1629745451_715066001)),
-            );
+            let condition = DatapointsSearchCondition {
+                datapoints_range: DatapointsRange::new(
+                    Some(TimestampNano::new(1629745451_715062000)),
+                    Some(TimestampNano::new(1629745451_715066001)),
+                ),
+                limit: None,
+            };
 
             let cache_setting = api::CacheSetting::none();
 
@@ -289,7 +288,7 @@ mod test {
             let dataframe = datapoints.unwrap().unwrap();
 
             {
-                let result = dataframe.search(&condition).await;
+                let result = dataframe.search(&condition.datapoints_range).await;
                 assert!(result.is_some());
                 assert_eq!(
                     result.unwrap().into_datapoints().unwrap(),
@@ -304,7 +303,7 @@ mod test {
             }
 
             {
-                let another_condition = DatapointSearchCondition::new(
+                let another_condition = DatapointsRange::new(
                     Some(TimestampNano::new(1629745451_715063000)),
                     Some(TimestampNano::new(1629745451_715065001)),
                 );
@@ -371,7 +370,7 @@ mod test {
 
         {
             let condition = PersistCondition {
-                datapoint_search_condition: DatapointSearchCondition::new(None, None),
+                datapoint_search_condition: DatapointsRange::new(None, None),
                 remove_from_store_after_persisted: true,
             };
 
@@ -394,7 +393,10 @@ mod test {
         }
 
         {
-            let condition = DatapointSearchCondition::new(None, None);
+            let condition = DatapointsSearchCondition {
+                datapoints_range: DatapointsRange::new(None, None),
+                limit: None,
+            };
 
             let cache_setting = api::CacheSetting::none();
 
@@ -423,7 +425,7 @@ mod test {
                     {1639745451_715062000, vec![1200f64,37f64]}
                 );
 
-                let result = dataframe.search(&condition).await;
+                let result = dataframe.search(&condition.datapoints_range).await;
                 assert!(result.is_some());
 
                 assert_eq!(result.clone().unwrap().len(), expected.len());
@@ -439,10 +441,8 @@ mod test {
             }
 
             {
-                let another_condition = DatapointSearchCondition::new(
-                    None,
-                    Some(TimestampNano::new(1639745451_715061001)),
-                );
+                let another_condition =
+                    DatapointsRange::new(None, Some(TimestampNano::new(1639745451_715061001)));
                 let result = dataframe.search(&another_condition).await;
                 assert!(result.is_some());
                 assert_eq!(

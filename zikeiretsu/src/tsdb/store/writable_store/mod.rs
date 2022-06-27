@@ -183,7 +183,7 @@ where
 
     pub async fn apply_dirties(&mut self) -> Result<()> {
         #[cfg(feature = "trace-log")]
-        log::trace!("applying dirties. len : {}", data_points.len());
+        log::trace!("applying dirties. len : {}", self.dirty_datapoints.len());
         if self.dirty_datapoints.is_empty() {
             return Ok(());
         }

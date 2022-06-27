@@ -118,6 +118,9 @@ where
     S: DatapointSorter + 'static,
 {
     pub async fn push(&mut self, data_point: DataPoint) -> Result<()> {
+        #[cfg(feature = "trace-log")]
+        log::trace!("push multi data: {data_point:?}");
+
         #[cfg(feature = "validate")]
         if !same_field_types(&self.field_types, &data_point.field_values) {
             let expected = self
@@ -145,6 +148,9 @@ where
     }
 
     pub async fn push_multi(&mut self, data_points: Vec<DataPoint>) -> Result<()> {
+        #[cfg(feature = "trace-log")]
+        log::trace!("push multi data: {data_points:?}");
+
         #[cfg(feature = "validate")]
         for data_point in data_points.iter() {
             if !same_field_types(&self.field_types, &data_point.field_values) {
@@ -176,6 +182,8 @@ where
     }
 
     pub async fn apply_dirties(&mut self) -> Result<()> {
+        #[cfg(feature = "trace-log")]
+        log::trace!("applying dirties. len : {}", data_points.len());
         if self.dirty_datapoints.is_empty() {
             return Ok(());
         }

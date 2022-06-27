@@ -11,6 +11,7 @@ rust-version = "1.61"
 default = []
 
 validate = []
+trace-log = []
 
 [[bin]]
 name = "zikeiretsu"

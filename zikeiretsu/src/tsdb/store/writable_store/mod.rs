@@ -6,7 +6,6 @@ use uuid::Uuid;
 
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
-    TimestampNano,
 };
 
 use crate::tsdb::util;
@@ -299,7 +298,7 @@ where
     pub async fn datapoints_tail_limit(&mut self, limit: usize) -> Result<&[DataPoint]> {
         let datapoints = self.datapoints().await?.as_slice();
         let found_index = linear_search_grouped_n_datas_with_func(
-            &datapoints,
+            datapoints,
             limit,
             |prev, current| prev.timestamp_nano.cmp(&current.timestamp_nano),
             LinearSearchDirection::Desc,

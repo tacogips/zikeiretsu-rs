@@ -31,25 +31,25 @@ fn datetime_filter_to_condition<'q>(
 
         DatetimeFilter::Gte(_, from, limit) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(Some(from.to_timestamp_nano(timezone)), None),
-            limit: limit.map(|limit| SearchDatapointsLimit::Head(limit)),
+            limit: limit.map(SearchDatapointsLimit::Head),
         }),
         DatetimeFilter::Gt(_, from, limit) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(
                 Some(from.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
                 None,
             ),
-            limit: limit.map(|limit| SearchDatapointsLimit::Head(limit)),
+            limit: limit.map(SearchDatapointsLimit::Head),
         }),
         DatetimeFilter::Lte(_, to, limit) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(
                 None,
                 Some(to.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
             ),
-            limit: limit.map(|limit| SearchDatapointsLimit::Tail(limit)),
+            limit: limit.map(SearchDatapointsLimit::Tail),
         }),
         DatetimeFilter::Lt(_, to, limit) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(None, Some(to.to_timestamp_nano(timezone))),
-            limit: limit.map(|limit| SearchDatapointsLimit::Tail(limit)),
+            limit: limit.map(SearchDatapointsLimit::Tail),
         }),
         DatetimeFilter::Equal(_, datetime_value) => {
             let from_dt_nano = datetime_value.to_timestamp_nano(timezone);

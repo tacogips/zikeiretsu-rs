@@ -154,7 +154,7 @@ pub async fn remove_local_lock_file_if_same_writer<P: AsRef<Path>>(
             Ok(mut lock_file) => {
                 let mut file_write_id: String = "".to_string();
                 lock_file.read_to_string(&mut file_write_id).ok();
-                if file_write_id.replace("\n", "") == writer_id.to_string() {
+                if file_write_id.replace('\n', "") == writer_id.to_string() {
                     if let Err(e) = fs::remove_file(lock_file_path) {
                         log::error!("could not remove local lock file manually {}", e);
                     }

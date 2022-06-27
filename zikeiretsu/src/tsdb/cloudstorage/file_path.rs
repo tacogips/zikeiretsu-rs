@@ -82,6 +82,7 @@ impl<'a> CloudBlockListFilePath<'a> {
             "{storage_url}blocklist",
             storage_url = cloud_storage.as_url(),
         );
+        log::debug!("list_file_urls: {list_file_url}");
         match cloud_storage {
             CloudStorage::Gcp(_, _) => gcp::list_block_list_files(list_file_url).await,
         }

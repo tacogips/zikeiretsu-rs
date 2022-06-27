@@ -34,9 +34,14 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
     db_dir: Option<P>,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<Vec<Metrics>> {
-    //TODO(tacogips) need some lock
+    let local_block_file_paths_is_empty = db_dir
+        .as_ref()
+        .map(|db_dir| list_local_block_list_files(db_dir.as_ref()).is_empty())
+        .unwrap_or(true);
+
+    log::debug!("fetch all metrics  cloud storage setting:{cloud_storage_and_setting:?}");
     if let Some((cloud_storage, cloud_setting)) = cloud_storage_and_setting {
-        if cloud_setting.force_update_block_list {
+        if cloud_setting.force_update_block_list || local_block_file_paths_is_empty {
             let block_file_urls = CloudBlockListFilePath::list_files_urls(cloud_storage).await?;
 
             let mut result: Vec<Metrics> = vec![];
@@ -66,7 +71,6 @@ pub async fn fetch_all_metrics<P: AsRef<Path>>(
     let db_dir = db_dir.unwrap();
 
     let file_paths = list_local_block_list_files(db_dir.as_ref());
-
     let mut metrics = Vec::<Metrics>::new();
     for each_file_path in file_paths {
         let each_metrics = extract_metrics_from_file_name(&each_file_path)?;

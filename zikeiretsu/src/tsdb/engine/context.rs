@@ -34,20 +34,20 @@ impl Database {
         self.database_name.to_string()
     }
 
-    pub fn from_str(database: &str) -> Result<Vec<Self>> {
+    pub fn parse(database: &str) -> Result<Vec<Self>> {
         let mut parsed_databases = Vec::<Self>::new();
         for each_database_config in database.split(',') {
             let database_name_and_cloud_storage =
                 each_database_config.split('=').collect::<Vec<&str>>();
-            match database_name_and_cloud_storage.as_slice() {
-                &[database_name, storage_url, ..] => {
+            match *database_name_and_cloud_storage.as_slice() {
+                [database_name, storage_url, ..] => {
                     //let storage_url = database_name_and_cloud_storage.get(1).unwrap();
                     let cloud_storage = CloudStorage::from_url(storage_url.trim())?;
                     let db = Database::new(database_name.trim().to_string(), Some(cloud_storage));
                     parsed_databases.push(db);
                 }
 
-                &[database_name] => {
+                [database_name] => {
                     let db = Database::new(database_name.trim().to_string(), None);
 
                     parsed_databases.push(db);

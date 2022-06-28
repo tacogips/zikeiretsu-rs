@@ -151,7 +151,7 @@ impl Args {
 
     fn parse_database_args(&mut self) -> Result<()> {
         if let Some(database) = &self.databases {
-            let parsed_databases = Database::from_str(database.as_str())?;
+            let parsed_databases = Database::parse(database.as_str())?;
             self.parsed_databases = Some(parsed_databases);
         }
         Ok(())

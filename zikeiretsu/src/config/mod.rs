@@ -1,9 +1,35 @@
-use super::{ArgsError, Result};
-use ::zikeiretsu::{CloudStorage, Database};
+use crate::{CloudStorage, CloudStorageError, Database};
 use dirs::home_dir;
 use serde::Deserialize;
 use std::fs;
 use std::path::{Path, PathBuf};
+use thiserror::Error;
+
+pub type Result<T> = std::result::Result<T, ConfigError>;
+
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("not data dir path ")]
+    NoDataDir,
+
+    #[error("{0}")]
+    TomlError(#[from] toml::de::Error),
+
+    #[error("{0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("{0}")]
+    CloudStorageError(#[from] CloudStorageError),
+
+    #[error("invalid database definition.{0}")]
+    InvalidDatabaseDefinition(String),
+
+    #[error("not database definition.")]
+    NoDatabaseDefinition,
+
+    #[error("no such config file. {0}")]
+    NoSuchConfigFile(String),
+}
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Config {
@@ -52,7 +78,7 @@ impl Config {
             let config_file_contents = fs::read_to_string(config_path)?;
             Self::read_str(config_file_contents.as_ref())
         } else {
-            Err(ArgsError::NoSuchConfigFile(
+            Err(ConfigError::NoSuchConfigFile(
                 config_path.display().to_string(),
             ))
         }

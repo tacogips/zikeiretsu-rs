@@ -1,9 +1,6 @@
-mod config;
-
-use ::zikeiretsu::{CloudStorageError, DBContext, DBContextError, Database};
+use ::zikeiretsu::{config::*, CloudStorageError, DBContext, DBContextError, Database};
 
 use clap::Parser;
-use config::*;
 use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -193,8 +190,8 @@ pub enum ArgsError {
     #[error("not database definition.")]
     NoDatabaseDefinition,
 
-    #[error("no such config file.")]
-    NoSuchConfigFile(String),
+    #[error("config error. {0}")]
+    ConfigError(#[from] ConfigError),
 
     #[error("no such config file.")]
     DBContextError(#[from] DBContextError),

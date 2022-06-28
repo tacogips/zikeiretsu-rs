@@ -40,6 +40,7 @@ pub fn parse<'q>(pair: Pair<'q, Rule>) -> Result<WhereClause<'q>> {
         }
     }
 
+    log::debug!("datetime filter clause : {datetime_filter:?}");
     Ok(WhereClause {
         datetime_filter,
         metrics_filter,

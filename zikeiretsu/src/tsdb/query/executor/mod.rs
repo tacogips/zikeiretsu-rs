@@ -34,6 +34,7 @@ pub struct ExecutedData {
 pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData> {
     let parsed_query = parse_query(query)?;
     let interpreted_query = interpret(parsed_query)?;
+    log::debug!("interpreted_query :{interpreted_query:?}");
     match interpreted_query {
         InterpretedQuery::ListMetrics(database_name, output_condition, query_setting) => {
             let (db_config, _database_name, db_dir) =

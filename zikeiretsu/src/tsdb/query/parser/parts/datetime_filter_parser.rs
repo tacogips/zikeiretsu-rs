@@ -38,9 +38,9 @@ impl<'q> DatetimeFilter<'q> {
                 }
                 Some(datetime_2) => Ok(DatetimeFilter::In(column_name, datetime_1, datetime_2)),
             },
-            ">=" => Ok(DatetimeFilter::Gte(column_name, datetime_1, None)),
+            ">=" | "=>" => Ok(DatetimeFilter::Gte(column_name, datetime_1, None)),
             ">" => Ok(DatetimeFilter::Gt(column_name, datetime_1, None)),
-            "<=" => Ok(DatetimeFilter::Lte(column_name, datetime_1, None)),
+            "<=" | "=<" => Ok(DatetimeFilter::Lte(column_name, datetime_1, None)),
             "<" => Ok(DatetimeFilter::Lt(column_name, datetime_1, None)),
             "=" => Ok(DatetimeFilter::Equal(column_name, datetime_1)),
             other_operator => {
@@ -49,11 +49,11 @@ impl<'q> DatetimeFilter<'q> {
                 // <|{n}, <=|{n},
                 if other_operator.len() >= 3 {
                     match &other_operator[..3] {
-                        ">=|" => {
+                        ">=|" | "=>|" => {
                             let limit = other_operator[3..].parse::<usize>()?;
                             return Ok(DatetimeFilter::Gte(column_name, datetime_1, Some(limit)));
                         }
-                        "<=|" => {
+                        "<=|" | "=<|" => {
                             let limit = other_operator[3..].parse::<usize>()?;
                             return Ok(DatetimeFilter::Lte(column_name, datetime_1, Some(limit)));
                         }

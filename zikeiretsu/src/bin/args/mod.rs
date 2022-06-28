@@ -1,6 +1,6 @@
 mod config;
 
-use ::zikeiretsu::{CloudStorage, CloudStorageError, DBContext, Database};
+use ::zikeiretsu::{CloudStorageError, DBContext, DBContextError, Database};
 
 use clap::Parser;
 use config::*;
@@ -151,44 +151,7 @@ impl Args {
 
     fn parse_database_args(&mut self) -> Result<()> {
         if let Some(database) = &self.databases {
-            let mut parsed_databases = Vec::<Database>::new();
-            for each_database_config in database.split(',') {
-                let database_name_and_cloud_storage =
-                    each_database_config.split('=').collect::<Vec<&str>>();
-                match database_name_and_cloud_storage.len() {
-                    1 => {
-                        let db = Database::new(
-                            database_name_and_cloud_storage
-                                .get(0)
-                                .unwrap()
-                                .trim()
-                                .to_string(),
-                            None,
-                        );
-
-                        parsed_databases.push(db);
-                    }
-                    2 => {
-                        let storage_url = database_name_and_cloud_storage.get(1).unwrap();
-                        let cloud_storage = CloudStorage::from_url(storage_url.trim())?;
-                        let db = Database::new(
-                            database_name_and_cloud_storage
-                                .get(0)
-                                .unwrap()
-                                .trim()
-                                .to_string(),
-                            Some(cloud_storage),
-                        );
-                        parsed_databases.push(db);
-                    }
-                    _ => {
-                        return Err(ArgsError::InvalidDatabaseDefinition(
-                            each_database_config.to_string(),
-                        ))
-                    }
-                }
-            }
-
+            let parsed_databases = Database::from_str(database.as_str())?;
             self.parsed_databases = Some(parsed_databases);
         }
         Ok(())
@@ -232,6 +195,9 @@ pub enum ArgsError {
 
     #[error("no such config file.")]
     NoSuchConfigFile(String),
+
+    #[error("no such config file.")]
+    DBContextError(#[from] DBContextError),
 }
 
 type Result<T> = std::result::Result<T, ArgsError>;
@@ -240,6 +206,8 @@ type Result<T> = std::result::Result<T, ArgsError>;
 mod test {
 
     use super::*;
+
+    use ::zikeiretsu::{CloudStorage, DBContext, Database};
 
     #[test]
     fn test_parse_databases_1() {

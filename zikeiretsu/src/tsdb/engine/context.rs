@@ -1,4 +1,4 @@
-use crate::tsdb::{Bucket, CloudStorage, SubDir};
+use crate::tsdb::{cloudstorage::CloudStorageError, Bucket, CloudStorage, SubDir};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -8,6 +8,11 @@ use thiserror::Error;
 pub enum DBContextError {
     #[error("database not found: {0}")]
     DatabaseNotFount(String),
+    #[error("invalid database definition.{0}")]
+    InvalidDatabaseDefinition(String),
+
+    #[error("cloud storage error.{0}")]
+    CloudStorageError(#[from] CloudStorageError),
 }
 
 pub type Result<T> = std::result::Result<T, DBContextError>;
@@ -27,6 +32,35 @@ impl Database {
     }
     pub fn name(&self) -> String {
         self.database_name.to_string()
+    }
+
+    pub fn from_str(database: &str) -> Result<Vec<Self>> {
+        let mut parsed_databases = Vec::<Self>::new();
+        for each_database_config in database.split(',') {
+            let database_name_and_cloud_storage =
+                each_database_config.split('=').collect::<Vec<&str>>();
+            match database_name_and_cloud_storage.as_slice() {
+                &[database_name, storage_url, ..] => {
+                    //let storage_url = database_name_and_cloud_storage.get(1).unwrap();
+                    let cloud_storage = CloudStorage::from_url(storage_url.trim())?;
+                    let db = Database::new(database_name.trim().to_string(), Some(cloud_storage));
+                    parsed_databases.push(db);
+                }
+
+                &[database_name] => {
+                    let db = Database::new(database_name.trim().to_string(), None);
+
+                    parsed_databases.push(db);
+                }
+                _ => {
+                    return Err(DBContextError::InvalidDatabaseDefinition(
+                        each_database_config.to_string(),
+                    ))
+                }
+            }
+        }
+
+        Ok(parsed_databases)
     }
 
     pub fn as_local_db_dir(&self, data_dir: &Path) -> PathBuf {

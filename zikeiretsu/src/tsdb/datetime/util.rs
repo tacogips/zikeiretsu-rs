@@ -16,15 +16,15 @@ pub enum DatetimeUtilError {
 }
 
 pub fn today<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
-    Utc::today().with_timezone(&tz)
+    tz.from_utc_datetime(&Utc::now().naive_utc()).date()
 }
 
 pub fn yesterday<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
-    Utc::today().with_timezone(&tz) - Duration::days(1)
+    today(tz) - Duration::days(1)
 }
 
 pub fn tomorrow<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
-    Utc::today().with_timezone(&tz) + Duration::days(1)
+    today(tz) + Duration::days(1)
 }
 
 pub enum DatetimeAccuracy {

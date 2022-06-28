@@ -1,9 +1,6 @@
-mod config;
-
-use ::zikeiretsu::{CloudStorageError, DBContext, DBContextError, Database};
+use ::zikeiretsu::{config::*, DBContext, DBContextError, Database};
 
 use clap::Parser;
-use config::*;
 use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -178,23 +175,11 @@ pub enum ArgsError {
     #[error("not data dir path ")]
     NoDataDir,
 
-    #[error("{0}")]
-    TomlError(#[from] toml::de::Error),
-
-    #[error("{0}")]
-    IoError(#[from] std::io::Error),
-
-    #[error("{0}")]
-    CloudStorageError(#[from] CloudStorageError),
-
-    #[error("invalid database definition.{0}")]
-    InvalidDatabaseDefinition(String),
-
     #[error("not database definition.")]
     NoDatabaseDefinition,
 
-    #[error("no such config file.")]
-    NoSuchConfigFile(String),
+    #[error("config error. {0}")]
+    ConfigError(#[from] ConfigError),
 
     #[error("no such config file.")]
     DBContextError(#[from] DBContextError),

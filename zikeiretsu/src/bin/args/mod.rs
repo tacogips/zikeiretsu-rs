@@ -1,4 +1,4 @@
-use ::zikeiretsu::{config::*, CloudStorageError, DBContext, DBContextError, Database};
+use ::zikeiretsu::{config::*, DBContext, DBContextError, Database};
 
 use clap::Parser;
 use std::env;
@@ -174,18 +174,6 @@ impl Args {
 pub enum ArgsError {
     #[error("not data dir path ")]
     NoDataDir,
-
-    #[error("{0}")]
-    TomlError(#[from] toml::de::Error),
-
-    #[error("{0}")]
-    IoError(#[from] std::io::Error),
-
-    #[error("{0}")]
-    CloudStorageError(#[from] CloudStorageError),
-
-    #[error("invalid database definition.{0}")]
-    InvalidDatabaseDefinition(String),
 
     #[error("not database definition.")]
     NoDatabaseDefinition,

@@ -114,6 +114,7 @@ impl<'q> ParsedQuery<'q> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BuildinDatetimeFunction {
+    Now,
     Today,
     Yesterday,
     Tomorrow,

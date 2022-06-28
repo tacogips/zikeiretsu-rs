@@ -143,6 +143,7 @@ impl DatetimeFilterValue {
                     .unwrap_or(0);
 
                 let timestamp_nano: TimestampNano = match build_func {
+                    BuildinDatetimeFunction::Now => today(*offset).into(),
                     BuildinDatetimeFunction::Today => today(*offset).into(),
                     BuildinDatetimeFunction::Yesterday => yesterday(*offset).into(),
                     BuildinDatetimeFunction::Tomorrow => tomorrow(*offset).into(),
@@ -304,6 +305,7 @@ pub fn parse_datetime(pair: Pair<'_, Rule>) -> Result<DatetimeFilterValue> {
             Rule::DATETIME_FN => {
                 for date_time_fn in each.into_inner() {
                     match date_time_fn.as_rule() {
+                        Rule::FN_NOW => datetime_fn = Some(BuildinDatetimeFunction::Now),
                         Rule::FN_TODAY => datetime_fn = Some(BuildinDatetimeFunction::Today),
                         Rule::FN_YESTERDAY => {
                             datetime_fn = Some(BuildinDatetimeFunction::Yesterday)

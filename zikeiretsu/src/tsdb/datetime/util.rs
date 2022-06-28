@@ -15,6 +15,10 @@ pub enum DatetimeUtilError {
     ChronoParseError(#[from] ChronoParseError),
 }
 
+pub fn now<Tz: TimeZone>(tz: Tz) -> DateTime<Tz> {
+    tz.from_utc_datetime(&Utc::now().naive_utc())
+}
+
 pub fn today<Tz: TimeZone>(tz: Tz) -> Date<Tz> {
     tz.from_utc_datetime(&Utc::now().naive_utc()).date()
 }

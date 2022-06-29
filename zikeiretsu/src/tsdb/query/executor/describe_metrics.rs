@@ -125,15 +125,13 @@ fn describes_to_dataframe_with_block_list(
     let mut block_list_end = Vec::<TimestampSec>::new();
 
     for each_descirbe in describes.iter() {
-        for (idx, each_block_time_stamp) in
-            each_descirbe.block_list.block_timestamps.iter().enumerate()
-        {
+        for (idx, each_meta) in each_descirbe.block_list.block_meta_infos.iter().enumerate() {
             metrics_names.push(each_descirbe.metrics.to_string());
             update_ats.push(each_descirbe.block_list.updated_timestamp_sec);
             block_num.push(each_descirbe.block_list.block_num() as u64);
             seq.push(idx as u64 + 1);
-            block_list_start.push(each_block_time_stamp.since_sec);
-            block_list_end.push(each_block_time_stamp.until_sec);
+            block_list_start.push(each_meta.block_timestamp.since_sec);
+            block_list_end.push(each_meta.block_timestamp.until_sec);
         }
     }
 

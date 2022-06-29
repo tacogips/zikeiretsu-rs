@@ -149,38 +149,38 @@ pub async fn search_dataframe<P: AsRef<Path>>(
         until_sec_ref
     );
 
-    let block_timestamps = block_list.search(since_sec_ref, until_sec_ref)?;
+    let block_metas = block_list.search(since_sec_ref, until_sec_ref)?;
 
     //TODO (tacogips) limit block_timestamps
     //if let Some(limit) = condition.limit.as_ref() {
     //    merged_dataframe.limit(limit);
     //}
 
-    log::debug!("search_dataframe. block timestamps: {:?}", block_timestamps);
+    log::debug!("search_dataframe. block timestamps: {:?}", block_metas);
 
-    let result = match block_timestamps {
+    let result = match block_metas {
         None => Ok(None),
-        Some(block_timestamps) => {
-            let tasks = block_timestamps.iter().map(|block_timestamp| async move {
+        Some(block_metas) => {
+            let tasks = block_metas.iter().map(|block_meta| async move {
                 let mut block = read_block(
                     database_name,
                     db_dir,
                     metrics,
                     field_selectors,
-                    block_timestamp,
+                    &block_meta.block_timestamp,
                     cache_setting,
                     cloud_storage_and_setting,
                 )
                 .await?;
                 // cut out partial datas from the dataframe
                 if !condition.datapoints_range.contains_whole(
-                    &block_timestamp.since_sec.as_timestamp_nano(),
-                    &(block_timestamp.until_sec + 1).as_timestamp_nano(),
+                    &block_meta.block_timestamp.since_sec.as_timestamp_nano(),
+                    &(block_meta.block_timestamp.until_sec + 1).as_timestamp_nano(),
                 ) {
                     block.retain_matches(&condition.datapoints_range).await?;
                 }
 
-                Ok((block, block_timestamp))
+                Ok((block, &block_meta.block_timestamp))
             });
 
             let dataframes_of_blocks = join_all(tasks).await;

@@ -71,21 +71,24 @@ async fn validate_block_list(
     .await?;
 
     let mut broken_timestamps: Vec<block_list::BlockTimestamp> = vec![];
-    for block_timestamp in block_list.block_timestamps.iter() {
+    for block_meta in block_list.block_meta_infos.iter() {
         let block = api::read::read_block(
             database_name,
             db_dir,
             metrics,
             None,
-            block_timestamp,
+            &block_meta.block_timestamp,
             &cache_setting,
             cloud_storage_and_setting,
         )
         .await;
 
         if block.is_err() {
-            log::info!("broken block file {block_timestamp}, {block:?}");
-            broken_timestamps.push(block_timestamp.clone())
+            log::info!(
+                "broken block file {}, {block:?}",
+                block_meta.block_timestamp
+            );
+            broken_timestamps.push(block_meta.block_timestamp.clone())
         }
     }
 
@@ -95,8 +98,8 @@ async fn validate_block_list(
         let broken_timstamps: HashSet<block_list::BlockTimestamp> =
             broken_timestamps.into_iter().collect();
         block_list
-            .block_timestamps
-            .retain(|block_timestamp| !broken_timstamps.contains(block_timestamp));
+            .block_meta_infos
+            .retain(|block_meta| !broken_timstamps.contains(&block_meta.block_timestamp));
         Ok(Some(block_list))
     }
 }

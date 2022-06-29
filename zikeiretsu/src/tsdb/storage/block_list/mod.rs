@@ -268,7 +268,7 @@ impl BlockList {
         match (since_inclusive, until_exclusive) {
             (Some(since), Some(until)) => {
                 let lower_idx = binary_search_by(
-                    &block_meta_infos,
+                    block_meta_infos,
                     |block_meta| block_meta.block_timestamp.until_sec.cmp(since),
                     BinaryRangeSearchType::AtLeastInclusive,
                 );
@@ -277,7 +277,7 @@ impl BlockList {
                     None => Ok(None),
                     Some(lower_idx) => {
                         let upper_idx = binary_search_by(
-                            &block_meta_infos,
+                            block_meta_infos,
                             |block_meta| block_meta.block_timestamp.since_sec.cmp(until),
                             BinaryRangeSearchType::AtMostInclusive,
                         );
@@ -294,7 +294,7 @@ impl BlockList {
 
             (Some(since), None) => {
                 let lower_idx = binary_search_by(
-                    &block_meta_infos,
+                    block_meta_infos,
                     |block_meta| block_meta.block_timestamp.until_sec.cmp(since),
                     BinaryRangeSearchType::AtLeastInclusive,
                 );
@@ -307,7 +307,7 @@ impl BlockList {
 
             (None, Some(until)) => {
                 let upper_idx = binary_search_by(
-                    &block_meta_infos,
+                    block_meta_infos,
                     |block_meta| block_meta.block_timestamp.since_sec.cmp(until),
                     BinaryRangeSearchType::AtMostInclusive,
                 );

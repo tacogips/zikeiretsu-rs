@@ -23,7 +23,7 @@ pub async fn repair_block_list_file<P: AsRef<Path>>(
     let cloud_storage_and_setting =
         cloud_storage.map(|cloud_storage| (cloud_storage, &cloud_setting));
     let p: Option<PathBuf> = None;
-    let metricses = api::read::fetch_all_metrics(p, cloud_storage_and_setting.clone()).await?;
+    let metricses = api::read::fetch_all_metrics(p, cloud_storage_and_setting).await?;
 
     for each_metrics in metricses.into_iter() {
         log::info!("checking {each_metrics}");
@@ -31,7 +31,7 @@ pub async fn repair_block_list_file<P: AsRef<Path>>(
             db_dir.as_ref(),
             database_name,
             &each_metrics,
-            cloud_storage_and_setting.clone(),
+            cloud_storage_and_setting,
         )
         .await?
         {
@@ -88,7 +88,7 @@ async fn validate_block_list(
                 "broken block file {}, {block:?}",
                 block_meta.block_timestamp
             );
-            broken_timestamps.push(block_meta.block_timestamp.clone())
+            broken_timestamps.push(block_meta.block_timestamp)
         }
     }
 

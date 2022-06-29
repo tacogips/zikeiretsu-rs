@@ -9,10 +9,11 @@ use uuid::Uuid;
 type Result<T> = std::result::Result<T, StorageApiError>;
 
 pub async fn repair_block_list_file<P: AsRef<Path>>(
-    database_name: &str,
     db_dir: P,
+    database_name: &str,
     cloud_storage: Option<&CloudStorage>,
 ) -> Result<()> {
+    log::info!("check and try repairing {database_name}");
     let cloud_setting = CloudStorageSetting::builder()
         .force_update_block_list(true)
         .download_block_if_not_exits(false)
@@ -26,6 +27,7 @@ pub async fn repair_block_list_file<P: AsRef<Path>>(
     let metricses = api::read::fetch_all_metrics(p, cloud_storage_and_setting.clone()).await?;
 
     for each_metrics in metricses.into_iter() {
+        log::info!("checking {each_metrics}");
         if let Some(bloken_block_list) = validate_block_list(
             db_dir.as_ref(),
             database_name,
@@ -34,6 +36,10 @@ pub async fn repair_block_list_file<P: AsRef<Path>>(
         )
         .await?
         {
+            log::info!(
+                "broken blocklist found :{}. start repairing",
+                bloken_block_list.metrics
+            );
             override_and_update_block_list_file(
                 db_dir.as_ref(),
                 &each_metrics,

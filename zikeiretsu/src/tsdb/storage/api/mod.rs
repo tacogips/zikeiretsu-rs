@@ -1,5 +1,6 @@
 pub mod cloud_setting;
 pub mod read;
+pub mod repair;
 pub mod write;
 
 use crate::tsdb::cloudstorage::*;

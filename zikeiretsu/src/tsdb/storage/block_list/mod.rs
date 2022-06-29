@@ -321,6 +321,7 @@ where
     //  (5) timestamp second head (untile)(v byte)
     //  (6) timestamp second (until)(v byte)
     write_timestamp_sec_and_deltas(untils, &mut block_list_file)?;
+    //TODO(tacogips) (7) timestamps nums in each block
 
     Ok(())
 }

@@ -48,17 +48,9 @@ impl BlockTimestamp {
             self.until_sec = other.until_sec
         }
     }
-    pub fn from_splited_timestamps(
-        since_secs: Vec<TimestampSec>,
-        until_secs: Vec<TimestampSec>,
+    pub fn from_timestamp_pairs(
+        timestamps: Vec<(TimestampSec, TimestampSec)>,
     ) -> Vec<BlockTimestamp> {
-        debug_assert_eq!(since_secs.len(), until_secs.len());
-        let timestamp_pairs: Vec<(TimestampSec, TimestampSec)> =
-            since_secs.into_iter().zip(until_secs.into_iter()).collect();
-        Self::from_timestamp_pairs(timestamp_pairs)
-    }
-
-    fn from_timestamp_pairs(timestamps: Vec<(TimestampSec, TimestampSec)>) -> Vec<BlockTimestamp> {
         timestamps
             .into_iter()
             .map(|(since_sec, until_sec)| BlockTimestamp {

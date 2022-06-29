@@ -3,6 +3,7 @@ use super::{
     block, block_list, block_list_file_path, block_timestamp_to_block_file_path, cloud_setting::*,
     lockfile_path, persisted_error_file_path, Result, StorageApiError,
 };
+use std::collections::HashSet;
 use std::fs::OpenOptions;
 
 use crate::tsdb::cloudstorage::*;
@@ -172,6 +173,14 @@ struct WrittenBlockInfo {
     block_timestamp: block_list::BlockTimestamp,
 }
 
+fn calc_unique_timestamp_num(data_points: &[DataPoint]) -> usize {
+    data_points
+        .iter()
+        .map(|datapoint| datapoint.timestamp_nano)
+        .collect::<HashSet<_>>()
+        .len()
+}
+
 async fn write_datas_to_local(
     db_dir: &Path,
     writer_id: &Uuid,
@@ -194,10 +203,15 @@ async fn write_datas_to_local(
 
     let head = data_points.get(0).unwrap();
     let tail = data_points.get(data_points.len() - 1).unwrap();
+    let timestamp_num = calc_unique_timestamp_num(data_points);
 
     let block_timestamp = block_list::BlockTimestamp {
         since_sec: head.timestamp_nano.as_timestamp_sec(),
         until_sec: tail.timestamp_nano.as_timestamp_sec() + 1,
+    };
+    let block_meta = block_list::BlockMetaInfo {
+        block_timestamp,
+        timestamp_num,
     };
 
     let cache_setting = super::CacheSetting {
@@ -224,7 +238,7 @@ async fn write_datas_to_local(
             Err(e) => return Err(e),
         };
 
-        block_list.add_timestamp(block_timestamp)?;
+        block_list.add_blockmeta(block_meta)?;
         block_list.update_updated_at(TimestampNano::now());
 
         let block_list_file_path = block_list_file_path(db_dir, metrics);
@@ -235,7 +249,7 @@ async fn write_datas_to_local(
     // write block file
     let (block_file_dir, block_file_path) = {
         let (block_file_dir, block_file_path) =
-            block_timestamp_to_block_file_path(db_dir, metrics, &block_timestamp);
+            block_timestamp_to_block_file_path(db_dir, metrics, &block_meta.block_timestamp);
         if block_file_path.exists() {
             return Err(StorageApiError::UnsupportedStorageStatus(format!(
                 "block file already exists at {block_file_path}. merging block files is not supported yet...",

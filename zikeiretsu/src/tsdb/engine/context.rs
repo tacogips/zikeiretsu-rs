@@ -8,6 +8,7 @@ use thiserror::Error;
 pub enum DBContextError {
     #[error("database not found: {0}")]
     DatabaseNotFount(String),
+
     #[error("invalid database definition.{0}")]
     InvalidDatabaseDefinition(String),
 

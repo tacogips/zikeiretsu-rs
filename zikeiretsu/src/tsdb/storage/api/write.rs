@@ -180,6 +180,7 @@ async fn write_datas_to_local(
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<WrittenBlockInfo> {
     let lock_file_path = lockfile_path(db_dir, metrics);
+    //TODO(tacogips) modulize lockfile to make writer id process DRY.see 'repair' module
     let mut lockfile = Lockfile::create(&lock_file_path)
         .map_err(|e| StorageApiError::AcquireLockError(lock_file_path.display().to_string(), e))?;
     lockfile

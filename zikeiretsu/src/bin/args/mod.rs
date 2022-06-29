@@ -11,6 +11,7 @@ pub enum Mode {
     Adhoc,
     Server,
     Client,
+    Repair,
 }
 impl FromStr for Mode {
     type Err = String;
@@ -20,6 +21,7 @@ impl FromStr for Mode {
             "adhoc" => Ok(Self::Adhoc),
             "server" => Ok(Self::Server),
             "client" => Ok(Self::Client),
+            "repair" => Ok(Self::Repair),
             r => Err(format!("unknown mode {r}")),
         }
     }
@@ -177,6 +179,9 @@ pub enum ArgsError {
 
     #[error("not database definition.")]
     NoDatabaseDefinition,
+
+    #[error("default database must specified")]
+    DefaultDatabaseMustSpecified,
 
     #[error("config error. {0}")]
     ConfigError(#[from] ConfigError),

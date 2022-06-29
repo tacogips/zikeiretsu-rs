@@ -151,6 +151,11 @@ pub async fn search_dataframe<P: AsRef<Path>>(
 
     let block_timestamps = block_list.search(since_sec_ref, until_sec_ref)?;
 
+    //TODO (tacogips) limit block_timestamps
+    //if let Some(limit) = condition.limit.as_ref() {
+    //    merged_dataframe.limit(limit);
+    //}
+
     log::debug!("search_dataframe. block timestamps: {:?}", block_timestamps);
 
     let result = match block_timestamps {
@@ -218,7 +223,7 @@ pub async fn search_dataframe<P: AsRef<Path>>(
     result
 }
 
-async fn read_block(
+pub async fn read_block(
     database_name: &str,
     root_dir: &Path,
     metrics: &Metrics,
@@ -227,6 +232,7 @@ async fn read_block(
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<TimeSeriesDataFrame> {
+    log::debug!("reading block file metrics:{metrics} ,timestamps:{block_timestamp}");
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 
@@ -298,7 +304,7 @@ fn read_from_block_file(
     Ok(result)
 }
 
-pub(crate) async fn read_block_list<'a>(
+pub(crate) async fn read_block_list(
     database_name: &str,
     db_dir: &Path,
     metrics: &Metrics,

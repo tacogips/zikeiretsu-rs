@@ -63,28 +63,60 @@ pub async fn main() -> Result<()> {
     let mut ctx = args.as_db_context()?;
 
     let mode = args.mode.unwrap_or(Mode::Adhoc);
-    if mode == Mode::Server {
-        setup_log(true);
-        arrow_flight_server(ctx, args.host.as_deref(), args.port).await?;
-    } else {
-        setup_log(false);
-        let mut executor_interface: Box<dyn ExecutorInterface> = if mode == Mode::Adhoc {
-            Box::new(AdhocExecutorInterface)
-        } else {
-            Box::new(
-                ArrowFlightClientInterface::new(args.https, args.host.as_deref(), args.port)
-                    .await?,
-            )
-        };
-        match args.query {
-            Some(query) => {
-                executor_interface.execute_query(&ctx, &query).await?;
+    match mode {
+        Mode::Server => {
+            setup_log(true);
+            arrow_flight_server(ctx, args.host.as_deref(), args.port).await?;
+        }
+        Mode::Adhoc | Mode::Client => {
+            setup_log(false);
+            let mut executor_interface: Box<dyn ExecutorInterface> = match mode {
+                Mode::Adhoc => Box::new(AdhocExecutorInterface),
+                Mode::Client => Box::new(
+                    ArrowFlightClientInterface::new(args.https, args.host.as_deref(), args.port)
+                        .await?,
+                ),
+                _ => {
+                    panic!("this never happend")
+                }
+            };
+            match args.query {
+                Some(query) => {
+                    executor_interface.execute_query(&ctx, &query).await?;
+                }
+                None => repl(&mut ctx, executor_interface).await?,
             }
-            None => repl(&mut ctx, executor_interface).await?,
+        }
+        Mode::Repair => {
+            setup_log(true);
+            repair(ctx).await?;
         }
     };
 
     Ok(())
+}
+
+async fn repair(ctx: DBContext) -> Result<()> {
+    let database = ctx.get_database(None);
+    match database {
+        Err(e) => {
+            let e: ArgsError = e.into();
+            Err(e.into())
+        }
+        Ok(database) => match database {
+            None => Err(ArgsError::DefaultDatabaseMustSpecified.into()),
+            Some(database) => {
+                let db_dir = database.as_local_db_dir(&ctx.data_dir);
+                Engine::repair(
+                    db_dir,
+                    &database.database_name,
+                    database.cloud_storage.as_ref(),
+                )
+                .await?;
+                Ok(())
+            }
+        },
+    }
 }
 
 pub async fn repl(

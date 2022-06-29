@@ -72,6 +72,14 @@ impl CloudStorageSettingBuilder {
         self
     }
 
+    pub fn upload_data_after_write(
+        mut self,
+        upload_data_after_write: bool,
+    ) -> CloudStorageSettingBuilder {
+        self.upload_data_after_write = upload_data_after_write;
+        self
+    }
+
     pub fn download_block_list_if_not_exits(
         mut self,
         download_block_list_if_not_exits: bool,

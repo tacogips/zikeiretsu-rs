@@ -117,6 +117,16 @@ impl Engine {
         Ok(metrics)
     }
 
+    pub async fn repair<P: AsRef<Path>>(
+        db_dir: P,
+        database_name: &str,
+        cloud_storage: Option<&CloudStorage>,
+    ) -> Result<()> {
+        api::repair::blocklist::repair_block_list_file(db_dir, database_name, cloud_storage)
+            .await?;
+        Ok(())
+    }
+
     pub async fn block_list_data<P: AsRef<Path>>(
         database_name: &str,
         db_dir: P,

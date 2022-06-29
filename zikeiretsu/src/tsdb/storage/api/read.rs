@@ -157,12 +157,10 @@ fn filter_block_metas_by_limit<'a>(
                     } else {
                         return &block_metas[..idx + 1];
                     }
+                } else if timestamp_num_sum == n && idx > 0 {
+                    return &block_metas[idx - 1..];
                 } else {
-                    if timestamp_num_sum == n && idx > 0 {
-                        return &block_metas[idx - 1..];
-                    } else {
-                        return &block_metas[idx..];
-                    }
+                    return &block_metas[idx..];
                 }
             }
         }

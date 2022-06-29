@@ -88,6 +88,7 @@ pub async fn main() -> Result<()> {
             }
         }
         Mode::Repair => {
+            setup_log(true);
             repair(ctx).await?;
         }
     };
@@ -97,7 +98,6 @@ pub async fn main() -> Result<()> {
 
 async fn repair(ctx: DBContext) -> Result<()> {
     let database = ctx.get_database(None);
-    let db_dir = ctx.data_dir.clone();
     match database {
         Err(e) => {
             let e: ArgsError = e.into();
@@ -106,6 +106,7 @@ async fn repair(ctx: DBContext) -> Result<()> {
         Ok(database) => match database {
             None => Err(ArgsError::DefaultDatabaseMustSpecified.into()),
             Some(database) => {
+                let db_dir = database.as_local_db_dir(&ctx.data_dir);
                 Engine::repair(
                     db_dir,
                     &database.database_name,

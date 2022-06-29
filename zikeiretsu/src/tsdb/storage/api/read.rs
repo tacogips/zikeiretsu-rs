@@ -232,6 +232,7 @@ pub async fn read_block(
     cache_setting: &CacheSetting,
     cloud_storage_and_setting: Option<(&CloudStorage, &CloudStorageSetting)>,
 ) -> Result<TimeSeriesDataFrame> {
+    log::debug!("reading block file metrics:{metrics} ,timestamps:{block_timestamp}");
     let (_, block_file_path) =
         block_timestamp_to_block_file_path(root_dir, metrics, block_timestamp);
 

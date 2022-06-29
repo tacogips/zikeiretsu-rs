@@ -13,11 +13,10 @@ pub async fn repair_block_list_file<P: AsRef<Path>>(
     database_name: &str,
     cloud_storage: Option<&CloudStorage>,
 ) -> Result<()> {
-    log::info!("check and try repairing {database_name}");
+    log::info!("check and try repairing database: {database_name}");
     let cloud_setting = CloudStorageSetting::builder()
         .force_update_block_list(true)
-        .download_block_if_not_exits(false)
-        .download_block_if_not_exits(false)
+        .download_block_if_not_exits(true)
         .upload_data_after_write(false)
         .build();
 
@@ -37,7 +36,7 @@ pub async fn repair_block_list_file<P: AsRef<Path>>(
         .await?
         {
             log::info!(
-                "broken blocklist found :{}. start repairing",
+                "broken blocklist found. metrics {}. start repairing",
                 bloken_block_list.metrics
             );
             override_and_update_block_list_file(
@@ -85,6 +84,7 @@ async fn validate_block_list(
         .await;
 
         if block.is_err() {
+            log::info!("broken block file {block_timestamp}, {block:?}");
             broken_timestamps.push(block_timestamp.clone())
         }
     }
@@ -123,9 +123,11 @@ async fn override_and_update_block_list_file(
             ))
         })?;
 
+    log::info!("write block list on local");
     block_list::write_to_block_listfile(&block_list_file_path, block_list)?;
 
     if let Some(cloud_storage) = cloud_storage {
+        log::info!("uploading cloud");
         upload_to_cloud(block_list_file_path.as_path(), metrics, cloud_storage).await?;
     }
 
@@ -138,6 +140,16 @@ async fn upload_to_cloud(
     cloud_storage: &CloudStorage,
 ) -> Result<()> {
     let cloud_lock_file_path = CloudLockfilePath::new(metrics, cloud_storage);
+    let writer_id = Uuid::new_v4();
+
+    if cloud_lock_file_path.exists().await? {
+        return Err(StorageApiError::CreateLockfileError(format!(
+            "cloud lock file already exists at {lock_file_url} ",
+            lock_file_url = cloud_lock_file_path.as_url()
+        )));
+    } else {
+        cloud_lock_file_path.create(&writer_id).await?;
+    }
 
     let cloud_block_list_file_path = CloudBlockListFilePath::new(metrics, cloud_storage);
     let upload = || async move {

@@ -112,6 +112,65 @@ pub(crate) fn list_local_block_list_files(db_dir: &Path) -> Vec<String> {
     file_names
 }
 
+fn filter_block_metas_by_limit<'a>(
+    block_metas: &'a [block_list::BlockMetaInfo],
+    limit: &SearchDatapointsLimit,
+) -> &'a [block_list::BlockMetaInfo] {
+    //TODO(tacogips) consider about wrapping case
+    //  time range ==> [TR]
+    //
+    //  |(TR 1)  | (TR 2)  |  (TR 3)  |
+    //        | (TR 4)                     |
+    //  When the ranges as above. Given that the time ranges are sorted by begining datetime, the tail block supposed to be TR 3 butactually it should be TR 4
+
+    if block_metas.is_empty() {
+        block_metas
+    } else {
+        let (n, is_head) = match limit {
+            SearchDatapointsLimit::Head(n) => (*n, true),
+            SearchDatapointsLimit::Tail(n) => (*n, false),
+        };
+        if n == 1 {
+            if is_head && block_metas[0].timestamp_num > 1 {
+                return &block_metas[..1];
+            } else if !is_head && block_metas[block_metas.len() - 1].timestamp_num > 1 {
+                return &block_metas[block_metas.len() - 1..];
+            }
+        }
+
+        let mut range: Vec<usize> = (0..=(block_metas.len() - 1)).into_iter().collect();
+        if !is_head {
+            range.reverse();
+        }
+
+        let mut timestamp_num_sum = 0;
+
+        for idx in range {
+            timestamp_num_sum += block_metas[idx].timestamp_num;
+
+            if timestamp_num_sum >= n {
+                // return with continuguous block
+                // in the case next block start or ends with the same timestamp
+                if is_head {
+                    if timestamp_num_sum == n && idx < (block_metas.len() - 1) {
+                        return &block_metas[..idx + 2];
+                    } else {
+                        return &block_metas[..idx + 1];
+                    }
+                } else {
+                    if timestamp_num_sum == n && idx > 0 {
+                        return &block_metas[idx - 1..];
+                    } else {
+                        return &block_metas[idx..];
+                    }
+                }
+            }
+        }
+
+        block_metas
+    }
+}
+
 pub async fn search_dataframe<P: AsRef<Path>>(
     database_name: &str,
     db_dir: P,
@@ -151,16 +210,15 @@ pub async fn search_dataframe<P: AsRef<Path>>(
 
     let block_metas = block_list.search(since_sec_ref, until_sec_ref)?;
 
-    //TODO (tacogips) limit block_timestamps
-    //if let Some(limit) = condition.limit.as_ref() {
-    //    merged_dataframe.limit(limit);
-    //}
-
     log::debug!("search_dataframe. block timestamps: {:?}", block_metas);
 
     let result = match block_metas {
         None => Ok(None),
-        Some(block_metas) => {
+        Some(mut block_metas) => {
+            if let Some(limit) = condition.limit.as_ref() {
+                block_metas = filter_block_metas_by_limit(block_metas, limit)
+            }
+
             let tasks = block_metas.iter().map(|block_meta| async move {
                 let mut block = read_block(
                     database_name,
@@ -380,6 +438,8 @@ pub(crate) async fn read_block_list(
 mod test {
     use super::*;
     use crate::tsdb::metrics::Metrics;
+    use crate::tsdb::*;
+
     #[test]
     pub fn extract_metrics_from_file_name_test() {
         let result = extract_metrics_from_file_name("some-met_rics.list");
@@ -387,5 +447,69 @@ mod test {
         let result = result.unwrap();
 
         assert_eq!(Metrics::new("some-met_rics").unwrap(), result);
+    }
+
+    macro_rules! blmeta {
+        ($since:expr,$until:expr,$num:expr) => {
+            block_list::BlockMetaInfo::new(
+                block_list::BlockTimestamp::new(
+                    TimestampSec::new($since),
+                    TimestampSec::new($until),
+                ),
+                $num,
+            )
+        };
+    }
+
+    macro_rules! block_metas {
+        ($({$since:expr,$until:expr,$num:expr}),*) => {
+            vec![
+                $(blmeta!($since,$until, $num) ),*
+            ]
+        };
+    }
+
+    #[test]
+    fn test_filter_blocklist_1() {
+        let block_metas = block_metas!({10,20,2}, {21,30,4}, {31,40,5});
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Head(1));
+        assert_eq!(result, block_metas!({10,20,2}));
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Tail(1));
+        assert_eq!(result, block_metas!({31,40,5}));
+    }
+
+    #[test]
+    fn test_filter_blocklist_2() {
+        let block_metas = block_metas!({10,20,3}, {21,30,4}, {31,40,3});
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Head(2));
+        assert_eq!(result, block_metas!({10,20,3}));
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Tail(2));
+        assert_eq!(result, block_metas!({31,40,3}));
+    }
+
+    #[test]
+    fn test_filter_blocklist_3() {
+        let block_metas = block_metas!({10,20,3}, {21,30,4}, {31,40,3});
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Head(3));
+        assert_eq!(result, block_metas!({10,20,3},{21,30,4}));
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Tail(3));
+        assert_eq!(result, block_metas!({21,30,4},{31,40,3}));
+    }
+
+    #[test]
+    fn test_filter_blocklist_4() {
+        let block_metas = block_metas!({10,20,3}, {21,30,4}, {31,40,3});
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Head(4));
+        assert_eq!(result, block_metas!({10,20,3},{21,30,4}));
+
+        let result = filter_block_metas_by_limit(&block_metas, &SearchDatapointsLimit::Tail(4));
+        assert_eq!(result, block_metas!({21,30,4},{31,40,3}));
     }
 }

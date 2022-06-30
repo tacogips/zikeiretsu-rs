@@ -3,7 +3,7 @@ use pest::iterators::Pair;
 
 use crate::tsdb::datetime::{parse_datetime_str, today, tomorrow, yesterday, TimestampNano};
 use crate::tsdb::query::parser::*;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, FixedOffset, Utc};
 
 #[derive(Debug, PartialEq)]
 pub enum DatetimeFilter<'q> {

@@ -153,7 +153,7 @@ with
 
   format_datetime = true,                // Format timestamps to readable string. default :true
 
-  tz = jst                               // timezone of the timestamps. abbrev or '+nn:nn' format
+  tz = Asia/Tokyo                        // timezone of the timestamps. abbrev or '+nn:nn' format
 
 select
   is_buy, volume, price // specified column alias or '*'
@@ -176,7 +176,7 @@ where
 #### filter by date formated string and offset
 ```
 with
-  tz = jst
+  tz = Asia/Tokyo
 
 select
   *

@@ -1,6 +1,6 @@
 use super::field::*;
 use crate::tsdb::datetime::*;
-use chrono::FixedOffset;
+use crate::tsdb::TimeZoneAndOffset;
 use serde::Serialize;
 use std::sync::Arc;
 
@@ -44,7 +44,7 @@ impl<'a> DataSeriesRef<'a> {
         &self,
         field_name: &str,
         format_timestamp: bool,
-        tz: Option<&FixedOffset>,
+        tz_and_offset: Option<&TimeZoneAndOffset>,
     ) -> (Field, ArrayRef) {
         match self.values {
             SeriesValuesRef::Float64(vs) => (
@@ -74,23 +74,35 @@ impl<'a> DataSeriesRef<'a> {
                         Arc::new(StringArray::from(
                             timestamp_nanos
                                 .iter()
-                                .map(|each_ts| each_ts.as_formated_datetime(tz))
+                                .map(|each_ts| {
+                                    each_ts.as_formated_datetime(
+                                        tz_and_offset.map(|e| e.offset).as_ref(),
+                                    )
+                                })
                                 .collect::<Vec<String>>(),
                         )),
                     )
                 } else {
+                    let offset_nano_seconds = tz_and_offset
+                        .map(|tz_and_offset| {
+                            tz_and_offset.offset.local_minus_utc() as i64 * 1_000_000_000i64
+                        })
+                        .unwrap_or(0);
                     (
                         Field::new(
                             field_name,
-                            DataType::Timestamp(TimeUnit::Nanosecond, tz.map(|tz| tz.to_string())),
+                            DataType::Timestamp(
+                                TimeUnit::Nanosecond,
+                                tz_and_offset.map(|tz_and_offset| tz_and_offset.tz.to_string()),
+                            ),
                             false,
                         ),
                         Arc::new(TimestampNanosecondArray::from_vec(
                             timestamp_nanos
                                 .iter()
-                                .map(|each_ts| each_ts.as_i64())
+                                .map(|each_ts| each_ts.as_i64() + offset_nano_seconds)
                                 .collect(),
-                            tz.map(|tz| tz.to_string()),
+                            tz_and_offset.map(|tz_and_offset| tz_and_offset.tz.to_string()),
                         )),
                     )
                 }
@@ -103,23 +115,33 @@ impl<'a> DataSeriesRef<'a> {
                         Arc::new(StringArray::from(
                             timestamp_secs
                                 .iter()
-                                .map(|each_ts| each_ts.as_formated_datetime(tz))
+                                .map(|each_ts| {
+                                    each_ts.as_formated_datetime(
+                                        tz_and_offset.map(|e| e.offset).as_ref(),
+                                    )
+                                })
                                 .collect::<Vec<String>>(),
                         )),
                     )
                 } else {
+                    let offset_seconds = tz_and_offset
+                        .map(|tz_and_offset| tz_and_offset.offset.local_minus_utc() as i64)
+                        .unwrap_or(0);
                     (
                         Field::new(
                             field_name,
-                            DataType::Timestamp(TimeUnit::Second, tz.map(|tz| tz.to_string())),
+                            DataType::Timestamp(
+                                TimeUnit::Second,
+                                tz_and_offset.map(|tz_and_offset| tz_and_offset.tz.to_string()),
+                            ),
                             false,
                         ),
                         Arc::new(TimestampSecondArray::from_vec(
                             timestamp_secs
                                 .iter()
-                                .map(|each_ts| each_ts.as_i64())
+                                .map(|each_ts| each_ts.as_i64() + offset_seconds)
                                 .collect(),
-                            tz.map(|tz| tz.to_string()),
+                            tz_and_offset.map(|tz_and_offset| tz_and_offset.tz.to_string()),
                         )),
                     )
                 }

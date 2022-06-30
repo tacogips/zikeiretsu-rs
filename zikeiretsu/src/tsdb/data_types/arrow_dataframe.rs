@@ -1,6 +1,6 @@
 use super::DataSeriesRef;
+use crate::tsdb::TimeZoneAndOffset;
 use async_trait::async_trait;
-use chrono::FixedOffset;
 use futures::future::join_all;
 use std::sync::Arc;
 use thiserror::*;
@@ -28,7 +28,7 @@ pub trait ArrowConvatibleDataFrame {
     async fn as_arrow_record_batchs(
         &self,
         format_timestamp: bool,
-        timezone: Option<&FixedOffset>,
+        timezone: Option<&TimeZoneAndOffset>,
     ) -> Result<RecordBatch> {
         let data_series_vec = self.as_data_serieses_ref_vec();
         let field_names: Vec<String> = match self.column_names() {

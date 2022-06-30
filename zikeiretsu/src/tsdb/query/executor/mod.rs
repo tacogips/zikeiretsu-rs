@@ -108,7 +108,7 @@ pub async fn execute_query(ctx: &DBContext, query: &str) -> Result<ExecutedData>
                     records: Some(
                         df.as_arrow_record_batchs(
                             query_condition.format_datetime,
-                            Some(&query_condition.timezone),
+                            Some(query_condition.timezone),
                         )
                         .await?,
                     ),

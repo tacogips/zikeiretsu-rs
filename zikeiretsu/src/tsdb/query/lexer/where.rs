@@ -17,25 +17,25 @@ pub(crate) fn interpret_datatime_search_condition<'q>(
 }
 
 fn datetime_filter_to_condition<'q>(
-    timezone: &FixedOffset,
+    offset: &FixedOffset,
     datetime_filter: &DatetimeFilter<'q>,
 ) -> LexerResult<DatapointsSearchCondition> {
     match &datetime_filter {
         DatetimeFilter::In(_, from, to) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(
-                Some(from.to_timestamp_nano(timezone)),
-                Some(to.to_timestamp_nano(timezone)),
+                Some(from.to_timestamp_nano(offset)),
+                Some(to.to_timestamp_nano(offset)),
             ),
             limit: None,
         }),
 
         DatetimeFilter::Gte(_, from, limit) => Ok(DatapointsSearchCondition {
-            datapoints_range: DatapointsRange::new(Some(from.to_timestamp_nano(timezone)), None),
+            datapoints_range: DatapointsRange::new(Some(from.to_timestamp_nano(offset)), None),
             limit: limit.map(SearchDatapointsLimit::Head),
         }),
         DatetimeFilter::Gt(_, from, limit) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(
-                Some(from.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
+                Some(from.to_timestamp_nano(offset) + Duration::nanoseconds(1)),
                 None,
             ),
             limit: limit.map(SearchDatapointsLimit::Head),
@@ -43,17 +43,17 @@ fn datetime_filter_to_condition<'q>(
         DatetimeFilter::Lte(_, to, limit) => Ok(DatapointsSearchCondition {
             datapoints_range: DatapointsRange::new(
                 None,
-                Some(to.to_timestamp_nano(timezone) + Duration::nanoseconds(1)),
+                Some(to.to_timestamp_nano(offset) + Duration::nanoseconds(1)),
             ),
             limit: limit.map(SearchDatapointsLimit::Tail),
         }),
         DatetimeFilter::Lt(_, to, limit) => Ok(DatapointsSearchCondition {
-            datapoints_range: DatapointsRange::new(None, Some(to.to_timestamp_nano(timezone))),
+            datapoints_range: DatapointsRange::new(None, Some(to.to_timestamp_nano(offset))),
             limit: limit.map(SearchDatapointsLimit::Tail),
         }),
         DatetimeFilter::Equal(_, datetime_value) => {
-            let from_dt_nano = datetime_value.to_timestamp_nano(timezone);
-            let from_dt = from_dt_nano.as_datetime_with_tz(timezone);
+            let from_dt_nano = datetime_value.to_timestamp_nano(offset);
+            let from_dt = from_dt_nano.as_datetime_with_tz(offset);
             let until_date_offset = match DatetimeAccuracy::from_datetime(from_dt) {
                 DatetimeAccuracy::NanoSecond => Duration::nanoseconds(1),
                 DatetimeAccuracy::MicroSecond => Duration::microseconds(1),
@@ -81,8 +81,9 @@ mod test {
     use super::*;
     use crate::tsdb::datetime::*;
     use crate::tsdb::parser::*;
+    use chrono::FixedOffset;
 
-    fn jst() -> FixedOffset {
+    fn jst_offset() -> FixedOffset {
         FixedOffset::east(9 * 3600)
     }
 
@@ -92,7 +93,7 @@ mod test {
         let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
         let col = "ts";
         let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
-        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+        let filter_cond = datetime_filter_to_condition(&jst_offset(), &filter).unwrap();
         let (datapoints_range, limit) = (filter_cond.datapoints_range, filter_cond.limit);
 
         let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
@@ -113,7 +114,7 @@ mod test {
         let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
         let col = "ts";
         let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
-        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+        let filter_cond = datetime_filter_to_condition(&jst_offset(), &filter).unwrap();
         let (date_range, limit) = (filter_cond.datapoints_range, filter_cond.limit);
 
         let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
@@ -134,7 +135,7 @@ mod test {
         let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
         let col = "ts";
         let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
-        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+        let filter_cond = datetime_filter_to_condition(&jst_offset(), &filter).unwrap();
         let (date_range, limit) = (filter_cond.datapoints_range, filter_cond.limit);
 
         let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
@@ -155,7 +156,7 @@ mod test {
         let filter_value = DatetimeFilterValue::DateString(dt.clone(), None);
         let col = "ts";
         let filter = DatetimeFilter::Equal(ColumnName(col), filter_value);
-        let filter_cond = datetime_filter_to_condition(&jst(), &filter).unwrap();
+        let filter_cond = datetime_filter_to_condition(&jst_offset(), &filter).unwrap();
         let (date_range, limit) = (filter_cond.datapoints_range, filter_cond.limit);
 
         let expected_from: TimestampNano = (dt - Duration::hours(9)).into();
@@ -178,7 +179,7 @@ mod test {
             DatetimeFilterValue::Function(BuildinDatetimeFunction::Yesterday, None),
         );
 
-        let filter_cond = datetime_filter_to_condition(&jst(), &filter);
+        let filter_cond = datetime_filter_to_condition(&jst_offset(), &filter);
 
         assert!(filter_cond.is_ok())
     }
@@ -194,7 +195,7 @@ mod test {
             DatetimeFilterValue::Function(BuildinDatetimeFunction::Yesterday, None),
         );
 
-        let filter_cond = datetime_filter_to_condition(&jst(), &filter);
+        let filter_cond = datetime_filter_to_condition(&jst_offset(), &filter);
 
         assert!(filter_cond.is_ok())
     }

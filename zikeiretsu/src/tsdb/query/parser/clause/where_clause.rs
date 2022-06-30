@@ -75,7 +75,7 @@ mod test {
     use crate::tsdb::query::parser::parts::DatetimeDelta;
     use pest::*;
 
-    use chrono::{format as chrono_format, DateTime, NaiveDateTime, NaiveTime, Utc};
+    use chrono::{format as chrono_format, DateTime, FixedOffset, NaiveDateTime, NaiveTime, Utc};
 
     #[test]
     fn parse_where_1() {

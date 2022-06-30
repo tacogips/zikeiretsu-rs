@@ -5,9 +5,9 @@ use arrow_flight::{
     flight_service_client::FlightServiceClient, utils::flight_data_to_arrow_batch, FlightData,
     Ticket,
 };
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio_stream::StreamExt;
-//use futures::StreamExt;
 use tonic::transport::Channel;
 
 pub struct ArrowFlightClientInterface {
@@ -84,7 +84,8 @@ pub async fn print_flight_data_query_result(flight_data: Vec<FlightData>) -> Arr
     let record_batch_data = flight_data.last().unwrap(); //TODO handler errror
     let output_condition: OutputCondition =
         serde_json::from_slice(&record_batch_data.app_metadata)?;
-    let record_batch = flight_data_to_arrow_batch(record_batch_data, Arc::new(schema), &[])?;
+    let record_batch =
+        flight_data_to_arrow_batch(record_batch_data, Arc::new(schema), &HashMap::new())?;
 
     output_records(record_batch, output_condition).await?;
     Ok(())

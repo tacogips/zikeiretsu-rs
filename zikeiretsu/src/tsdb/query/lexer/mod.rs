@@ -13,7 +13,7 @@ use either::Either;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Error as IoError;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::result::Result as StdResult;
 use thiserror::Error;
 
@@ -50,9 +50,6 @@ pub type Result<T> = std::result::Result<T, LexerError>;
 pub enum OutputError {
     #[error("{0}")]
     IoError(#[from] IoError),
-
-    #[error("output file already exists:{0}")]
-    OutputFileAlreadyExists(PathBuf),
 
     #[error("invalid output file path : {0}")]
     InvalidPath(String),
@@ -159,18 +156,15 @@ impl OutputCondition {
                 Some(output_file_path) => match output_file_path.parent() {
                     None => Err(OutputError::InvalidPath(format!("{:?} ", output_file_path))),
                     Some(output_dir) => {
-                        if Path::new(output_file_path).exists() {
-                            Err(OutputError::OutputFileAlreadyExists(
-                                output_file_path.clone(),
-                            ))
-                        } else {
-                            if output_dir.exists() {
-                                fs::create_dir_all(output_dir)?;
-                            }
-
-                            let f = fs::File::create(output_file_path)?;
-                            Ok(OutputWriter::File(f))
+                        if !output_dir.exists() {
+                            fs::create_dir_all(output_dir)?;
                         }
+
+                        let f = fs::OpenOptions::new()
+                            .write(true)
+                            .truncate(true)
+                            .open(output_file_path)?;
+                        Ok(OutputWriter::File(f))
                     }
                 },
             }?;

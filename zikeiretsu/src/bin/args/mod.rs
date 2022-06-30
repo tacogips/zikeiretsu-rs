@@ -91,7 +91,7 @@ impl Args {
         if let Some(database_configs) = config.databases {
             let mut databases = Vec::new();
             for each_config in database_configs.into_iter() {
-                databases.push(each_config.into_database()?);
+                databases.push(each_config.as_database()?);
             }
 
             self.parsed_databases = Some(databases);

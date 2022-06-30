@@ -35,11 +35,16 @@ pub fn parse_timezone_name(pair: Pair<'_, Rule>) -> Result<&'static TimeZoneAndO
         ));
     }
 
-    timezone_abbevs()
-        .get(pair.as_str().trim())
-        .map_or_else(|| Err(ParserError::InvalidTimeZone(pair.to_string())), Ok)
+    timezone_zone().get(pair.as_str().trim()).map_or_else(
+        || {
+            Err(ParserError::InvalidTimeZone(
+                pair.as_str().trim().to_string(),
+            ))
+        },
+        Ok,
+    )
 }
-static TIMEZONE_ABBREVS: OnceCell<HashMap<&'static str, TimeZoneAndOffset>> = OnceCell::new();
+static TIMEZONE_DEFS: OnceCell<HashMap<&'static str, TimeZoneAndOffset>> = OnceCell::new();
 
 macro_rules! tz_abbrev_to_offset {
     ($(($abbrev:expr, $offset_str:expr)), *) => {{
@@ -51,8 +56,8 @@ macro_rules! tz_abbrev_to_offset {
     }};
 }
 
-fn timezone_abbevs() -> &'static HashMap<&'static str, TimeZoneAndOffset> {
-    TIMEZONE_ABBREVS.get_or_init(|| {
+fn timezone_zone() -> &'static HashMap<&'static str, TimeZoneAndOffset> {
+    TIMEZONE_DEFS.get_or_init(|| {
         tz_abbrev_to_offset!(
             ("Etc/GMT+12", "-12:00"),
             ("Etc/GMT+11", "-11:00"),

@@ -87,7 +87,7 @@ pub enum ParserError {
     #[error("invalid metrics:{0}")]
     InvalidMetricsError(String),
 
-    #[error("invalid timezone abbrev:{0}")]
+    #[error("invalid timezone: {0}")]
     InvalidTimeZone(String),
 }
 

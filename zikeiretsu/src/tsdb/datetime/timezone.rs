@@ -2,7 +2,7 @@ use chrono::FixedOffset;
 use once_cell::sync::Lazy;
 
 pub static DEFAULT_TIMEZONE_AND_OFFSET: Lazy<TimeZoneAndOffset> =
-    Lazy::new(|| TimeZoneAndOffset::default());
+    Lazy::new(TimeZoneAndOffset::default);
 
 #[derive(Debug, PartialEq)]
 pub struct TimeZoneAndOffset {

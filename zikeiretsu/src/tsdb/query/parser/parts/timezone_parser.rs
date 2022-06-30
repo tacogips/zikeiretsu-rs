@@ -35,10 +35,9 @@ pub fn parse_timezone_name(pair: Pair<'_, Rule>) -> Result<&'static TimeZoneAndO
         ));
     }
 
-    timezone_abbevs().get(pair.as_str().trim()).map_or_else(
-        || Err(ParserError::InvalidTimeZone(pair.to_string())),
-        |timezone_and_offset| Ok(timezone_and_offset),
-    )
+    timezone_abbevs()
+        .get(pair.as_str().trim())
+        .map_or_else(|| Err(ParserError::InvalidTimeZone(pair.to_string())), Ok)
 }
 static TIMEZONE_ABBREVS: OnceCell<HashMap<&'static str, TimeZoneAndOffset>> = OnceCell::new();
 

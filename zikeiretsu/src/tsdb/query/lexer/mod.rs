@@ -7,8 +7,8 @@ use crate::tsdb::datapoint::DatapointsSearchCondition;
 use crate::tsdb::metrics::Metrics;
 pub use crate::tsdb::query::parser::clause::{OutputFormat, WhereClause, WithClause};
 use crate::tsdb::query::parser::*;
+use crate::tsdb::TimeZoneAndOffset;
 use crate::tsdb::{CacheSetting, CloudStorageSetting};
-use chrono::FixedOffset;
 use either::Either;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -183,7 +183,7 @@ pub struct InterpretedQueryCondition {
     pub datetime_search_condition: DatapointsSearchCondition,
     pub output_condition: OutputCondition,
     pub format_datetime: bool,
-    pub timezone: FixedOffset,
+    pub timezone: &'static TimeZoneAndOffset,
 }
 
 macro_rules! prepend_ts_column_to_head {
@@ -228,7 +228,9 @@ pub(crate) fn interpret(parsed_query: ParsedQuery<'_>) -> Result<InterpretedQuer
 
     let datetime_search_condition = match parsed_query.r#where.as_ref() {
         None => return Err(LexerError::EmptyFilterCondition),
-        Some(filter) => r#where::interpret_datatime_search_condition(&with.timezone, filter)?,
+        Some(filter) => {
+            r#where::interpret_datatime_search_condition(&with.timezone.offset, filter)?
+        }
     };
 
     invalid_if_metrics_filter_exists(parsed_query.r#where.as_ref())?;

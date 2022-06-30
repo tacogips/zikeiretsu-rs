@@ -2,7 +2,7 @@ pub mod clause;
 pub mod parts;
 
 use crate::tsdb::DatetimeUtilError;
-use chrono::{FixedOffset, TimeZone};
+use chrono::TimeZone;
 use clause::*;
 use log;
 pub use parts::*;
@@ -88,7 +88,7 @@ pub enum ParserError {
     InvalidMetricsError(String),
 
     #[error("invalid timezone abbrev:{0}")]
-    InvalidTimeZoneAbberv(String),
+    InvalidTimeZone(String),
 }
 
 pub type Result<T> = std::result::Result<T, ParserError>;
@@ -177,18 +177,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn parse_timezone_offset_val() {
-        let pairs = QueryGrammer::parse(Rule::TIMEZONE_OFFSET_VAL, "+1");
-
-        assert!(pairs.is_ok());
-        let mut pairs = pairs.unwrap();
-
-        let tz = pairs.next().unwrap();
-        assert_eq!(tz.as_rule(), Rule::TIMEZONE_OFFSET_VAL);
-        assert_eq!(tz.as_str(), "+1");
-    }
-
-    #[test]
     fn parse_column() {
         let pairs = QueryGrammer::parse(Rule::COLUMNS, "aa,bb,cc_cc,dd");
 
@@ -209,14 +197,14 @@ mod test {
 
     #[test]
     fn parse_define_tz() {
-        let pairs = QueryGrammer::parse(Rule::DEFINE_TZ, "tz = +9");
+        let pairs = QueryGrammer::parse(Rule::DEFINE_TZ, "tz = Asia/Tokyo");
 
         assert!(pairs.is_ok());
         let mut pairs = pairs.unwrap();
 
         let tz = pairs.next().unwrap();
         assert_eq!(tz.as_rule(), Rule::DEFINE_TZ);
-        assert_eq!(tz.as_str(), "tz = +9");
+        assert_eq!(tz.as_str(), "tz = Asia/Tokyo");
     }
 
     #[test]
@@ -338,7 +326,7 @@ mod test {
         let query = r#"with
 
         cols = [is_buy, volume, price],
- 	   tz = +9
+ 	   tz = Asia/Tokyo
 select *
  from trades  "#;
 
@@ -354,7 +342,7 @@ select *
         let query = r#"with
 
         cols = [is_buy, volume, price],
- 	   tz = +9
+ 	   tz = Asia/Tokyo
 select *
 from trades
 
@@ -370,7 +358,7 @@ from trades
         let query = r#"with
 
         cols = [is_buy, volume, price],
- 	   tz = +9
+ 	   tz = Asia/Tokyo
 select *
 from trades
 
@@ -387,7 +375,7 @@ from trades
         let query = r#"with
 
         cols = [is_buy, volume, price],
- 	   tz = +9
+ 	   tz = Asia/Tokyo
 select *
 from trades
 
@@ -403,7 +391,7 @@ from trades
         let query = r#"with
 
         cols = [is_buy, volume, price],
- 	   tz = JST select *
+ 	   tz = Asia/Tokyo select *
 from trades
 
  "#;
@@ -417,7 +405,7 @@ from trades
     fn parse_query_6() {
         let query = r#"with
 	cols = [_, volume, price],
-	tz = JST
+	tz = Asia/Tokyo
 
 select ts, volume, price
 from trades
@@ -433,7 +421,7 @@ where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
     fn parse_query_7() {
         let query = r#"with
   	    cols = [_, volume, price],
-  	    tz = JST
+  	    tz = Asia/Tokyo
      select ts, volume, price
      from trades
      where ts in (yesterday() + 9:00, today() + 2 hours )
@@ -449,7 +437,7 @@ where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
         let query = r#"with
         db = some,
   	    cols = [_, volume, price],
-  	    tz = JST
+  	    tz = Asia/Tokyo
      select ts, volume, price
      from trades
      where ts in (yesterday() + 9:00, today() + 2 hours )
@@ -465,7 +453,7 @@ where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
         let query = r#"with
         force_sync_cloud = true,
   	    cols = [_, volume, price],
-  	    tz = JST
+  	    tz = Asia/Tokyo
      select ts, volume, price
      from trades
      where ts in (yesterday() + 9:00, today() + 2 hours )
@@ -481,7 +469,7 @@ where ts in ('2012-12-13 9:00:00', '2012-12-13 9:00:00')
         let query = r#"with
         force_sync_cloud = true,
   	    cols = [_, volume, price],
-  	    tz = JST
+  	    tz = Asia/Tokyo
      select ts, volume, price
      from trades
      where ts >=|2 yesterday()

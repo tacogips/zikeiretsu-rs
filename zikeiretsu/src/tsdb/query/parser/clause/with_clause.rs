@@ -1,5 +1,6 @@
 use super::super::boolean::parse_bool;
 use crate::tsdb::query::parser::*;
+use crate::tsdb::TimeZoneAndOffset;
 use pest::iterators::Pair;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -16,7 +17,7 @@ pub enum OutputFormat {
 pub struct WithClause<'q> {
     pub def_columns: Option<Vec<Column<'q>>>,
     pub def_database: Option<&'q str>,
-    pub def_timezone: Option<FixedOffset>,
+    pub def_timezone: Option<&'static TimeZoneAndOffset>,
     pub def_output: Option<OutputFormat>,
     pub def_output_to_memory: bool,
     pub def_output_file_path: Option<PathBuf>,
@@ -69,12 +70,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
 
                     Rule::DEFINE_TZ => {
                         for each_in_define_tz in each_define.into_inner() {
-                            if each_in_define_tz.as_rule() == Rule::TIMEZONE_OFFSET_VAL {
-                                let timezone =
-                                    timezone_parser::parse_timezone_offset(each_in_define_tz)?;
-
-                                with_clause.def_timezone = Some(timezone)
-                            } else if each_in_define_tz.as_rule() == Rule::TIMEZONE_NAME {
+                            if each_in_define_tz.as_rule() == Rule::TIMEZONE_NAME {
                                 let timezone =
                                     timezone_parser::parse_timezone_name(each_in_define_tz)?;
 
@@ -154,6 +150,7 @@ pub fn parse(pair: Pair<'_, Rule>) -> Result<WithClause<'_>> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use chrono::FixedOffset;
 
     #[test]
     fn test_parse_with_1() {
@@ -175,11 +172,17 @@ mod test {
 
     #[test]
     fn test_parse_with_2() {
-        let query = r"with tz = +9:00            ";
+        let query = r"with tz = Asia/Tokyo            ";
         let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
-        assert_eq!(result.def_timezone, Some(FixedOffset::east(9 * 3600)));
+        assert_eq!(
+            result.def_timezone,
+            Some(&TimeZoneAndOffset::new(
+                ("Asia/Tokyo").parse::<chrono_tz::Tz>().unwrap(),
+                FixedOffset::east(9 * 3600)
+            ))
+        );
         assert_eq!(result.def_output, None);
 
         assert_eq!(result.def_output_file_path, None);
@@ -187,11 +190,18 @@ mod test {
 
     #[test]
     fn test_parse_with_3() {
-        let query = r"with tz = -9:00            ";
+        let query = r"with tz = America/Anchorage           ";
         let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
-        assert_eq!(result.def_timezone, Some(FixedOffset::east(-9 * 3600)));
+        assert_eq!(
+            result.def_timezone,
+            Some(&TimeZoneAndOffset::new(
+                ("America/Anchorage").parse::<chrono_tz::Tz>().unwrap(),
+                FixedOffset::east(-9 * 3600)
+            ))
+        );
+
         assert_eq!(result.def_output, None);
         assert_eq!(result.def_output_file_path, None);
     }
@@ -223,11 +233,18 @@ mod test {
 
     #[test]
     fn test_parse_with_6() {
-        let query = r"with tz = JST           ";
+        let query = r"with tz = America/Anchorage           ";
         let mut pairs = QueryGrammer::parse(Rule::WITH_CLAUSE, query).unwrap();
         let result = parse(pairs.next().unwrap()).unwrap();
         assert_eq!(result.def_columns, None);
-        assert_eq!(result.def_timezone, Some(FixedOffset::east(9 * 3600)));
+        assert_eq!(
+            result.def_timezone,
+            Some(&TimeZoneAndOffset::new(
+                ("America/Anchorage").parse::<chrono_tz::Tz>().unwrap(),
+                FixedOffset::east(-9 * 3600)
+            ))
+        );
+
         assert_eq!(result.def_output, None);
         assert_eq!(result.def_output_file_path, None);
     }

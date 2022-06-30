@@ -2,12 +2,13 @@ use super::{LexerError, Result as LexerResult};
 use crate::tsdb::query::parser::clause::{OutputFormat, WithClause};
 use crate::tsdb::query::parser::*;
 use crate::tsdb::{CacheSetting, CloudStorageSetting};
-use chrono::FixedOffset;
+
+use crate::{TimeZoneAndOffset, DEFAULT_TIMEZONE_AND_OFFSET};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 pub(crate) struct With<'q> {
-    pub timezone: FixedOffset,
+    pub timezone: &'static TimeZoneAndOffset,
     pub database: Option<&'q str>,
     pub output_format: OutputFormat,
     pub format_datetime: bool,
@@ -21,11 +22,10 @@ pub(crate) struct With<'q> {
 
 impl<'q> Default for With<'q> {
     fn default() -> Self {
-        let timezone: FixedOffset = FixedOffset::west(0);
         let output_format: OutputFormat = OutputFormat::Table;
 
         Self {
-            timezone,
+            timezone: &*DEFAULT_TIMEZONE_AND_OFFSET,
             output_format,
             format_datetime: true,
             database: None,
@@ -138,7 +138,7 @@ mod test {
         column_map.insert("c2", 1);
         column_map.insert("c3", 2);
         assert_eq!(result.column_index_map, Some(column_map));
-        assert_eq!(result.timezone, FixedOffset::east(0));
+        assert_eq!(result.timezone.offset, FixedOffset::east(0));
         assert_eq!(result.output_format, OutputFormat::Table);
     }
 }

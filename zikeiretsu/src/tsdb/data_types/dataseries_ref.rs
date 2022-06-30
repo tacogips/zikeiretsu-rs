@@ -83,6 +83,11 @@ impl<'a> DataSeriesRef<'a> {
                         )),
                     )
                 } else {
+                    let offset_nano_seconds = tz_and_offset
+                        .map(|tz_and_offset| {
+                            tz_and_offset.offset.local_minus_utc() as i64 * 1_000_000_000i64
+                        })
+                        .unwrap_or(0);
                     (
                         Field::new(
                             field_name,
@@ -95,7 +100,7 @@ impl<'a> DataSeriesRef<'a> {
                         Arc::new(TimestampNanosecondArray::from_vec(
                             timestamp_nanos
                                 .iter()
-                                .map(|each_ts| each_ts.as_i64())
+                                .map(|each_ts| each_ts.as_i64() + offset_nano_seconds)
                                 .collect(),
                             tz_and_offset.map(|tz_and_offset| tz_and_offset.tz.to_string()),
                         )),
@@ -119,6 +124,9 @@ impl<'a> DataSeriesRef<'a> {
                         )),
                     )
                 } else {
+                    let offset_seconds = tz_and_offset
+                        .map(|tz_and_offset| tz_and_offset.offset.local_minus_utc() as i64)
+                        .unwrap_or(0);
                     (
                         Field::new(
                             field_name,
@@ -131,7 +139,7 @@ impl<'a> DataSeriesRef<'a> {
                         Arc::new(TimestampSecondArray::from_vec(
                             timestamp_secs
                                 .iter()
-                                .map(|each_ts| each_ts.as_i64())
+                                .map(|each_ts| each_ts.as_i64() + offset_seconds)
                                 .collect(),
                             tz_and_offset.map(|tz_and_offset| tz_and_offset.tz.to_string()),
                         )),

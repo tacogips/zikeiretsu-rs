@@ -1,4 +1,4 @@
-use crate::{CloudStorage, CloudStorageError, Database};
+use crate::{CloudStorage, CloudStorageError, DBContext, Database};
 use dirs::home_dir;
 use serde::Deserialize;
 use std::fs;
@@ -50,14 +50,14 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub fn into_database(self) -> Result<Database> {
-        let cloud_storage = match self.cloud_storage_url {
+    pub fn as_database(&self) -> Result<Database> {
+        let cloud_storage = match &self.cloud_storage_url {
             None => None,
             Some(cloud_storage_url) => Some(CloudStorage::from_url(cloud_storage_url.as_str())?),
         };
 
         Ok(Database {
-            database_name: self.database_name,
+            database_name: self.database_name.clone(),
             cloud_storage,
         })
     }
@@ -87,6 +87,24 @@ impl Config {
     pub fn read_str(contents: &str) -> Result<Self> {
         let config: Config = toml::from_str(contents)?;
         Ok(config)
+    }
+
+    pub fn as_db_context(&self) -> Result<DBContext> {
+        let parsed_databases = match &self.databases {
+            Some(databases) => databases
+                .iter()
+                .map(|e| e.as_database())
+                .collect::<Result<Vec<Database>>>()?,
+            None => return Err(ConfigError::NoDatabaseDefinition),
+        };
+
+        let data_dir = match &self.data_dir {
+            Some(data_dir) => data_dir.clone(),
+            None => return Err(ConfigError::NoDataDir),
+        };
+
+        let ctx = DBContext::new(data_dir, self.default_database.clone(), parsed_databases);
+        Ok(ctx)
     }
 }
 

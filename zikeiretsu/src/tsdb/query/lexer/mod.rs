@@ -168,7 +168,10 @@ impl OutputCondition {
                                 fs::create_dir_all(output_dir)?;
                             }
 
-                            let f = fs::File::create(output_file_path)?;
+                            let f = fs::OpenOptions::new()
+                                .write(true)
+                                .truncate(true)
+                                .open(output_file_path)?;
                             Ok(OutputWriter::File(f))
                         }
                     }

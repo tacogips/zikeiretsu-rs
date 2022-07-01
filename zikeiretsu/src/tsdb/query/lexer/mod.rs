@@ -162,6 +162,7 @@ impl OutputCondition {
 
                         let f = fs::OpenOptions::new()
                             .write(true)
+                            .create(true)
                             .truncate(true)
                             .open(output_file_path)?;
                         Ok(OutputWriter::File(f))

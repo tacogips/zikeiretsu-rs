@@ -1,5 +1,5 @@
-use crate::tsdb::search::*;
 use crate::tsdb::timestamp_sec::*;
+use searcher::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::Iterator;

@@ -11,13 +11,13 @@
 ///
 mod block_timestamp;
 
-use crate::tsdb::search::*;
 use crate::tsdb::{metrics::Metrics, timestamp_nano::*, timestamp_sec::*};
 use crate::FieldError;
 use base_128_variants;
 use bits_ope::*;
 pub use block_timestamp::*;
 use memmap2::MmapOptions;
+use searcher::*;
 use serde::{Deserialize, Serialize};
 use simple8b_rle;
 use std::cmp::Ordering;

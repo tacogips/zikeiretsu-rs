@@ -9,15 +9,15 @@ impl<'a> DatapointSearcher<'a> {
         Self { datapoints }
     }
 
-    pub async fn search(&self, cond: &DatapointsRange) -> Option<&[DataPoint]> {
-        DataPoint::search(self.datapoints, cond).await
+    pub async fn search(&self, cond: &DatapointsRange) -> Option<&'a [DataPoint]> {
+        DataPoint::search(self.datapoints, &cond).await
     }
 
     pub async fn search_with_indices(
         &self,
-        cond: DatapointsRange,
+        cond: &DatapointsRange,
     ) -> Option<(&[DataPoint], (usize, usize))> {
-        DataPoint::search_with_indices(self.datapoints, &cond).await
+        DataPoint::search_with_indices(self.datapoints, cond).await
     }
 }
 

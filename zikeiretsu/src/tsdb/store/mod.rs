@@ -1,7 +1,7 @@
 pub mod writable_store;
 
+use crate::tsdb::storage::api as storage_api;
 use crate::tsdb::util;
-use crate::tsdb::{search::*, storage::api as storage_api};
 use chrono::{DateTime, Utc};
 use std::cmp::Ordering;
 use thiserror::Error;

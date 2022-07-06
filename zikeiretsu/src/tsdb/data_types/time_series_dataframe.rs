@@ -10,7 +10,7 @@ use crate::tsdb::util::{prepend, trim_values};
 
 use std::cmp::Ordering;
 
-use crate::tsdb::search::*;
+use searcher::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]

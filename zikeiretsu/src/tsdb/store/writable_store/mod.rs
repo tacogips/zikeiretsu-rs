@@ -2,6 +2,7 @@ mod persistence;
 mod sorter;
 
 use super::*;
+use searcher::*;
 use uuid::Uuid;
 
 use crate::tsdb::{
@@ -234,7 +235,7 @@ where
         let datapoints_searcher = DatapointSearcher::new(datapoints);
 
         if let Some((_, indices)) = datapoints_searcher
-            .search_with_indices(datapoint_search_condition)
+            .search_with_indices(&datapoint_search_condition)
             .await
         {
             remove_range(datapoints, indices)?;
@@ -252,7 +253,7 @@ where
             let datapoints_searcher = DatapointSearcher::new(all_datapoints);
 
             if let Some((datapoints, indices)) = datapoints_searcher
-                .search_with_indices(condition.datapoint_search_condition)
+                .search_with_indices(&condition.datapoint_search_condition)
                 .await
             {
                 storage_api::write::write_datas(

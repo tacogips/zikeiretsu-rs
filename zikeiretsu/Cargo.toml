@@ -21,15 +21,15 @@ path = "src/bin/main.rs"
 bits-ope = { path = "../bits-ope" }
 xor-encoding = { path = "../xor-encoding" }
 simple8b-rle = { path = "../simple8b-rle" }
-base-128-variants = { path ="../base-128-variants" }
-searcher = { path ="../searcher" }
+base-128-variants = { path = "../base-128-variants" }
+searcher = { path = "../searcher" }
 file-dougu = { git = "https://github.com/tacogips/file-dougu-rs", tag = "0.1.11" }
 
 chrono = "0.4"
 chrono-tz = "0.6.1"
 strum = { version = "0.21", features = ["derive"] }
 thiserror = "1"
-tokio = { version = "1", features= ["rt-multi-thread","macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-stream = "0.1"
 async-trait = "0.1"
 memmap2 = "0.3"
@@ -37,7 +37,7 @@ itertools = "0.10"
 lockfile = "0.2"
 url = "2"
 log = "0.4"
-futures = {version = "0.3" , features= ["std"] }
+futures = { version = "0.3", features = ["std"] }
 serde = "1"
 serde_json = "1"
 owning_ref = "0.4"
@@ -53,22 +53,23 @@ pest = "2.1"
 pest_derive = "2.1"
 once_cell = "1.9"
 either = "1.6"
-clap = {version = "3.1" , features= ["derive","env"]}
+clap = { version = "3.1", features = ["derive", "env"] }
 
 tracing = "0.1"
-tracing-subscriber = {version = "0.2", features = ["env-filter"]}
+tracing-subscriber = { version = "0.2", features = ["env-filter"] }
 tracing-log = "0.1"
 
-arrow = { version = "17", features = ["prettyprint"]}
+arrow = { version = "17", features = ["prettyprint"] }
 arrow-flight = "17.0.0"
 parquet = "17"
-tonic = {version = "0.7" }
+tonic = { version = "0.7" }
 async-stream = "0.3"
 lru = "0.7"
 uuid = { version = "1.1.2", features = ["v4"] }
+bincode = { version = "1.3.3" }
+zstd = "0.11.2"
 
 [dev-dependencies]
 tempfile = "3.2"
 tempdir = "0.3"
 tokio-test = "0.4"
-

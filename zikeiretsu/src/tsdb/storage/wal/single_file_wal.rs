@@ -34,23 +34,23 @@ where
 }
 
 fn read_datapint_from_wal(datas: &[u8]) -> Result<Vec<DataPoint>> {
-    //let mut datapoints =Vec<DataPoint>::new();
+    let mut result = Vec::<DataPoint>::new();
+    let mut current_index: usize = 0;
+    while current_index < datas.len() {
+        //datalength in 64bit
+        let mut data_length: [u8; 8] = Default::default();
+        data_length.copy_from_slice(&datas[current_index..current_index + 8usize]);
+        let data_length: usize = u64::from_be_bytes(data_length) as usize;
+        current_index += 8;
 
-    //loop{
-    //    r.read(8)
+        let raw_datapoint = &datas[current_index..current_index + data_length]; //datalength in 64bit
+        current_index += data_length;
 
-    //let serialized = bincode::deserialize(&datapoint)?;
-    //let data_size = serialized.len() as u64;
+        let deserialized: DataPoint = bincode::deserialize(&raw_datapoint)?;
+        result.push(deserialized);
+    }
 
-    //w.write_all(&data_size.to_be_bytes())?;
-    ////TODO(tacodigs) if consequence data writing fails, should we delete the written data length
-    ////also?
-    //w.write_all(&serialized)?;
-
-    //}
-
-    //Ok(())
-    unimplemented!()
+    Ok(result)
 }
 
 #[async_trait]
@@ -68,8 +68,8 @@ impl WalWriter for SingleFileWal {
                 .map(&self.wal_file)
                 .map_err(|e| WalError::WalFileOpenError(format!("{}", e)))?
         };
-        let data = read_datapint_from_wal(&wal_data)?;
-        Ok(data)
+        let datapoints = read_datapint_from_wal(&wal_data)?;
+        Ok(datapoints)
     }
 
     fn clean(&mut self) -> Result<()> {

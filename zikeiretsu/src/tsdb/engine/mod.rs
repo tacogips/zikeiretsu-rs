@@ -3,9 +3,9 @@ use crate::tsdb::cloudstorage::CloudStorage;
 use crate::tsdb::data_types::TimeSeriesDataFrame;
 use crate::tsdb::field::FieldType;
 use crate::tsdb::metrics::Metrics;
+use crate::tsdb::storage::wal::WalWriter;
 use crate::tsdb::store::writable_store::DatapointDefaultSorter;
 use crate::tsdb::{datapoint::DatapointsSearchCondition, storage::*, store::*};
-
 use crate::tsdb::{storage::api as storage_api, store};
 pub use context::*;
 use std::path::Path;
@@ -145,11 +145,12 @@ impl Engine {
         Ok(block_list)
     }
 
-    pub fn writable_store_builder(
+    pub fn writable_store_builder<Wal: WalWriter>(
         metics: Metrics,
         field_types: Vec<FieldType>,
-    ) -> WritableStoreBuilder<DatapointDefaultSorter> {
-        WritableStore::builder(metics, field_types)
+        wal: Wal,
+    ) -> WritableStoreBuilder<DatapointDefaultSorter, Wal> {
+        WritableStore::builder(metics, field_types, wal)
     }
 
     pub async fn search<P: AsRef<Path>>(

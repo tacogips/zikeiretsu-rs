@@ -1,6 +1,7 @@
 use super::{storage_api, DatapointSorter, WritableStore};
 use crate::tsdb::datapoint::*;
 use crate::tsdb::metrics::Metrics;
+use crate::tsdb::storage::wal::WalWriter;
 use crate::tsdb::store::writable_store::Result;
 use crate::tsdb::timestamp_nano::TimestampNano;
 use crate::tsdb::CloudStorage;
@@ -50,8 +51,8 @@ impl PeriodicallyPeristenceShutdown {
     }
 }
 
-pub fn start_periodically_persistence<S: DatapointSorter + 'static>(
-    store: Arc<Mutex<WritableStore<S>>>,
+pub fn start_periodically_persistence<S: DatapointSorter + 'static, Wal: WalWriter + 'static>(
+    store: Arc<Mutex<WritableStore<S, Wal>>>,
     interval_duration: Duration,
     remove_from_store_after_persisted: bool,
 ) -> PeriodicallyPeristenceShutdown {

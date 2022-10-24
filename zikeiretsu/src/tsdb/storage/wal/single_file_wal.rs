@@ -1,17 +1,11 @@
-//    let encoded: Vec<u8> = bincode::serialize(&target).unwrap();
-//
-//    let decoded: Option<String> = bincode::deserialize(&encoded[..]).unwrap();
-//
-
 use super::{Result, WalError, WalWriter};
 use crate::tsdb::datapoint::DataPoint;
+use crate::tsdb::metrics::Metrics;
 use async_trait::async_trait;
 use memmap2::MmapOptions;
 use std::fs::{File, OpenOptions};
-use std::io::{self, Read, Seek, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use tokio::sync::mpsc;
-use tokio::task;
 
 const WAL_FILE_NAME: &str = "wal.dat";
 
@@ -77,10 +71,12 @@ impl WalWriter for SingleFileWal {
         Ok(())
     }
 
-    fn exists(data_dir_path: &Path) -> bool {
+    fn exists(data_dir_path: &Path, metrics: &Metrics) -> bool {
         let mut pb = PathBuf::new();
 
         pb.push(data_dir_path);
+        pb.push("wal");
+        pb.push(metrics.as_str());
         pb.push(WAL_FILE_NAME);
 
         pb.exists()

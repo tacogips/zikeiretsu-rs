@@ -1,6 +1,7 @@
 pub mod writable_store;
 
 use crate::tsdb::storage::api as storage_api;
+use crate::tsdb::storage::wal::WalError;
 use crate::tsdb::util;
 use chrono::{DateTime, Utc};
 use std::cmp::Ordering;
@@ -43,6 +44,9 @@ pub enum StoreError {
 
     #[error("Vec ope Error. {0}")]
     VecOpeError(#[from] util::VecOpeError),
+
+    #[error("Wal Error. {0}")]
+    WalError(#[from] WalError),
 }
 
 type Result<T> = std::result::Result<T, StoreError>;

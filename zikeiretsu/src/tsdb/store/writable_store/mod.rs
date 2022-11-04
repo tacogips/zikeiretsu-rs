@@ -81,19 +81,21 @@ impl<S: DatapointSorter + Send + 'static, Wal: WalWriter> WritableStoreBuilder<S
         self
     }
 
-    pub fn build(self) -> Arc<Mutex<WritableStore<S, Wal>>> {
+    pub async fn build(self) -> Result<Arc<Mutex<WritableStore<S, Wal>>>> {
+        let datapoints_in_wal = self.wal.load().await?;
+
         let store = WritableStore {
             store_id: Uuid::new_v4(),
             metrics: self.metrics,
             field_types: self.field_types,
             convert_dirty_to_sorted_on_read: self.convert_dirty_to_sorted_on_read,
-            dirty_datapoints: vec![],
+            dirty_datapoints: datapoints_in_wal,
             sorted_datapoints: vec![],
             sorter: self.sorter,
             persistence: self.persistence,
             wal: self.wal,
         };
-        Arc::new(Mutex::new(store))
+        Ok(Arc::new(Mutex::new(store)))
     }
 }
 
@@ -155,6 +157,7 @@ where
                 ));
             }
         }
+
         self.wal.write(&data_points).await?;
 
         for each_data_point in data_points {
@@ -202,6 +205,7 @@ where
             }
         }
         self.dirty_datapoints.clear();
+        self.wal.clean()?;
 
         Ok(())
     }

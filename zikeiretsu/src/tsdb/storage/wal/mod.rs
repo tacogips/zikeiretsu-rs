@@ -26,7 +26,9 @@ pub trait WalWriter: Sync + Send {
     async fn write(&mut self, datapoint: &[DataPoint]) -> Result<()>;
     async fn load(&self) -> Result<Vec<DataPoint>>;
     fn clean(&mut self) -> Result<()>;
-    fn exists(data_dir_path: &Path, metrics: &Metrics) -> bool;
+    fn open_or_create(data_dir_path: &Path, metrics: &Metrics) -> Result<Self>
+    where
+        Self: Sized;
 }
 
 pub struct EmptyWal;
@@ -42,7 +44,7 @@ impl WalWriter for EmptyWal {
     fn clean(&mut self) -> Result<()> {
         Ok(())
     }
-    fn exists(_data_dir_path: &Path, _metrics: &Metrics) -> bool {
-        false
+    fn open_or_create(_data_dir_path: &Path, _metrics: &Metrics) -> Result<Self> {
+        Ok(EmptyWal)
     }
 }

@@ -58,9 +58,9 @@ async fn write_datas(temp_db_dir: &PathBuf) {
 
     let metrics = "trades".try_into().unwrap();
     let persistence = Persistence::Storage(temp_db_dir.as_path().to_path_buf(), cloud_setting);
-    let wal = SingleFileWal::open_or_create(temp_db_dir.as_path(), &metrics).unwrap();
 
-    let wr = Engine::writable_store_builder(metrics, fields.clone(), wal)
+    let wr = Engine::writable_store_builder(temp_db_dir.as_path(), metrics, fields.clone())
+        .unwrap()
         .persistence(persistence)
         //give the store specific sort function
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {

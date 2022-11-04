@@ -16,8 +16,6 @@ pub use sorter::*;
 use std::marker::Send;
 pub use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-//<Wal: WalWriter>
-//    pub wal: Wal,
 
 pub struct WritableStoreBuilder<S: DatapointSorter + 'static, Wal: WalWriter> {
     metrics: Metrics,

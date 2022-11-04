@@ -161,11 +161,11 @@ where
     latest_hit_idx
 }
 
-pub fn binary_search_range_by<'a, T, F1, F2>(
-    datas: &'a [T],
+pub fn binary_search_range_by<T, F1, F2>(
+    datas: &[T],
     condition_at_least: Option<F1>,
     condition_at_most: Option<F2>,
-) -> Option<&'a [T]>
+) -> Option<&[T]>
 where
     F1: Fn(&T) -> Ordering,
     F2: Fn(&T) -> Ordering,
@@ -174,11 +174,11 @@ where
     result.map(|(datapoints, _indices)| datapoints)
 }
 
-pub fn binary_search_range_with_idx_by<'a, T, F1, F2>(
-    datas: &'a [T],
+pub fn binary_search_range_with_idx_by<T, F1, F2>(
+    datas: &[T],
     condition_at_least_eq: Option<F1>,
     condition_at_most_exclusive: Option<F2>,
-) -> Option<(&'a [T], (usize, usize))>
+) -> Option<(&[T], (usize, usize))>
 where
     F1: Fn(&T) -> Ordering,
     F2: Fn(&T) -> Ordering,

@@ -205,7 +205,6 @@ where
             }
         }
         self.dirty_datapoints.clear();
-        self.wal.clean()?;
 
         Ok(())
     }
@@ -266,6 +265,8 @@ where
                         dirty_datapoint_len = self.dirty_datapoints.len(),
                     );
                 }
+
+                self.wal.clean()?;
                 Ok(Some(()))
             } else {
                 Ok(None)

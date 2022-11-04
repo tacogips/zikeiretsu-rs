@@ -6,3 +6,4 @@ pub mod persisted_error;
 pub mod wal;
 
 pub use api::*;
+pub use wal::*;

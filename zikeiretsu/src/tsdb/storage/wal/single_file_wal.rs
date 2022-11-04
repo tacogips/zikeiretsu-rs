@@ -58,13 +58,17 @@ impl WalWriter for SingleFileWal {
     }
 
     async fn load(&self) -> Result<Vec<DataPoint>> {
-        let wal_data = unsafe {
-            MmapOptions::new()
-                .map(&self.wal_file)
-                .map_err(|e| WalError::WalFileOpenError(format!("{}", e)))?
-        };
-        let datapoints = read_datapint_from_wal(&wal_data)?;
-        Ok(datapoints)
+        if self.wal_file.metadata()?.len() == 0 {
+            return Ok(vec![]);
+        } else {
+            let wal_data = unsafe {
+                MmapOptions::new()
+                    .map(&self.wal_file)
+                    .map_err(|e| WalError::WalFileOpenError(format!("{}", e)))?
+            };
+            let datapoints = read_datapint_from_wal(&wal_data)?;
+            Ok(datapoints)
+        }
     }
 
     fn clean(&mut self) -> Result<()> {
@@ -184,5 +188,17 @@ mod test {
             let read_size = wal_file.read_to_end(&mut bytes).unwrap();
             assert_eq!(read_size, 0);
         }
+    }
+
+    #[tokio::test]
+    async fn test_load_from_empty_wal() {
+        let temp_data_dir = TempDir::new("wal_test").expect("Could not create temp dir");
+        let db_dir = temp_data_dir.path();
+        let test_metrics = Metrics::new("s").unwrap();
+        let wal = SingleFileWal::open_or_create(db_dir, &test_metrics).unwrap();
+
+        let v = wal.load().await.unwrap();
+
+        assert!(v.is_empty());
     }
 }

@@ -56,9 +56,11 @@ async fn write_datas(temp_db_dir: &PathBuf) {
         Some((storage, cloud_setting))
     };
 
+    let metrics = "trades".try_into().unwrap();
     let persistence = Persistence::Storage(temp_db_dir.as_path().to_path_buf(), cloud_setting);
 
-    let wr = Engine::writable_store_builder("trades".try_into().unwrap(), fields.clone())
+    let wr = Engine::writable_store_builder(temp_db_dir.as_path(), metrics, fields.clone())
+        .unwrap()
         .persistence(persistence)
         //give the store specific sort function
         .sorter(|lhs: &DataPoint, rhs: &DataPoint| {
@@ -83,7 +85,9 @@ async fn write_datas(temp_db_dir: &PathBuf) {
                 lhs.timestamp_nano.cmp(&rhs.timestamp_nano)
             }
         })
-        .build();
+        .build()
+        .await
+        .unwrap();
     wr.lock().await.push_multi(prices).await.unwrap();
     // persist all datapoints
     let condition = PersistCondition::new(DatapointsRange::all(), true);

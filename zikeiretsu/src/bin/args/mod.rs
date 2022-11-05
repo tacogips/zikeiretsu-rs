@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use thiserror::Error;
 
-#[derive(Parser, PartialEq, Debug)]
+#[derive(Parser, Clone, PartialEq, Debug)]
 pub enum Mode {
     Adhoc,
     Server,

@@ -1,6 +1,7 @@
 pub mod writable_store;
 
 use crate::tsdb::storage::api as storage_api;
+use crate::tsdb::storage::wal::WalError;
 use crate::tsdb::util;
 use chrono::{DateTime, Utc};
 use std::cmp::Ordering;
@@ -43,6 +44,9 @@ pub enum StoreError {
 
     #[error("Vec ope Error. {0}")]
     VecOpeError(#[from] util::VecOpeError),
+
+    #[error("Wal Error. {0}")]
+    WalError(#[from] WalError),
 }
 
 type Result<T> = std::result::Result<T, StoreError>;
@@ -50,6 +54,7 @@ type Result<T> = std::result::Result<T, StoreError>;
 #[cfg(test)]
 mod test {
 
+    use crate::tsdb::storage::wal::EmptyWal;
     use crate::tsdb::*;
     use std::path::PathBuf;
     use tempdir::TempDir;
@@ -68,6 +73,7 @@ mod test {
         };
     }
 
+    #[ignore]
     #[tokio::test]
     async fn writable_store_test1() {
         let datapoints = float_data_points!(
@@ -78,13 +84,16 @@ mod test {
         let store = WritableStoreBuilder::default(
             Metrics::new("default").unwrap(),
             vec![FieldType::Float64, FieldType::Float64],
+            EmptyWal,
         )
-        .build();
+        .build()
+        .await
+        .unwrap();
 
-        for each in datapoints.into_iter() {
+        {
             let mut s = store.lock().await;
-            let result = s.push(each).await;
-            assert!(result.is_ok())
+            let result = s.push_multi(datapoints).await;
+            assert!(result.is_ok());
         }
 
         let expected = float_data_points!(
@@ -112,13 +121,16 @@ mod test {
         let store = WritableStoreBuilder::default(
             Metrics::new("default").unwrap(),
             vec![FieldType::Float64, FieldType::Float64],
+            EmptyWal,
         )
-        .build();
+        .build()
+        .await
+        .unwrap();
 
-        for each in datapoints.into_iter() {
+        {
             let mut s = store.lock().await;
-            let result = s.push(each).await;
-            assert!(result.is_ok())
+            let result = s.push_multi(datapoints).await;
+            assert!(result.is_ok());
         }
 
         let expected = float_data_points!(
@@ -171,9 +183,11 @@ mod test {
         let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
-        let store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types, EmptyWal)
             .persistence(persistence)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         {
             let input_datapoints = float_data_points!(
@@ -329,9 +343,11 @@ mod test {
         let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::Storage(PathBuf::from(temp_db_dir.path()), None);
-        let store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types, EmptyWal)
             .persistence(persistence)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         {
             let input_datapoints = float_data_points!(
@@ -466,9 +482,11 @@ mod test {
         let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::OnMemory;
-        let store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types, EmptyWal)
             .persistence(persistence)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         {
             let input_datapoints = float_data_points!(
@@ -509,9 +527,11 @@ mod test {
         let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::OnMemory;
-        let store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types, EmptyWal)
             .persistence(persistence)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         {
             let input_datapoints = float_data_points!(
@@ -548,9 +568,11 @@ mod test {
         let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::OnMemory;
-        let store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types, EmptyWal)
             .persistence(persistence)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         {
             let input_datapoints = float_data_points!(
@@ -596,9 +618,11 @@ mod test {
         let metrics: Metrics = "test_metrics".try_into().unwrap();
 
         let persistence = Persistence::OnMemory;
-        let store = WritableStore::builder(metrics.clone(), field_types)
+        let store = WritableStore::builder(metrics.clone(), field_types, EmptyWal)
             .persistence(persistence)
-            .build();
+            .build()
+            .await
+            .unwrap();
 
         {
             let input_datapoints = float_data_points!(

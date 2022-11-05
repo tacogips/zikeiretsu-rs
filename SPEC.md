@@ -5,9 +5,10 @@
  [data_dir]
   │
   ├─ [database_dir]
-  │    ├─ wal (not implemented yet though..)
+  │    ├─ wal
   │    │   │
-  │    │   └─ ...
+  │    │   ├── [metrics_1]
+  │    │   └── ...
   │    │
   │    ├─ error
   │    │   │
@@ -231,7 +232,17 @@ every value has at least 3 trailing-zeros.drop these zeros.
 - timestamp   ...  (not implemented yet) delta encoding and [simple8b-rle](https://github.com/lemire/FastPFor/blob/master/headers/simple8b_rle.h)
 - bool        ...  Simply packing 1bit values into 64bits space
 
-### WAL (WIP)
+### WAL
+
+```
+┌───────────────────────────┬─────────────────────────────────────────┬────────────────────────────┬────────────────────────────────────────┬──────┐
+│ (1)datapoint_size (32bit) │ (2)datapoint serialized with bincode    │  (3)datapoint_size (32bit) │ (4)datapoint serialized with bincode   │ ...  │
+└───────────────────────────┴─────────────────────────────────────────┴────────────────────────────┴────────────────────────────────────────┴──────┘
+
+```
+
+
+
 ### format (WIP)
 
 ```

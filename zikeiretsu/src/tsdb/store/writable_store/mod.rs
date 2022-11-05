@@ -5,11 +5,11 @@ use super::*;
 use searcher::*;
 use uuid::Uuid;
 
+use crate::tsdb::storage::wal::WalWriter;
+use crate::tsdb::util;
 use crate::tsdb::{
     datapoint::*, datapoints_searcher::*, field::*, metrics::Metrics, storage::api as storage_api,
 };
-
-use crate::tsdb::util;
 use chrono::Duration;
 pub use persistence::*;
 pub use sorter::*;
@@ -17,11 +17,12 @@ use std::marker::Send;
 pub use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 
-pub struct WritableStoreBuilder<S: DatapointSorter + 'static> {
+pub struct WritableStoreBuilder<S: DatapointSorter + 'static, Wal: WalWriter> {
     metrics: Metrics,
     field_types: Vec<FieldType>,
     convert_dirty_to_sorted_on_read: bool,
     sorter: S,
+    wal: Wal,
     persistence: Persistence,
 }
 
@@ -31,19 +32,20 @@ impl Default for Persistence {
     }
 }
 
-impl WritableStoreBuilder<DatapointDefaultSorter> {
-    pub fn default(metrics: Metrics, field_types: Vec<FieldType>) -> Self {
+impl<Wal: WalWriter> WritableStoreBuilder<DatapointDefaultSorter, Wal> {
+    pub fn default(metrics: Metrics, field_types: Vec<FieldType>, wal: Wal) -> Self {
         Self {
             metrics,
             field_types,
             convert_dirty_to_sorted_on_read: true,
             sorter: DatapointDefaultSorter,
             persistence: Persistence::default(),
+            wal,
         }
     }
 }
 
-impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
+impl<S: DatapointSorter + Send + 'static, Wal: WalWriter> WritableStoreBuilder<S, Wal> {
     pub fn convert_dirty_to_sorted_on_read(
         mut self,
         convert_dirty_to_sorted_on_read: bool,
@@ -52,12 +54,13 @@ impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
         self
     }
 
-    pub fn sorter<NS: DatapointSorter + Send>(self, sorter: NS) -> WritableStoreBuilder<NS> {
+    pub fn sorter<NS: DatapointSorter + Send>(self, sorter: NS) -> WritableStoreBuilder<NS, Wal> {
         let WritableStoreBuilder {
             metrics,
             field_types,
             convert_dirty_to_sorted_on_read,
             persistence,
+            wal,
             ..
         } = self;
 
@@ -67,6 +70,7 @@ impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
             field_types,
             convert_dirty_to_sorted_on_read,
             persistence,
+            wal,
         }
     }
 
@@ -75,22 +79,25 @@ impl<S: DatapointSorter + Send + 'static> WritableStoreBuilder<S> {
         self
     }
 
-    pub fn build(self) -> Arc<Mutex<WritableStore<S>>> {
+    pub async fn build(self) -> Result<Arc<Mutex<WritableStore<S, Wal>>>> {
+        let datapoints_in_wal = self.wal.load().await?;
+
         let store = WritableStore {
             store_id: Uuid::new_v4(),
             metrics: self.metrics,
             field_types: self.field_types,
             convert_dirty_to_sorted_on_read: self.convert_dirty_to_sorted_on_read,
-            dirty_datapoints: vec![],
+            dirty_datapoints: datapoints_in_wal,
             sorted_datapoints: vec![],
             sorter: self.sorter,
             persistence: self.persistence,
+            wal: self.wal,
         };
-        Arc::new(Mutex::new(store))
+        Ok(Arc::new(Mutex::new(store)))
     }
 }
 
-pub struct WritableStore<S: DatapointSorter + 'static> {
+pub struct WritableStore<S: DatapointSorter + 'static, Wal: WalWriter> {
     store_id: Uuid,
     metrics: Metrics,
     #[allow(dead_code)]
@@ -103,51 +110,24 @@ pub struct WritableStore<S: DatapointSorter + 'static> {
     sorted_datapoints: Vec<DataPoint>,
     sorter: S,
     persistence: Persistence,
+    wal: Wal,
 }
 
-impl WritableStore<DatapointDefaultSorter> {
+impl<Wal: WalWriter> WritableStore<DatapointDefaultSorter, Wal> {
     pub fn builder(
         metrics: Metrics,
         field_types: Vec<FieldType>,
-    ) -> WritableStoreBuilder<DatapointDefaultSorter> {
-        WritableStoreBuilder::default(metrics, field_types)
+        wal: Wal,
+    ) -> WritableStoreBuilder<DatapointDefaultSorter, Wal> {
+        WritableStoreBuilder::default(metrics, field_types, wal)
     }
 }
 
-impl<S> WritableStore<S>
+impl<S, Wal> WritableStore<S, Wal>
 where
     S: DatapointSorter + 'static,
+    Wal: WalWriter + 'static,
 {
-    pub async fn push(&mut self, data_point: DataPoint) -> Result<()> {
-        #[cfg(feature = "trace-log")]
-        log::trace!("push multi data: {data_point:?}");
-
-        #[cfg(feature = "validate")]
-        if !same_field_types(&self.field_types, &data_point.field_values) {
-            let expected = self
-                .field_types
-                .iter()
-                .map(|e| e.to_string())
-                .collect::<Vec<String>>()
-                .join(",");
-
-            let data_point_fields = data_point
-                .field_values
-                .iter()
-                .map(|e| e.as_type().to_string())
-                .collect::<Vec<String>>()
-                .join(",");
-
-            return Err(StoreError::DataFieldTypesMismatched(
-                expected,
-                data_point_fields,
-            ));
-        }
-
-        self.dirty_datapoints.push(data_point);
-        Ok(())
-    }
-
     pub async fn push_multi(&mut self, data_points: Vec<DataPoint>) -> Result<()> {
         #[cfg(feature = "trace-log")]
         log::trace!("push multi data: {data_points:?}");
@@ -175,6 +155,8 @@ where
                 ));
             }
         }
+
+        self.wal.write(&data_points).await?;
 
         for each_data_point in data_points {
             self.dirty_datapoints.push(each_data_point);
@@ -281,6 +263,8 @@ where
                         dirty_datapoint_len = self.dirty_datapoints.len(),
                     );
                 }
+
+                self.wal.clean()?;
                 Ok(Some(()))
             } else {
                 Ok(None)
@@ -317,7 +301,7 @@ where
     }
 
     pub fn create_sink_channel(
-        store: Arc<Mutex<WritableStore<S>>>,
+        store: Arc<Mutex<WritableStore<S, Wal>>>,
     ) -> mpsc::UnboundedSender<Vec<DataPoint>> {
         let (datapoints_tx, mut datapoints_rx) = mpsc::unbounded_channel::<Vec<DataPoint>>();
         task::spawn(async move {
@@ -333,7 +317,7 @@ where
     }
 
     pub fn start_repetedly_persist(
-        store: Arc<Mutex<WritableStore<S>>>,
+        store: Arc<Mutex<WritableStore<S, Wal>>>,
         persist_interval_duration: Duration,
         clear_after_persisted: bool,
     ) -> PeriodicallyPeristenceShutdown {
